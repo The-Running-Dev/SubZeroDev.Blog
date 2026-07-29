@@ -1,0 +1,12 @@
+{
+  "repo_path": "D:/Dropbox/Projects/SubZeroDev.Blog",
+  "clone_url": "https://github.com/The-Running-Dev/SubZeroDev.Blog.git",
+  "base_branch": "main",
+  "site_root": "docs",
+  "blog_dir": "docs/blog",
+  "package_manager": "none",
+  "dev_command": "./docs.ps1 -Live",
+  "dev_port": 3000,
+  "author_id": "subzerodev",
+  "default_tags": []
+}
