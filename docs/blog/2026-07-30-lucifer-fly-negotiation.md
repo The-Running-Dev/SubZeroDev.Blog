@@ -1,7 +1,10 @@
 ---
 title: "Lucifer, the Fly, and the Negotiation That Failed Spectacularly"
 description: "A perfectly reasonable attempt at diplomacy."
-date: 2026-07-30
+slug: lucifer-fly-negotiation
+authors:
+  - subzerodev
+date: 2026-07-30T00:00:00
 tags:
   - absurd
   - lucifer
@@ -20,6 +23,8 @@ Most days it's just me, coffee, and whatever absurd problem the universe decides
 This morning?
 
 A fly.
+
+<!-- truncate -->
 
 Now, I am a reasonable devil.
 
