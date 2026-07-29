@@ -44,6 +44,9 @@ Delivered in pull request
 - Document how route changes preserve previously published links.
 - Validate all discovery surfaces before a production artifact is uploaded.
 
+Delivered in pull request
+[#8](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/8).
+
 ## Milestone 5: Repeatable publishing — planned
 
 - Publish substantive posts based on real SubZeroDev project work.
