@@ -10,9 +10,17 @@ The source repository for the SubZeroDev technical blog at
 
 ## Status
 
-This repository is at its initial scaffold stage. It currently owns the blog's
-documentation site and publishing configuration; article content and any
-additional application features will be added separately.
+The site now includes its first published post and the authoring workflow for
+future posts. It currently owns the blog's content, project documentation, and
+publishing configuration; additional application features will be added only
+when their source and validation exist here.
+
+## Blog
+
+Read the inaugural post at
+[blog.subzerodev.com/blog/welcome/](/blog/welcome/).
+For authoring guidance, see
+[Writing Posts](/docs/writing-posts/).
 
 ## Documentation
 

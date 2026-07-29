@@ -28,7 +28,13 @@ const config: Config = {
           sidebarPath: './sidebar.ts',
           routeBasePath: 'docs'
         },
-        blog: false
+        blog: {
+          path: 'blog',
+          routeBasePath: 'blog',
+          blogTitle: 'SubZeroDev Blog',
+          blogDescription: 'Notes on building and maintaining SubZeroDev projects.',
+          showReadingTime: true
+        }
       } satisfies Preset.Options
     ]
   ],
@@ -37,6 +43,11 @@ const config: Config = {
     navbar: {
       title: 'SubZeroDev Blog',
       items: [
+        {
+          to: '/blog/',
+          position: 'left',
+          label: 'Blog'
+        },
         {
           type: 'docSidebar',
           sidebarId: 'docs',

@@ -24,6 +24,7 @@ Before editing:
 ## Layout and ownership
 
 - `README.md`: authoritative site-root content and repository homepage.
+- `docs/blog/`: authored blog posts served below `/blog/`.
 - `docs/docs/`: authored documentation served below `/docs/`.
 - `docs/src/pages/index.md`: generated site root; never edit directly.
 - `docs/docs/index.md`: generated minimal `/docs/` landing page; never edit
@@ -53,6 +54,11 @@ homepage, edit `README.md`, then regenerate the checked-in pages:
 Do not edit generated index pages directly. Add authored pages under
 `docs/docs/` with front matter and deterministic `sidebar_position` values.
 Use absolute published links in the README.
+
+Author blog posts under `docs/blog/` using a date-prefixed filename such as
+`YYYY-MM-DD-slug.md`. Include `title`, `description`, `slug`, and `authors` in
+front matter. Preview the route locally and ensure the post makes only claims
+supported by repository source or cited material.
 
 The docs system is installed and upgraded through the shared template's
 supported `Invoke-SetupDocs` interface. Before upgrading, inspect the template

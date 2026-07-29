@@ -8,7 +8,8 @@ sidebar_position: 4
 ## Authoring
 
 Edit the repository root `README.md` for the site homepage. Add project
-documentation as Markdown under `docs/docs/`.
+documentation as Markdown under `docs/docs/`, and blog posts under
+`docs/blog/`.
 
 The following files are generated and must not be edited directly:
 
@@ -20,6 +21,13 @@ After changing the README, regenerate the homepage:
 ```powershell
 ./docs.ps1 -BuildOnly
 ```
+
+## Writing posts
+
+Create a Markdown file under `docs/blog/` with a date-prefixed filename, for
+example `YYYY-MM-DD-post-slug.md`. Each post needs front matter with `title`,
+`description`, `slug`, and `authors`; see [Writing Posts](./writing-posts.md)
+for the complete workflow.
 
 ## Validation
 
