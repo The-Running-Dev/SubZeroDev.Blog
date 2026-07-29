@@ -35,40 +35,6 @@
         'node_modules'
     )
 
-    # --- GeneratedFiles:start ---
-    # Files generated from another file, checked for drift rather than scanned.
-    # Each entry names the generated file, its source, and the script that
-    # produces the expected content, all relative to the project root. The
-    # generator and this check share that script so they cannot disagree.
-    #
-    # Set SiteUrl to the published origin, with a trailing slash, so absolute
-    # links in the README resolve to site-relative links on the homepage.
-    #
-    # Path here follows Arguments.RouteBasePath: 'docs/docs/index.md' when it
-    # is '/' (the README becomes the docs index), or 'docs/src/pages/index.md'
-    # for any other value (the README becomes the site root instead, since
-    # nothing else routes '/' at a non-root routeBasePath). setup-docs.ps1
-    # substitutes both together from the same value, so they cannot disagree.
-    #
-    # The start/end markers above and below are load-bearing: setup-docs.ps1
-    # locates this exact block by those two comment lines to remove it entirely
-    # when -NoHomepage is passed. Keep them if you edit this block by hand.
-    GeneratedFiles = @(
-        @{
-            Path = 'docs/src/pages/index.md'
-            Source = 'README.md'
-            Generator = 'build/ConvertTo-DocumentationHomepage.ps1'
-            SourceParameter = 'ReadmePath'
-            Arguments = @{
-                Title = 'SubZeroDev Blog'
-                Description = 'The source and project documentation for the SubZeroDev technical blog.'
-                SiteUrl = 'https://blog.subzerodev.com/'
-                RouteBasePath = 'docs'
-            }
-        }
-    )
-    # --- GeneratedFiles:end ---
-
     # Individual files excluded from scanning, relative to the project root.
     ExcludedFiles = @(
         'CHANGELOG.md'

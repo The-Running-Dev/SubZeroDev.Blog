@@ -7,20 +7,11 @@ sidebar_position: 4
 
 ## Authoring
 
-Edit the repository root `README.md` for the site homepage. Add project
-documentation as Markdown under `docs/docs/`, and blog posts under
-`docs/blog/`.
+Edit the repository root `README.md` for the GitHub repository homepage. Add
+project documentation as Markdown under `docs/docs/`, and blog posts under
+`docs/blog/`. The blog index owns the public site root.
 
-The following files are generated and must not be edited directly:
-
-- `docs/src/pages/index.md`
-- `docs/docs/index.md`
-
-After changing the README, regenerate the homepage:
-
-```powershell
-./docs.ps1 -BuildOnly
-```
+The generated `docs/docs/index.md` file must not be edited directly.
 
 ## Writing posts
 
@@ -28,6 +19,9 @@ Create a Markdown file under `docs/blog/` with a date-prefixed filename, for
 example `YYYY-MM-DD-post-slug.md`. Each post needs front matter with `title`,
 `description`, `slug`, and `authors`; see [Writing Posts](./writing-posts.md)
 for the complete workflow.
+
+Post slugs are served directly below the site root. A post with
+`slug: example` is published at `/example/`.
 
 ## Validation
 

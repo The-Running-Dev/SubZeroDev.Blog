@@ -30,7 +30,7 @@ const config: Config = {
         },
         blog: {
           path: 'blog',
-          routeBasePath: 'blog',
+          routeBasePath: '/',
           blogTitle: 'SubZeroDev Blog',
           blogDescription: 'Notes on building and maintaining SubZeroDev projects.',
           showReadingTime: true
@@ -44,7 +44,7 @@ const config: Config = {
       title: 'SubZeroDev Blog',
       items: [
         {
-          to: '/blog/',
+          to: '/',
           position: 'left',
           label: 'Blog'
         },
