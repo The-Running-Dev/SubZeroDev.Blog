@@ -53,6 +53,9 @@ jobs:
             - name: Build Documentation
               run: /template/scripts/docs-build.ps1 -SourceDocs ./docs -OutputPath artifacts/docs
 
+            # Consumer-inserted step, documented in AGENTS.md: validates this
+            # repository's route contract, which the shared template cannot
+            # know. Re-apply if a template upgrade regenerates this file.
             - name: Validate Production Discovery Routes and Feeds
               run: ./build/Test-DocumentationArtifact.ps1
 

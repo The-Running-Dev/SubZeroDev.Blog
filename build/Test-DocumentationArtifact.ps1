@@ -16,7 +16,11 @@ param (
 
     [Parameter()]
     [ValidateNotNullOrEmpty()]
-    [string] $TagDefinitionPath = 'docs/blog/tags.yml'
+    [string] $TagDefinitionPath = 'docs/blog/tags.yml',
+
+    [Parameter()]
+    [ValidateNotNullOrEmpty()]
+    [string] $TemplatePath = 'docs/blog/_post-template.md'
 )
 
 Set-StrictMode -Version 3.0
@@ -24,6 +28,7 @@ $ErrorActionPreference = 'Stop'
 
 $output = [IO.Path]::GetFullPath($OutputPath)
 $tagDefinitions = [IO.Path]::GetFullPath($TagDefinitionPath)
+$template = [IO.Path]::GetFullPath($TemplatePath)
 
 if (-not (Test-Path -LiteralPath $output -PathType Container)) {
     throw "Documentation artifact directory not found: '$output'."
@@ -31,6 +36,10 @@ if (-not (Test-Path -LiteralPath $output -PathType Container)) {
 
 if (-not (Test-Path -LiteralPath $tagDefinitions -PathType Leaf)) {
     throw "Blog tag definitions not found: '$tagDefinitions'."
+}
+
+if (-not (Test-Path -LiteralPath $template -PathType Leaf)) {
+    throw "Blog post template not found: '$template'."
 }
 
 function Assert-ArtifactFile {
@@ -45,17 +54,20 @@ function Assert-ArtifactFile {
     }
 }
 
+# Line-based extraction with optional trailing YAML comments. A tag entry
+# this cannot read fails the key/permalink count check below rather than
+# being skipped silently.
 $tagLines = @(Get-Content -LiteralPath $tagDefinitions)
 $tagKeys = @(
     foreach ($line in $tagLines) {
-        if ($line -cmatch '^([a-z0-9][a-z0-9-]*):\s*$') {
+        if ($line -cmatch '^([a-z0-9][a-z0-9-]*):\s*(?:#.*)?$') {
             $Matches[1]
         }
     }
 )
 $tagPermalinks = @(
     foreach ($line in $tagLines) {
-        if ($line -cmatch '^\s+permalink:\s+[''"]?/?([a-z0-9][a-z0-9-]*)[''"]?\s*$') {
+        if ($line -cmatch '^\s+permalink:\s+[''"]?/?([a-z0-9][a-z0-9-]*)[''"]?\s*(?:#.*)?$') {
             $Matches[1]
         }
     }
@@ -98,9 +110,19 @@ foreach ($permalink in $tagPermalinks) {
     Assert-ArtifactFile -RelativePath "tags/$permalink/index.html"
 }
 
-$unexpectedTemplateRoute = Join-Path $output '_post-template/index.html'
-if (Test-Path -LiteralPath $unexpectedTemplateRoute) {
-    throw "The authoring template was emitted as a public blog route."
+# A leaked template would be routed by its front matter slug, not its
+# filename, so derive the route to assert absent from the template itself.
+$templateSlugLine = @(Get-Content -LiteralPath $template) -cmatch '^slug:\s*\S'
+if ($templateSlugLine.Count -ne 1) {
+    throw "Expected exactly one slug in '$TemplatePath'."
+}
+
+$templateSlug = ($templateSlugLine[0] -replace '^slug:\s*', '').Trim().Trim('''"').TrimStart('/')
+foreach ($leakedRoute in @("$templateSlug/index.html", '_post-template/index.html')) {
+    $unexpectedTemplateRoute = Join-Path $output $leakedRoute
+    if (Test-Path -LiteralPath $unexpectedTemplateRoute) {
+        throw "The authoring template was emitted as a public blog route: '$leakedRoute'."
+    }
 }
 
 foreach ($feedPath in @('rss.xml', 'atom.xml')) {

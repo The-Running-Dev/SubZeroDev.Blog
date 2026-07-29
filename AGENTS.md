@@ -69,6 +69,12 @@ supported `Invoke-SetupDocs` interface. Before upgrading, inspect the template
 instructions, resolve the current container digest, dry-run the installer, and
 update every immutable image reference together.
 
+The installer-owned workflows carry one documented consumer-inserted step:
+after each production build, `./build/Test-DocumentationArtifact.ps1` validates
+this repository's route contract, which only this repository knows. Do not add
+other manual edits to `.github/workflows/docs-*.yml`. If a template upgrade
+regenerates those files, re-apply the validation step before merging.
+
 README homepage generation is disabled because the blog owns `/`. Do not
 restore `build/ConvertTo-DocumentationHomepage.ps1` or
 `docs/src/pages/index.md` unless the route contract changes again.
