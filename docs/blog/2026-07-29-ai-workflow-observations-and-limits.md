@@ -5,6 +5,9 @@ slug: ai-workflow-observations-and-limits
 authors:
   - subzerodev
 date: 2026-07-29T08:40:00
+tags:
+  - ai-assisted-engineering
+  - automation
 ---
 
 *Part 4 of [The AI-Assisted Software Engineering Workflow](https://blog.subzerodev.com/ai-assisted-engineering-workflow).*

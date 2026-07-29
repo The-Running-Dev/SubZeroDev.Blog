@@ -1,0 +1,19 @@
+site-updates:
+  label: Site Updates
+  permalink: /site-updates
+  description: Changes to the SubZeroDev Blog, its publishing workflow, and its public structure.
+
+ai-assisted-engineering:
+  label: AI-Assisted Engineering
+  permalink: /ai-assisted-engineering
+  description: Practical use of AI systems across software design, implementation, review, and delivery.
+
+automation:
+  label: Automation
+  permalink: /automation
+  description: Repeatable tooling and workflows that replace manual engineering operations.
+
+projects-as-code:
+  label: Projects as Code
+  permalink: /projects-as-code
+  description: Declarative, version-controlled project structure, infrastructure, governance, and agent behavior.

@@ -5,6 +5,10 @@ slug: ai-workflow-architecture
 authors:
   - subzerodev
 date: 2026-07-29T08:50:00
+tags:
+  - ai-assisted-engineering
+  - automation
+  - projects-as-code
 ---
 
 *Part 2 of [The AI-Assisted Software Engineering Workflow](https://blog.subzerodev.com/ai-assisted-engineering-workflow).*

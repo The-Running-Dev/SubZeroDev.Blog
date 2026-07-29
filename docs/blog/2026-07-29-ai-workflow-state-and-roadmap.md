@@ -5,6 +5,10 @@ slug: ai-workflow-state-and-roadmap
 authors:
   - subzerodev
 date: 2026-07-29T08:30:00
+tags:
+  - ai-assisted-engineering
+  - automation
+  - projects-as-code
 ---
 
 *Part 6 of [The AI-Assisted Software Engineering Workflow](https://blog.subzerodev.com/ai-assisted-engineering-workflow).*

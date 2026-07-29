@@ -64,6 +64,9 @@ jobs:
             - name: Build documentation
               run: /template/scripts/docs-build.ps1 -SourceDocs ./docs -OutputPath artifacts/docs
 
+            - name: Validate production discovery routes and feeds
+              run: ./build/Test-DocumentationArtifact.ps1
+
             # Run the same archiving step docs-deploy.yml uses, so the deploy
             # path is covered before merge rather than after it. This action
             # tars the site with `tar --hard-dereference`, which fails outright

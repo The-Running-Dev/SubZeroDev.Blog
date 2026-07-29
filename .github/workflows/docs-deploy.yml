@@ -53,6 +53,9 @@ jobs:
             - name: Build Documentation
               run: /template/scripts/docs-build.ps1 -SourceDocs ./docs -OutputPath artifacts/docs
 
+            - name: Validate Production Discovery Routes and Feeds
+              run: ./build/Test-DocumentationArtifact.ps1
+
             - name: Upload Pages Artifact
               uses: actions/upload-pages-artifact@v5
               with:
