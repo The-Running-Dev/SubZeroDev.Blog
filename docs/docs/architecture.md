@@ -39,6 +39,6 @@ Pull requests run the documentation gate and a production build. A push to
 `main` builds the same overlay and deploys the resulting static artifact to
 GitHub Pages at the custom domain.
 
-The compatibility pages under `/blog/` redirect browsers to the equivalent
-root-level blog route. Keep them while previously published links may still be
-in use.
+The compatibility pages under `/blog/` emit an HTML meta refresh for clients
+without JavaScript, repeat the redirect after hydration, and retain a visible
+fallback link. Keep them while previously published links may still be in use.
