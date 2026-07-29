@@ -32,8 +32,7 @@ files, validation commands, and pull-request policy.
 ./build/Test-Documentation.ps1
 ```
 
-The gate validates local Markdown links and anchors, terminology, and generated
-homepage drift.
+The gate validates local Markdown links and anchors and repository terminology.
 
 ## Preview locally
 

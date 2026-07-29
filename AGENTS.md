@@ -7,9 +7,8 @@ This repository owns the SubZeroDev Blog site at
 delivery configuration. It does not own the shared Docusaurus runtime; that is
 provided by the immutable `ghcr.io/the-running-dev/docs-template` image.
 
-The repository is currently an initial scaffold. Do not describe article
-publishing or application features as implemented until their source and
-validation exist here.
+The blog is published at the site root. Do not describe additional application
+features as implemented until their source and validation exist here.
 
 ## Safe start
 
@@ -23,17 +22,19 @@ Before editing:
 
 ## Layout and ownership
 
-- `README.md`: authoritative site-root content and repository homepage.
-- `docs/blog/`: authored blog posts served below `/blog/`.
+- `README.md`: repository homepage rendered on GitHub.
+- `MILESTONES.md`: deployable roadmap and acceptance criteria.
+- `docs/blog/`: authored blog posts; the index owns `/` and posts are served
+  directly below it.
+- `docs/src/pages/blog/`: compatibility pages for routes published before the
+  blog moved to `/`.
 - `docs/docs/`: authored documentation served below `/docs/`.
-- `docs/src/pages/index.md`: generated site root; never edit directly.
 - `docs/docs/index.md`: generated minimal `/docs/` landing page; never edit
   directly.
 - `docs/docusaurus.config.ts`: consumer-owned site and route configuration.
 - `docs/sidebar.ts`: documentation navigation.
 - `docs/Dockerfile`, `docs.ps1`, `.github/workflows/docs-*.yml`: installer-owned
   build and delivery files.
-- `build/ConvertTo-DocumentationHomepage.ps1`: homepage generator.
 - `build/Test-Documentation.ps1`: documentation quality gate.
 - `.config/DocumentationRules.psd1`: generated-file and terminology rules.
 - `artifacts/`: local build output; never commit.
@@ -44,14 +45,10 @@ to its overlay, content, and configuration.
 
 ## Documentation workflow
 
-The README owns `/`; authored documentation owns `/docs/`. To change the site
-homepage, edit `README.md`, then regenerate the checked-in pages:
+The blog index owns `/`; authored documentation owns `/docs/`. The README is
+the repository homepage and is not copied into the Docusaurus site.
 
-```powershell
-./docs.ps1 -BuildOnly
-```
-
-Do not edit generated index pages directly. Add authored pages under
+Do not edit the generated docs index directly. Add authored pages under
 `docs/docs/` with front matter and deterministic `sidebar_position` values.
 Use absolute published links in the README.
 
@@ -64,6 +61,10 @@ The docs system is installed and upgraded through the shared template's
 supported `Invoke-SetupDocs` interface. Before upgrading, inspect the template
 instructions, resolve the current container digest, dry-run the installer, and
 update every immutable image reference together.
+
+README homepage generation is disabled because the blog owns `/`. Do not
+restore `build/ConvertTo-DocumentationHomepage.ps1` or
+`docs/src/pages/index.md` unless the route contract changes again.
 
 ## Validation
 
@@ -95,9 +96,9 @@ and deletions.
 ## Completion checklist
 
 - Public claims match source and current behavior.
-- Generated pages match `README.md`.
 - Authored links, anchors, and terminology pass the gate.
 - The immutable docs image digest is consistent in all installer-owned files.
 - Production docs build and deployment checks pass.
-- `/`, `/docs/`, and representative authored routes work over HTTPS.
+- `/`, `/welcome/`, `/docs/`, and representative authored routes work over
+  HTTPS.
 - The worktree is clean and local `main` matches `origin/main`.

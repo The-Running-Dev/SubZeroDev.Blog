@@ -13,7 +13,9 @@ to own its content, routes, and deployment settings.
 
 | Route | Source | Ownership |
 | --- | --- | --- |
-| `/` | `README.md`, generated into `docs/src/pages/index.md` | Repository homepage |
+| `/` | Blog index generated from `docs/blog/` | Blog listing |
+| `/<slug>/` | Markdown under `docs/blog/` | Authored blog post |
+| `/blog/**` | Pages under `docs/src/pages/blog/` | Legacy-route compatibility |
 | `/docs/` | `docs/docs/index.md` | Generated documentation landing page |
 | `/docs/**` | Markdown under `docs/docs/` | Authored project documentation |
 
@@ -36,3 +38,7 @@ All four build references pin the same immutable container digest:
 Pull requests run the documentation gate and a production build. A push to
 `main` builds the same overlay and deploys the resulting static artifact to
 GitHub Pages at the custom domain.
+
+The compatibility pages under `/blog/` redirect browsers to the equivalent
+root-level blog route. Keep them while previously published links may still be
+in use.

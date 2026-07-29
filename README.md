@@ -13,7 +13,7 @@ when their source and validation exist here.
 ## Blog
 
 Read the inaugural post at
-[blog.subzerodev.com/blog/welcome/](https://blog.subzerodev.com/blog/welcome/).
+[blog.subzerodev.com/welcome/](https://blog.subzerodev.com/welcome/).
 For authoring guidance, see
 [Writing Posts](https://blog.subzerodev.com/docs/writing-posts/).
 
@@ -30,7 +30,7 @@ The documentation toolchain runs in Docker. To validate documentation:
 ./build/Test-Documentation.ps1
 ```
 
-To build the production site and regenerate the README-derived homepage:
+To build the production site:
 
 ```powershell
 ./docs.ps1 -BuildOnly
@@ -49,6 +49,9 @@ and its GitHub Pages delivery workflow. Shared Docusaurus behavior comes from
 the pinned
 [Docusaurus Template](https://github.com/The-Running-Dev/Docusaurus-Template)
 container rather than being copied into this repository.
+
+The implementation plan is tracked in
+[MILESTONES.md](https://github.com/The-Running-Dev/SubZeroDev.Blog/blob/main/MILESTONES.md).
 
 ## License
 
