@@ -1,7 +1,12 @@
+---
+title: 'SubZeroDev Blog'
+description: 'The source and project documentation for the SubZeroDev technical blog.'
+---
+
 # SubZeroDev Blog
 
 The source repository for the SubZeroDev technical blog at
-[blog.subzerodev.com](https://blog.subzerodev.com/).
+[blog.subzerodev.com](/).
 
 ## Status
 
@@ -12,7 +17,7 @@ additional application features will be added separately.
 ## Documentation
 
 Project documentation is published at
-[blog.subzerodev.com/docs/](https://blog.subzerodev.com/docs/).
+[blog.subzerodev.com/docs/](/docs/).
 
 ## Development
 
@@ -44,4 +49,6 @@ container rather than being copied into this repository.
 
 ## License
 
-Licensed under the [MIT License](https://blog.subzerodev.com/docs/license/).
+Licensed under the [MIT License](/docs/license/).
+
+[View the documentation](/docs/)
