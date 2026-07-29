@@ -17,3 +17,23 @@ projects-as-code:
   label: Projects as Code
   permalink: /projects-as-code
   description: Declarative, version-controlled project structure, infrastructure, governance, and agent behavior.
+
+absurd:
+  label: Absurd
+  permalink: /absurd
+  description: Humor built from unreasonable situations treated with perfectly reasonable seriousness.
+
+lucifer:
+  label: Lucifer
+  permalink: /lucifer
+  description: Stories and observations told through the Lucifer persona.
+
+philosophy:
+  label: Philosophy
+  permalink: /philosophy
+  description: Reflections on boundaries, behavior, meaning, and the mechanics of being human.
+
+stories:
+  label: Stories
+  permalink: /stories
+  description: Personal narratives, incidents, and fictionalized observations.
