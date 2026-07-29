@@ -15,10 +15,10 @@ The generated `docs/docs/index.md` file must not be edited directly.
 
 ## Writing posts
 
-Create a Markdown file under `docs/blog/` with a date-prefixed filename, for
+Copy `docs/blog/_post-template.md` to a date-prefixed Markdown filename, for
 example `YYYY-MM-DD-post-slug.md`. Each post needs front matter with `title`,
-`description`, `slug`, and `authors`; see [Writing Posts](./writing-posts.md)
-for the complete workflow.
+`description`, `slug`, `authors`, `date`, and predefined `tags`; see
+[Writing Posts](./writing-posts.md) for the complete workflow.
 
 Post slugs are served directly below the site root. A post with
 `slug: example` is published at `/example/`.
@@ -42,6 +42,7 @@ The production build runs through Docker:
 
 ```powershell
 ./docs.ps1 -BuildOnly
+./build/Test-DocumentationArtifact.ps1
 ```
 
 ## Pull requests

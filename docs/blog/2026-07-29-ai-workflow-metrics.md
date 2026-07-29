@@ -5,6 +5,9 @@ slug: ai-workflow-metrics
 authors:
   - subzerodev
 date: 2026-07-29T08:35:00
+tags:
+  - ai-assisted-engineering
+  - automation
 ---
 
 *Part 5 of [The AI-Assisted Software Engineering Workflow](https://blog.subzerodev.com/ai-assisted-engineering-workflow).*

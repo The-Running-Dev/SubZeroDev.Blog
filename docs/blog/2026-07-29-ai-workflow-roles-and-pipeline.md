@@ -5,6 +5,9 @@ slug: ai-workflow-roles-and-pipeline
 authors:
   - subzerodev
 date: 2026-07-29T08:55:00
+tags:
+  - ai-assisted-engineering
+  - automation
 ---
 
 *Part 1 of [The AI-Assisted Software Engineering Workflow](https://blog.subzerodev.com/ai-assisted-engineering-workflow).*

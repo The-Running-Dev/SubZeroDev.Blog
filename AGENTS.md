@@ -53,14 +53,27 @@ Do not edit the generated docs index directly. Add authored pages under
 Use absolute published links in the README.
 
 Author blog posts under `docs/blog/` using a date-prefixed filename such as
-`YYYY-MM-DD-slug.md`. Include `title`, `description`, `slug`, and `authors` in
-front matter. Preview the route locally and ensure the post makes only claims
-supported by repository source or cited material.
+`YYYY-MM-DD-slug.md`. Copy `docs/blog/_post-template.md` and replace every
+placeholder. Include `title`, `description`, `slug`, `authors`, `date`, and one
+or more keys from `docs/blog/tags.yml` in front matter. Do not add inline tags:
+the production build rejects tags outside the controlled vocabulary. Preview
+the route locally and ensure the post makes only claims supported by repository
+source or cited material.
+
+Published slugs are permanent public routes. Preserve an existing `slug` when
+editing a post. If a route must move, add a compatibility route before changing
+the slug and document both the old and canonical routes.
 
 The docs system is installed and upgraded through the shared template's
 supported `Invoke-SetupDocs` interface. Before upgrading, inspect the template
 instructions, resolve the current container digest, dry-run the installer, and
 update every immutable image reference together.
+
+The installer-owned workflows carry one documented consumer-inserted step:
+after each production build, `./build/Test-DocumentationArtifact.ps1` validates
+this repository's route contract, which only this repository knows. Do not add
+other manual edits to `.github/workflows/docs-*.yml`. If a template upgrade
+regenerates those files, re-apply the validation step before merging.
 
 README homepage generation is disabled because the blog owns `/`. Do not
 restore `build/ConvertTo-DocumentationHomepage.ps1` or
@@ -73,6 +86,7 @@ Run all checks that apply:
 ```powershell
 ./build/Test-Documentation.ps1
 ./docs.ps1 -BuildOnly
+./build/Test-DocumentationArtifact.ps1
 git diff --check
 git status --short --branch
 ```

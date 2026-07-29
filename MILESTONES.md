@@ -23,7 +23,7 @@ Delivered in pull request
 Delivered in pull request
 [#3](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/3).
 
-## Milestone 3: Blog-first routing — in progress
+## Milestone 3: Blog-first routing — complete
 
 - Serve the blog index at the site root, `/`.
 - Serve posts directly below the root, beginning with `/welcome/`.
@@ -33,12 +33,19 @@ Delivered in pull request
 - Update repository guidance, examples, and validation expectations.
 - Verify the documentation gate, production build, and representative routes.
 
-## Milestone 4: Editorial metadata and discovery — planned
+Delivered in pull request
+[#4](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/4).
 
-- Define a small, stable tag vocabulary when a second substantive post exists.
-- Add a reusable post template with the required front matter.
-- Verify RSS metadata and archive navigation in production.
-- Document how route changes preserve or redirect previously published links.
+## Milestone 4: Editorial metadata and discovery — complete
+
+- Define and enforce a small, stable tag vocabulary.
+- Add a reusable post template with required front matter.
+- Configure and verify tag, archive, RSS, and Atom discovery in production.
+- Document how route changes preserve previously published links.
+- Validate all discovery surfaces before a production artifact is uploaded.
+
+Delivered in pull request
+[#8](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/8).
 
 ## Milestone 5: Repeatable publishing — planned
 
@@ -47,5 +54,5 @@ Delivered in pull request
 - Define a lightweight editorial review checklist from recurring review
   findings.
 
-Milestones 4 and 5 should be refined from repository evidence before
-implementation; they are direction, not claims about current behavior.
+Milestone 5 should be refined from repository evidence before implementation;
+it is direction, not a claim about current behavior.

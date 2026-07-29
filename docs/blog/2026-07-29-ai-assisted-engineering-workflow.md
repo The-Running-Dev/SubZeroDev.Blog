@@ -5,6 +5,10 @@ slug: ai-assisted-engineering-workflow
 authors:
   - subzerodev
 date: 2026-07-29T09:00:00
+tags:
+  - ai-assisted-engineering
+  - automation
+  - projects-as-code
 ---
 
 **Status:** Living document  
