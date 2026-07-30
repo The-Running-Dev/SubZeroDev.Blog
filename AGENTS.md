@@ -127,6 +127,11 @@ post, verify its canonical HTTPS route after deployment succeeds and report the
 published URL. Do not claim a post is published when the deployment or route
 verification failed.
 
+**Hard rule:** never state or imply a published URL until the `Docs Deploy` run
+for that exact merge commit shows `completed`/`success`. A merged PR is not a
+deployed site. Poll the run status (`gh run list` / `gh run watch`) until it
+finishes — do not estimate timing or report the URL "as good as done."
+
 ## Completion checklist
 
 - Public claims match source and current behavior.
