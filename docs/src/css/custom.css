@@ -295,6 +295,92 @@ nav[aria-label='Blog recent posts navigation'] [aria-current='page'] {
   box-shadow: var(--sz-shadow);
 }
 
+.content-hub {
+  max-width: 58rem;
+}
+
+.content-hub__hero {
+  margin-bottom: 2.25rem;
+  padding: clamp(1.5rem, 4vw, 2.75rem);
+  border: 1px solid var(--sz-border);
+  border-radius: 1.25rem;
+  background: var(--sz-panel);
+  box-shadow: var(--sz-shadow-raised);
+}
+
+.content-hub__eyebrow,
+.content-hub__entry > p:first-child {
+  margin-bottom: 0.45rem;
+  color: var(--sz-accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.content-hub__hero h1 {
+  margin-bottom: 0.85rem;
+}
+
+.content-hub__hero > p:last-child {
+  max-width: 44rem;
+  margin-bottom: 0;
+  color: var(--ifm-font-color-secondary);
+  font-size: 1.08rem;
+}
+
+.content-hub__list {
+  display: grid;
+  gap: 1rem;
+}
+
+.content-hub__entry {
+  padding: 1.35rem 1.5rem;
+  border: 1px solid var(--sz-border);
+  border-radius: 1rem;
+  background: var(--sz-panel);
+  box-shadow: var(--sz-shadow);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.content-hub__entry h2 {
+  margin-bottom: 0.55rem;
+  font-size: clamp(1.25rem, 2vw, 1.5rem);
+  letter-spacing: -0.025em;
+}
+
+.content-hub__entry h2 a {
+  color: var(--ifm-font-color-base);
+  text-decoration: none;
+}
+
+.content-hub__entry > p:not(:first-child) {
+  margin-bottom: 1rem;
+  color: var(--ifm-font-color-secondary);
+}
+
+.content-hub__link {
+  color: var(--sz-accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (hover: hover) {
+  .content-hub__entry:hover {
+    border-color: var(--sz-border-strong);
+    box-shadow: var(--sz-shadow-raised);
+    transform: translateY(-2px);
+  }
+
+  .content-hub__entry h2 a:hover,
+  .content-hub__link:hover {
+    color: var(--sz-accent);
+    text-decoration: underline;
+    text-decoration-color: var(--sz-accent);
+    text-underline-offset: 0.18em;
+  }
+}
+
 a[class*='tagRegular'],
 .blog-post-page [class*='tag_'] a {
   border-radius: 999px;
@@ -331,6 +417,10 @@ input:focus-visible {
 
   .markdown h2 {
     margin-top: 2rem;
+  }
+
+  .content-hub__entry {
+    padding: 1.2rem;
   }
 }
 

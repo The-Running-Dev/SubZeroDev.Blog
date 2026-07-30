@@ -100,6 +100,10 @@ $requiredRoutes = @(
     'blog/welcome/index.html'
     'archive/index.html'
     'tags/index.html'
+    'series/lucifer-chronicles/index.html'
+    'series/ai-assisted-engineering/index.html'
+    'series/state-of-dev/index.html'
+    'projects/game-engine/index.html'
 )
 
 foreach ($route in $requiredRoutes) {
