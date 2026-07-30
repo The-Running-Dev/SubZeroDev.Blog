@@ -63,10 +63,18 @@ export function createHttpServer(options: HttpServerOptions = {}): http.Server {
   }
 
   const httpServer = http.createServer((req: IncomingMessage, res: ServerResponse) => {
-    void handleIncoming(req, res);
+    handleIncoming(req, res).catch((err: unknown) => {
+      process.stderr.write(`blog-mcp http: unhandled request error: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`);
+      if (!res.headersSent) {
+        rpcError(res, 400, -32000, 'Bad request.');
+      }
+    });
   });
 
   async function handleIncoming(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    // Parsing can throw on a malformed request line/Host header; keep this
+    // inside the function the caller already wraps in .catch(), rather than
+    // letting it throw before any handler is attached.
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? `${host}:${port}`}`);
 
     if (url.pathname === '/healthz') {
@@ -100,21 +108,36 @@ export function createHttpServer(options: HttpServerOptions = {}): http.Server {
 
     const server = createServer(serverOptions);
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+
+    // Registered before awaiting anything below: an early client disconnect
+    // can fire 'close' while connect()/handleRequest() are still in flight,
+    // and a listener attached only in a later `finally` would miss it,
+    // leaking this request's server/transport.
+    let cleaned = false;
+    const cleanup = (): void => {
+      if (cleaned) return;
+      cleaned = true;
+      transport.close();
+      server.close();
+    };
+    res.once('close', cleanup);
+
     try {
       await server.connect(transport);
       await transport.handleRequest(req, res);
     } catch (err) {
-      process.stderr.write(`blog-mcp http: request failed: ${err instanceof Error ? err.stack ?? err.message : String(err)}\n`);
+      process.stderr.write(`blog-mcp http: request failed: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`);
       if (!res.headersSent) {
         rpcError(res, 500, -32603, 'Internal server error.');
       }
-    } finally {
-      res.on('close', () => {
-        transport.close();
-        server.close();
-      });
+      cleanup();
     }
   }
+
+  httpServer.on('error', (err: NodeJS.ErrnoException) => {
+    process.stderr.write(`blog-mcp http: failed to start on ${host}:${port}: ${err.message}\n`);
+    process.exit(1);
+  });
 
   httpServer.listen(port, host, () => {
     const address = httpServer.address();
