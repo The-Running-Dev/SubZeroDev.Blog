@@ -14,7 +14,7 @@ tags:
 
 <!-- truncate -->
 
-## AI and automation roles
+## AI and Automation Roles
 
 | Role | Current tool or approach |
 |---|---|
@@ -33,9 +33,9 @@ Copilot automatic code review was removed because it consumed too much of the
 available Pro quota. Qodo currently provides the dedicated automated review gate,
 subject to its monthly limit.
 
-## End-to-end workflow
+## End-to-End Workflow
 
-### 1. Bootstrap the project
+### 1. Bootstrap the Project
 
 A reusable setup agent initializes or inspects a repository and brings it to a
 standard baseline. A typical invocation can be as short as:
@@ -58,7 +58,7 @@ The bootstrap process can cover:
 The setup instructions are portable: after proving them in one repository, they
 can be copied into another and supplied with only project-specific variables.
 
-### 2. Describe the work
+### 2. Describe the Work
 
 The repository contains the context agents need to operate consistently:
 
@@ -115,13 +115,13 @@ The implementer follows the reviewed plan, repository instructions, and mileston
 definition. Agents may work on separate projects or separate stages in parallel,
 but human context capacity governs the practical concurrency limit.
 
-### 5. Open a draft pull request
+### 5. Open a Draft Pull Request
 
 Work is placed in a draft pull request early enough for automated review. The
 draft state is part of the review protocol rather than merely a final publishing
 step.
 
-### 6. Run the automated review gate
+### 6. Run the Automated Review Gate
 
 Qodo reviews the draft pull request. The review is evaluated for:
 
@@ -132,18 +132,18 @@ Qodo reviews the draft pull request. The review is evaluated for:
 - False positives
 - Issues that duplicate earlier review stages
 
-### 7. Address findings
+### 7. Address Findings
 
 Codex inspects the review comments, makes justified changes, verifies the
 implementation, and updates the pull request. Human judgment remains responsible
 for deciding which comments are valid and whether the result is ready.
 
-### 8. Merge and ship
+### 8. Merge and Ship
 
 After verification and final review, the pull request is merged and deployment
 proceeds through the repository’s normal automation.
 
-### 9. Extract and improve the protocol
+### 9. Extract and Improve the Protocol
 
 When a new or complex workflow succeeds:
 

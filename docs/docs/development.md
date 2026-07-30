@@ -13,7 +13,7 @@ project documentation as Markdown under `docs/docs/`, and blog posts under
 
 The generated `docs/docs/index.md` file must not be edited directly.
 
-## Writing posts
+## Writing Posts
 
 Copy `docs/blog/_post-template.md` to a date-prefixed Markdown filename, for
 example `YYYY-MM-DD-post-slug.md`. Each post needs front matter with `title`,
@@ -45,7 +45,7 @@ The production build runs through Docker:
 ./build/Test-DocumentationArtifact.ps1
 ```
 
-## Pull requests
+## Pull Requests
 
 Use a focused branch and open a draft pull request. The pull request must pass
 both documentation checks before it is made ready and squash merged:

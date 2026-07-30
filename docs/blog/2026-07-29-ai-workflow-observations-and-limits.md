@@ -12,9 +12,9 @@ tags:
 
 *Part 4 of [The AI-Assisted Software Engineering Workflow](https://blog.subzerodev.com/ai-assisted-engineering-workflow).*
 
-## Observations and operating limits
+## Observations and Operating Limits
 
-### Experienced engineers receive the largest multiplier
+### Experienced Engineers Receive the Largest Multiplier
 
 “Vibe coding” is real in this workflow, but it is not effortless button-pushing.
 
@@ -23,7 +23,7 @@ tags:
 The multiplier comes from combining high-volume AI execution with experienced
 judgment about architecture, priorities, correctness, and tradeoffs.
 
-### The human role has expanded
+### The Human Role Has Expanded
 
 AI has reduced the amount of manual, routine coding while expanding the operator
 into several roles:
@@ -40,14 +40,14 @@ into several roles:
 The work has not disappeared. The bottleneck has moved from typing code to
 directing, reviewing, integrating, and improving the system.
 
-### A very small AI-first company is plausible
+### A Very Small AI-First Company Is Plausible
 
 The workflow suggests that one experienced operator can coordinate capabilities
 that previously required several specialized roles. This does not mean a company
 has no people; it means a small number of highly capable people can orchestrate a
 larger volume and variety of work.
 
-### Human context is the concurrency limit
+### Human Context Is the Concurrency Limit
 
 The tools can support several simultaneous projects, but human context switching
 becomes costly around four or five active projects.
@@ -59,7 +59,7 @@ Current operating guideline:
 - **Beyond 3:** use only when work is clearly isolated and coordination is
   lightweight
 
-### Observed quota behavior
+### Observed Quota Behavior
 
 These are empirical observations and should be distinguished from official
 product guarantees.

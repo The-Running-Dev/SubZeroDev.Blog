@@ -12,9 +12,9 @@ tags:
 
 *Part 3 of [The AI-Assisted Software Engineering Workflow](https://blog.subzerodev.com/ai-assisted-engineering-workflow).*
 
-## Development environments and mobility
+## Development Environments and Mobility
 
-### Current default: local execution
+### Current Default: Local Execution
 
 Local development remains the best fit because it provides:
 
@@ -25,7 +25,7 @@ Local development remains the best fit because it provides:
 - Direct access to local services and resources
 - Easier testing and integration
 
-### Cloud environment findings
+### Cloud Environment Findings
 
 **Codex cloud environments:** setup friction is too high for the current
 workflow.
@@ -37,7 +37,7 @@ The current conclusion is not that cloud execution is unusable, but that
 vendor-controlled cloud workspaces do not yet fit a heavily tooled local
 workflow.
 
-### Bring-your-own portable environment
+### Bring-Your-Own Portable Environment
 
 The more promising experiment is a project-owned development container:
 
@@ -56,7 +56,7 @@ Open design questions include:
 - Propagating base-image updates
 - Persistence and backup of in-progress work
 
-### Multi-machine synchronization
+### Multi-Machine Synchronization
 
 Dropbox currently transports unfinished work between machines without requiring a
 WIP commit for every handoff. Git remains authoritative version control.
@@ -71,7 +71,7 @@ This is convenient but requires discipline:
 A future improvement is an automatic handoff snapshot: save, optionally validate,
 create a recoverable checkpoint, and synchronize or push to a temporary branch.
 
-### Distributed execution
+### Distributed Execution
 
 Remote-capable tools allow one machine to run planning or analysis while another
 handles interactive implementation and review. This can separate contexts and

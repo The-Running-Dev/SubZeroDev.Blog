@@ -15,7 +15,7 @@ install yet.
 - PowerShell 7 or later for the documentation gate
 - Docker Desktop for previewing and building the production site
 
-## Clone and inspect
+## Clone and Inspect
 
 ```powershell
 git clone https://github.com/The-Running-Dev/SubZeroDev.Blog.git
@@ -26,7 +26,7 @@ git status --short --branch
 Read `AGENTS.md` before editing. It records the repository boundary, generated
 files, validation commands, and pull-request policy.
 
-## Validate the documentation
+## Validate the Documentation
 
 ```powershell
 ./build/Test-Documentation.ps1
@@ -34,7 +34,7 @@ files, validation commands, and pull-request policy.
 
 The gate validates local Markdown links and anchors and repository terminology.
 
-## Preview locally
+## Preview Locally
 
 ```powershell
 ./docs.ps1

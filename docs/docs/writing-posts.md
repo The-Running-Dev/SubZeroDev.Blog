@@ -9,7 +9,7 @@ Blog posts live in `docs/blog/`. The blog index is published at `/`, and posts
 are published directly below it. The source tree, front matter, and production
 build are the authoritative record of what is published.
 
-## Create a post
+## Create a Post
 
 Copy the reusable template to a date-prefixed Markdown filename:
 
@@ -41,7 +41,7 @@ The template is deliberately excluded from Docusaurus discovery. Its
 placeholder tag is also undeclared, so a copied post cannot build until the
 author replaces it with a valid tag.
 
-## Choose tags
+## Choose Tags
 
 Tags are a controlled vocabulary defined in `docs/blog/tags.yml`. Use the
 smallest set that accurately describes the post:
@@ -62,7 +62,7 @@ Keep each post factual. Describe only behavior that is present in the linked
 source or provide an external source for material claims. Never publish keys,
 tokens, private configuration, or unpublished customer information.
 
-## Preserve published routes
+## Preserve Published Routes
 
 Treat every published `slug` as a permanent public route. Editing a post must
 not change its slug. If a route must move, add and verify a compatibility route
@@ -77,7 +77,7 @@ Reader discovery is published at:
 - `/rss.xml` for RSS;
 - `/atom.xml` for Atom.
 
-## Review and publish
+## Review and Publish
 
 1. Preview the post with `./docs.ps1`.
 2. Run `./build/Test-Documentation.ps1`.
