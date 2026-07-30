@@ -4,9 +4,27 @@ main h1,
   line-height: 1.25;
 }
 
+.blog-list-page main h2 {
+  font-size: 1.75rem;
+  line-height: 1.3;
+}
+
+.blog-list-page main h3 {
+  font-size: 1.4rem;
+  line-height: 1.35;
+}
+
 @media (max-width: 576px) {
   main h1,
   .blog-post-page main h1 {
     font-size: 2rem;
+  }
+
+  .blog-list-page main h2 {
+    font-size: 1.5rem;
+  }
+
+  .blog-list-page main h3 {
+    font-size: 1.25rem;
   }
 }
