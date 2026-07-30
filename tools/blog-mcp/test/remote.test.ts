@@ -188,4 +188,32 @@ describe('remote tools against a gh shim (no real GitHub involved)', () => {
     expect(threads.length).toBe(1);
     expect(threads[0]?.isResolved).toBe(false);
   });
+
+  it('blog_pr_comments paginates until hasNextPage is false, not just the first page', async () => {
+    // A page-1-only bug would report 1 thread here instead of 3 -- exactly
+    // the failure mode a reviewer flagged against a first:100-with-no-pagination
+    // query: a PR with more unresolved threads than fit on one page would
+    // silently look clean.
+    process.env.GH_SHIM_THREADS_PAGES_JSON = JSON.stringify([
+      {
+        nodes: [{ id: 'thread-page0', isResolved: false, comments: { nodes: [{ path: 'a.md', line: 1, body: 'page 0', url: 'x' }] } }],
+        pageInfo: { hasNextPage: true, endCursor: '1' }
+      },
+      {
+        nodes: [{ id: 'thread-page1', isResolved: false, comments: { nodes: [{ path: 'a.md', line: 2, body: 'page 1', url: 'x' }] } }],
+        pageInfo: { hasNextPage: true, endCursor: '2' }
+      },
+      {
+        nodes: [{ id: 'thread-page2', isResolved: true, comments: { nodes: [{ path: 'a.md', line: 3, body: 'page 2', url: 'x' }] } }],
+        pageInfo: { hasNextPage: false, endCursor: null }
+      }
+    ]);
+    try {
+      const result = await call(server, 'blog_pr_comments', { pr: 42 });
+      const threads = (result.data as { threads: Array<{ threadId: string }> }).threads;
+      expect(threads.map((t) => t.threadId)).toEqual(['thread-page0', 'thread-page1', 'thread-page2']);
+    } finally {
+      delete process.env.GH_SHIM_THREADS_PAGES_JSON;
+    }
+  });
 });

@@ -117,7 +117,7 @@ Add the repository's excerpt marker in a natural position near the beginning of 
 
 `<!-- truncate -->`
 
-Do not place the marker inside the front matter, a paragraph, blockquote, or other Markdown construct. Keep any additional `# ` headings **after** the marker — one before it is fine (the themed title), but a second one before it renders unstyled and oversized on the blog index and tag pages (`blog_validate_posts`'s `SingleH1` rule catches this; `docs/blog/2026-07-30-the-absurdity-of-humanity.md` shipped with exactly this bug before it was fixed).
+Do not place the marker inside the front matter, a paragraph, blockquote, or other Markdown construct. Keep any additional `# ` headings **after** the marker — one before it is fine (the themed title), but a second one before it renders unstyled and oversized on the blog index and tag pages (`blog_validate_posts`'s `SingleH1` rule catches this; see pull requests [#30](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/30) and [#31](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/31), which fixed exactly this bug in `docs/blog/2026-07-30-the-absurdity-of-humanity.md`).
 
 If the post belongs to a curated series or project (its tags or slug match one of the hubs in `docs/src/pages/series/` or `docs/src/pages/projects/`), add it there too — a post that qualifies but is missing from its hub is a real, recurring gap (it produced a follow-up PR once already).
 
@@ -221,10 +221,17 @@ If CI fails, review feedback arrives before merge, or the deployment fails:
 3. Re-run all relevant local validation.
 4. Commit and push the correction.
 5. Capture the replacement head SHA and arm auto-merge again with that SHA.
-   - If `gh pr merge`/`blog_arm_auto_merge` returns a transient error (a
-     `502`, or `"Merge already in progress"`), wait roughly 15–20 seconds
-     and retry once before escalating — observed as a GitHub-side hiccup,
-     not a real conflict.
+   - If `gh pr merge`/`blog_arm_auto_merge` returns a `502` or `"Merge
+     already in progress"` error, that is not necessarily a real conflict:
+     in [PR #35](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/35)
+     both occurred back to back on an otherwise-mergeable PR and cleared on
+     their own. Confirm actual state first (`gh pr view <pr> --json
+     mergeable,mergeStateStatus,autoMergeRequest` — `mergeable_state:
+     "blocked"` with `auto_merge: null` after a real block, such as an
+     unresolved review thread, means something else is wrong and retrying
+     won't help; see §9). If state looks otherwise clean, waiting roughly
+     15–20 seconds and retrying once resolved it in that one observed case
+     — this is not documented GitHub API behavior, just what worked once.
 6. Update the PR description if the scope materially changed.
 
 Do not treat a passing lightweight Markdown check as proof that the production Docusaurus build passes.

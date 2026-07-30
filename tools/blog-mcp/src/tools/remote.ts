@@ -21,25 +21,29 @@ interface PrViewJson {
   autoMergeRequest?: unknown;
 }
 
+interface ReviewThreadNode {
+  id: string;
+  isResolved: boolean;
+  comments: { nodes: Array<{ path: string; line: number | null; body: string; url: string }> };
+}
+
 interface ReviewThreadsResponse {
   repository: {
     pullRequest: {
       reviewThreads: {
-        nodes: Array<{
-          id: string;
-          isResolved: boolean;
-          comments: { nodes: Array<{ path: string; line: number | null; body: string; url: string }> };
-        }>;
+        pageInfo: { hasNextPage: boolean; endCursor: string | null };
+        nodes: ReviewThreadNode[];
       };
     };
   };
 }
 
 const REVIEW_THREADS_QUERY = `
-query($owner: String!, $repo: String!, $number: Int!) {
+query($owner: String!, $repo: String!, $number: Int!, $after: String) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $number) {
-      reviewThreads(first: 100) {
+      reviewThreads(first: 100, after: $after) {
+        pageInfo { hasNextPage endCursor }
         nodes {
           id
           isResolved
@@ -51,6 +55,31 @@ query($owner: String!, $repo: String!, $number: Int!) {
     }
   }
 }`;
+
+const MAX_REVIEW_THREAD_PAGES = 20;
+
+/**
+ * Paginates reviewThreads to completion rather than trusting a single
+ * first:100 page -- a PR with more than 100 threads would otherwise let
+ * this silently under-report unresolved ones, which is exactly the
+ * scenario required_conversation_resolution cares about getting right.
+ * Capped at MAX_REVIEW_THREAD_PAGES as a defensive bound, not because that
+ * many pages is expected.
+ */
+async function fetchAllReviewThreads(repoRoot: string, owner: string, repo: string, pr: number): Promise<ReviewThreadNode[]> {
+  const allNodes: ReviewThreadNode[] = [];
+  let cursor: string | undefined;
+  for (let page = 0; page < MAX_REVIEW_THREAD_PAGES; page++) {
+    const fields: Record<string, string | number> = { owner, repo, number: pr };
+    if (cursor) fields.after = cursor;
+    const response = await ghGraphQl<ReviewThreadsResponse>(REVIEW_THREADS_QUERY, fields, { repoRoot });
+    allNodes.push(...response.repository.pullRequest.reviewThreads.nodes);
+    if (!response.repository.pullRequest.reviewThreads.pageInfo.hasNextPage) break;
+    cursor = response.repository.pullRequest.reviewThreads.pageInfo.endCursor ?? undefined;
+    if (!cursor) break;
+  }
+  return allNodes;
+}
 
 /**
  * Tier C: push, PR creation, and auto-merge. Only registered when
@@ -197,8 +226,8 @@ export function registerRemoteTools(ctx: ToolContext): void {
       const remote = await remoteUrl({ repoRoot }).catch(() => undefined);
       const { owner, repo } = resolveOwnerRepo(config.cloneUrl, remote);
 
-      const response = await ghGraphQl<ReviewThreadsResponse>(REVIEW_THREADS_QUERY, { owner, repo, number: args.pr }, { repoRoot });
-      const threads = response.repository.pullRequest.reviewThreads.nodes.map((node) => {
+      const nodes = await fetchAllReviewThreads(repoRoot, owner, repo, args.pr);
+      const threads = nodes.map((node) => {
         const first = node.comments.nodes[0];
         return {
           threadId: node.id,
