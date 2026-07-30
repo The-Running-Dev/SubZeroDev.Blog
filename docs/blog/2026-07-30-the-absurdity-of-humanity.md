@@ -14,7 +14,7 @@ tags:
 
 # The Absurdity of Humanity
 
-# God, Lucifer, and the Missing Escape Hatch
+**God, Lucifer, and the Missing Escape Hatch**
 
 Lucifer stood beside God, staring down at Earth.
 
