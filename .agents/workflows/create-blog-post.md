@@ -75,7 +75,7 @@ description: "<description>"
 slug: <slug>
 authors:
   - <valid-author-key>
-date: <YYYY-MM-DD>T00:00:00
+date: <YYYY-MM-DD>T00:00:00Z
 tags:
   - <existing-tag-key>
 ---

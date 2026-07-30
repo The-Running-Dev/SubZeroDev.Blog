@@ -42,6 +42,14 @@ To preview the site locally:
 ./docs.ps1
 ```
 
+### Publishing tools
+
+[`tools/blog-mcp`](https://github.com/The-Running-Dev/SubZeroDev.Blog/tree/main/tools/blog-mcp)
+exposes this repository's deterministic publishing steps — front-matter
+validation, post authoring, tag and hub maintenance, and local git — as
+callable MCP tools, so an agent no longer has to get them right by reading
+prose alone.
+
 ## Repository boundary
 
 This repository owns the public blog site, its authored project documentation,
