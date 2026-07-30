@@ -96,16 +96,29 @@ claim the build passed; verify the corresponding GitHub Actions check.
 
 ## Git and pull requests
 
-Use focused commits with concise conventional messages. Open a draft pull
-request first. Required PR checks are:
+Use focused commits with concise conventional messages. After the applicable
+local validation passes, open a ready pull request and arm automatic squash
+merge against the exact validated head commit. Use a draft pull request only
+when the user explicitly requests a hold, a draft, or no auto-merge.
+
+For a post-only change, arm auto-merge immediately after publishing the PR.
+For code, styling, configuration, or workflow changes, run any available
+automated review and address valid findings before arming auto-merge. Required
+PR checks are:
 
 - `Documentation links and terminology`
 - `Verify Documentation Build`
 
-Do not require the merge-only deployment job. Make the PR ready and squash
-merge only after required checks pass. Protect `main` with required pull
-requests, successful checks, conversation resolution, and blocked force pushes
-and deletions.
+Do not require the merge-only deployment job. Enable GitHub auto-merge with
+the allowed squash strategy and the exact validated head SHA; GitHub will merge
+only after the required checks and conversation resolution pass. If the head
+changes, revalidate it and arm auto-merge again with the new SHA. Protect
+`main` with required pull requests, successful checks, conversation resolution,
+and blocked force pushes and deletions.
+
+After a validated fix directly satisfies a review thread, resolve that thread
+so it cannot keep auto-merge blocked. Leave ambiguous findings unresolved and
+report them instead.
 
 ## Completion checklist
 
