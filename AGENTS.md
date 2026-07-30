@@ -157,7 +157,12 @@ verification failed.
 **Hard rule:** never state or imply a published URL until the `Docs Deploy` run
 for that exact merge commit shows `completed`/`success`. A merged PR is not a
 deployed site. Poll the run status (`gh run list` / `gh run watch`) until it
-finishes — do not estimate timing or report the URL "as good as done."
+finishes — do not estimate timing or report the URL "as good as done." When
+`tools/blog-mcp` is available, `blog_verify_published_url` enforces this
+structurally rather than relying on the rule being followed by hand: it has
+no code path that returns a URL without a confirmed successful deploy. This
+prose stays authoritative regardless — the rule must hold even when the tool
+layer is unavailable.
 
 ## Completion checklist
 

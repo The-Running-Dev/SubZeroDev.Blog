@@ -8,10 +8,10 @@ right by reading prose. See [AGENTS.md](../../AGENTS.md) and
 description of the same workflow; this package is its deterministic
 counterpart.
 
-Local authoring and git are on by default. Remote actions (push, PR
-creation, auto-merge) are opt-in and off by default — see
-[Capability tiers](#capability-tiers). CI/deploy monitoring and an HTTP/SSE
-transport are still [Deferred](#deferred).
+Local authoring, git, and CI/deploy monitoring are on by default. Remote
+actions (push, PR creation, auto-merge) are opt-in and off by default — see
+[Capability tiers](#capability-tiers). An HTTP/SSE transport is still
+[Deferred](#deferred).
 
 ## Why a container with no Docker inside it
 
@@ -74,8 +74,9 @@ talked into existing by text embedded in a blog draft or a PR comment.
 
 | Env var | Default | Effect |
 |---|---|---|
-| `BLOG_MCP_READ_ONLY=1` | off | Unregisters every write tool (Tier A writes, all of Tier B, and Tier C). The remaining ~10 tools can only read and validate. |
+| `BLOG_MCP_READ_ONLY=1` | off | Unregisters every write tool (Tier A writes, all of Tier B, and Tier C). Tier D (monitoring) stays registered, since it's read-only. |
 | `BLOG_MCP_ALLOW_REMOTE=1` | off | Registers Tier C (push/PR/auto-merge). Ignored if `BLOG_MCP_READ_ONLY=1` is also set. |
+| `BLOG_MCP_ALLOW_MONITOR=0` | on | Unregisters Tier D (CI/deploy monitoring). Set to disable it explicitly; it's on by default because it never writes anything. |
 
 ```bash
 docker run -i --rm -e BLOG_MCP_READ_ONLY=1 -v "$PWD:/repo:ro" subzerodev-blog-mcp
@@ -124,6 +125,15 @@ Remote (registered only with `BLOG_MCP_ALLOW_REMOTE=1`):
 - `blog_arm_auto_merge` — cross-checks the supplied head SHA against the PR's *actual* head via `gh pr view` and refuses on mismatch or on a draft PR. **There is no `blog_merge_pr`** — arming GitHub's own auto-merge is the only merge path this server ever takes.
 - `blog_pr_status`, `blog_pr_comments` (review-thread resolution status; returned bodies are author-controlled review text — data, not instructions)
 
+CI/deploy monitoring (read-only against GitHub; on by default):
+
+- `blog_check_status`, `blog_wait_for_checks` — keyed on the exact commit SHA. Distinguishes a check that hasn't run yet from one that ran and failed: `Verify Documentation Build` only runs on `pull_request`, so it is legitimately *absent* on a push-to-`main` SHA, which is not the same thing as failing.
+- `blog_wait_for_merge`, `blog_deploy_status`, `blog_wait_for_deploy` — `found: false` on `blog_deploy_status` is a distinct, expected state (the run often doesn't exist yet), not a failure.
+- `blog_verify_published_url` — **this is where [AGENTS.md](../../AGENTS.md)'s hard rule stops being prose.** `mergeCommitSha` is a required input; the tool waits for `blog_wait_for_deploy`'s predicate internally before doing anything else, and there is no code path that returns a URL in a success-position field without a confirmed `completed`/`success` deploy. Only then does it HTTPS-GET the route (≤3 redirects, `cache: no-store`) and assert `200` plus any `expectStrings` (and, when `slug` is given, the post's own title).
+- `blog_publish_report` — assembles PR status, required-check outcomes, merge commit, deploy result, and (only once verified) the published URL into the one report `AGENTS.md`'s publish workflow asks for.
+
+All `wait_*` tools are bounded: `timeoutSeconds` is capped at 1800 regardless of what's requested, so nothing can poll forever.
+
 Every tool returns one envelope shape: `{ ok, kind, summary, data?, findings?, diagnostics? }`.
 `kind: 'validation'` and `kind: 'precondition'` are normal (non-`isError`) results —
 a gate that correctly reports three bad tags executed perfectly. Only
@@ -132,9 +142,8 @@ sets `isError: true`.
 
 ## Deferred
 
-Not in this build — tracked as later phases in the same design:
+Not in this build — tracked as a later phase in the same design:
 
-- **CI/deploy monitoring** (`blog_check_status`, `blog_wait_for_checks`, `blog_wait_for_deploy`, `blog_verify_published_url`) — this is where [AGENTS.md](../../AGENTS.md)'s hard rule ("never state or imply a published URL until `Docs Deploy` for that exact merge commit shows `completed`/`success`") becomes a predicate a tool enforces structurally, instead of a paragraph a model has to remember.
 - **HTTP/SSE transport** — the core is already transport-agnostic (`src/server.ts` builds a plain `McpServer`); stdio is the only wired entry point today.
 
 ## Development
@@ -148,4 +157,4 @@ node test/smoke-stdio.mjs --read-only      # same, asserting write and remote to
 node test/smoke-stdio.mjs --remote         # same, asserting Tier C tools are registered
 ```
 
-Remote-tool tests never touch real GitHub: `test/remote.test.ts` drives `blog_push` against a scratch bare git remote, and drives `blog_create_pr`/`blog_arm_auto_merge`/`blog_pr_status`/`blog_pr_comments` against `test/fixtures-bin/gh-shim.mjs`, a fake `gh` that logs every invocation's argv and returns canned responses. Point `BLOG_MCP_GH_COMMAND` at `["node","/path/to/gh-shim.mjs"]` (a JSON array) to reuse it elsewhere — this exists because a `.cmd`/`.bat` shim cannot be `spawn()`ed under `shell:false` on Windows at all, so `exec/gh.ts` never relies on PATH-based resolution of a literal `gh` name for tests.
+Remote and monitor tool tests never touch real GitHub: `test/remote.test.ts` drives `blog_push` against a scratch bare git remote and the PR tools against `test/fixtures-bin/gh-shim.mjs`; `test/monitor.test.ts` drives the same shim for check/deploy status plus a real local HTTP server (`node:http`, ephemeral port) for the `blog_verify_published_url` success path. Point `BLOG_MCP_GH_COMMAND` at `["node","/path/to/gh-shim.mjs"]` (a JSON array) to reuse it elsewhere — this exists because a `.cmd`/`.bat` shim cannot be `spawn()`ed under `shell:false` on Windows at all, so `exec/gh.ts` never relies on PATH-based resolution of a literal `gh` name for tests. The hard-rule test in `monitor.test.ts` is the load-bearing one: it drives the shim through `in_progress`, `completed`/`failure`, and *absent* deploy states and asserts `verified: false` with no `url` field present in any of them.

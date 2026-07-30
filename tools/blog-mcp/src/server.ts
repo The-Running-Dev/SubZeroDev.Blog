@@ -3,7 +3,8 @@ import { resolveRepoRoot, loadConfig } from './config.js';
 import { registerAuthoringTools, registerAuthoringWriteTools } from './tools/authoring.js';
 import { registerLocalGitTools } from './tools/localGit.js';
 import { registerRemoteTools } from './tools/remote.js';
-import { isReadOnly, isRemoteEnabled } from './tools/context.js';
+import { registerMonitorTools } from './tools/monitor.js';
+import { isReadOnly, isRemoteEnabled, isMonitorEnabled } from './tools/context.js';
 
 export interface CreateServerOptions {
   repoRoot?: string;
@@ -37,8 +38,10 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
       registerRemoteTools(ctx);
     }
   }
-
-  // Tier D (CI/deploy monitoring) is not implemented yet.
+  if (isMonitorEnabled()) {
+    // Read-only against GitHub, so available independent of BLOG_MCP_READ_ONLY.
+    registerMonitorTools(ctx);
+  }
 
   return server;
 }

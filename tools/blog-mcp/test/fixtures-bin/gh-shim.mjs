@@ -54,6 +54,21 @@ if (group === 'pr' && action === 'merge') {
   process.exit(0);
 }
 
+if (group === 'run' && action === 'list') {
+  const runs = process.env.GH_SHIM_DEPLOY_RUNS_JSON
+    ? JSON.parse(process.env.GH_SHIM_DEPLOY_RUNS_JSON)
+    : [];
+  process.stdout.write(JSON.stringify(runs) + '\n');
+  process.exit(0);
+}
+
+if (group === 'api' && args[1] !== 'graphql' && String(args[1] ?? '').includes('/check-runs')) {
+  const checkRuns = process.env.GH_SHIM_CHECK_RUNS_JSON ? JSON.parse(process.env.GH_SHIM_CHECK_RUNS_JSON) : [];
+  const payload = { total_count: checkRuns.length, check_runs: checkRuns };
+  process.stdout.write(JSON.stringify(payload) + '\n');
+  process.exit(0);
+}
+
 if (group === 'api' && args[1] === 'graphql') {
   const threads = process.env.GH_SHIM_THREADS_JSON
     ? JSON.parse(process.env.GH_SHIM_THREADS_JSON)
