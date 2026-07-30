@@ -4,7 +4,7 @@ description: Who gets the multiplier, how the human role expanded, the project c
 slug: ai-workflow-observations-and-limits
 authors:
   - subzerodev
-date: 2026-07-29T08:40:00
+date: 2026-07-29T08:40:00Z
 tags:
   - ai-assisted-engineering
   - automation

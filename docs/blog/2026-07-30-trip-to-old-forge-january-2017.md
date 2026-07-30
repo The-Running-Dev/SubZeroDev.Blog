@@ -4,7 +4,7 @@ description: "A winter drive to Old Forge becomes an experiment in speed, instin
 slug: trip-to-old-forge-january-2017
 authors:
   - subzerodev
-date: 2026-07-30T00:00:00
+date: 2026-07-30T04:11:03Z
 tags:
   - absurd
   - lucifer

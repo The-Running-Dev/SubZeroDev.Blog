@@ -4,7 +4,7 @@ description: The living record of the operating model behind SubZeroDev projects
 slug: ai-assisted-engineering-workflow
 authors:
   - subzerodev
-date: 2026-07-29T09:00:00
+date: 2026-07-29T09:00:00Z
 tags:
   - ai-assisted-engineering
   - automation

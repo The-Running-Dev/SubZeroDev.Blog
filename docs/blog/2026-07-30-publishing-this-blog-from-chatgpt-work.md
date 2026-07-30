@@ -4,7 +4,7 @@ description: "The actual client-to-pull-request workflow used to turn a conversa
 slug: publishing-this-blog-from-chatgpt-work
 authors:
   - subzerodev
-date: 2026-07-30T00:00:00
+date: 2026-07-30T16:59:52Z
 tags:
   - ai-assisted-engineering
   - automation

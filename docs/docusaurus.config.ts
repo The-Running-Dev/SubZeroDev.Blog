@@ -51,7 +51,8 @@ const config: Config = {
             copyright: `Copyright © ${new Date().getFullYear()} SubZeroDev`,
             language: 'en'
           },
-          showReadingTime: true
+          showReadingTime: true,
+          blogSidebarCount: 20
         }
       } satisfies Preset.Options
     ]

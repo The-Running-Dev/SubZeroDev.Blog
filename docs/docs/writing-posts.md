@@ -28,14 +28,16 @@ description: One-sentence summary for readers and metadata.
 slug: post-slug
 authors:
   - subzerodev
-date: YYYY-MM-DDTHH:MM:SS
+date: YYYY-MM-DDTHH:MM:SSZ
 tags:
   - ai-assisted-engineering
 ---
 ```
 
-Keep the `<!-- truncate -->` marker after the introduction so the blog index
-shows a useful summary rather than the complete post.
+Use an explicit UTC `Z` suffix so publication metadata and feeds remain
+reproducible across build environments. Keep the `<!-- truncate -->` marker
+after the introduction so the blog index shows a useful summary rather than the
+complete post.
 
 The template is deliberately excluded from Docusaurus discovery. Its
 placeholder tag is also undeclared, so a copied post cannot build until the
