@@ -4,7 +4,7 @@ description: "A perfectly reasonable attempt at diplomacy."
 slug: lucifer-fly-negotiation
 authors:
   - subzerodev
-date: 2026-07-30T00:00:00
+date: 2026-07-30T02:56:06
 tags:
   - absurd
   - lucifer

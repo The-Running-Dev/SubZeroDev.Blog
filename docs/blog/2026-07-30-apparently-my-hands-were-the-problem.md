@@ -4,7 +4,7 @@ description: "Sometimes the only unacceptable part of an absurd situation is tha
 slug: apparently-my-hands-were-the-problem
 authors:
   - subzerodev
-date: 2026-07-30T00:00:00
+date: 2026-07-30T03:22:20
 tags:
   - absurd
   - lucifer

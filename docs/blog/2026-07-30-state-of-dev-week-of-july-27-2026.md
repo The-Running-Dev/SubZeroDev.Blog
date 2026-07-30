@@ -4,7 +4,7 @@ description: "A humorous state-of-development report on an AI-assisted software 
 slug: state-of-dev-week-of-july-27-2026
 authors:
   - subzerodev
-date: 2026-07-30T00:00:00
+date: 2026-07-30T17:39:41
 tags:
   - ai-assisted-engineering
   - automation
