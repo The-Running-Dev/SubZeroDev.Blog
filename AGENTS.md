@@ -120,6 +120,13 @@ After a validated fix directly satisfies a review thread, resolve that thread
 so it cannot keep auto-merge blocked. Leave ambiguous findings unresolved and
 report them instead.
 
+After auto-merge is armed, the agent must monitor the two required checks for
+the exact head SHA and report their outcome. After merge, monitor the `Docs
+Deploy` workflow for the resulting merge commit. For a new or changed blog
+post, verify its canonical HTTPS route after deployment succeeds and report the
+published URL. Do not claim a post is published when the deployment or route
+verification failed.
+
 ## Completion checklist
 
 - Public claims match source and current behavior.

@@ -3,7 +3,8 @@
 Use this workflow for code, styling, configuration, documentation, and blog
 changes in this repository. It turns a validated branch into a protected,
 automatically merged pull request without requiring a user to watch checks or
-click Merge.
+click Merge. The agent remains responsible for monitoring the result and
+reporting it back.
 
 ## Inputs
 
@@ -59,8 +60,10 @@ gh pr merge <pr-url-or-number> --auto --squash --match-head-commit $headSha
 ```
 
 GitHub keeps the PR open until every protected-branch requirement passes. Do
-not merge directly, bypass protection, or wait manually for successful checks.
-The repository removes the remote branch automatically after the merge.
+not merge directly or bypass protection. Monitor the required checks for the
+exact head SHA, then confirm the merge and the `Docs Deploy` workflow for its
+merge commit. The repository removes the remote branch automatically after the
+merge.
 
 ## 5. Handle exceptions
 
@@ -73,6 +76,9 @@ If a required check fails, a review thread blocks the PR, or the head changes:
    otherwise leave it open and report the ambiguity.
 5. Recompute `$headSha` and arm auto-merge again.
 
-Report the PR URL, head SHA, whether auto-merge is armed, and any unresolved
-exception. On a successful path, GitHub merges and triggers the existing Pages
-deployment without further user action.
+After a successful merge, wait for the deployment workflow to complete and
+report its result. When the change has a public route, verify that route over
+HTTPS before reporting it as published. For a blog post, report its canonical
+`https://blog.subzerodev.com/<slug>/` URL. Report the PR URL, head SHA, merge
+commit, deployment result, published URL when applicable, and any unresolved
+exception.
