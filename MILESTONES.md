@@ -56,3 +56,13 @@ Delivered in pull request
 
 Milestone 5 should be refined from repository evidence before implementation;
 it is direction, not a claim about current behavior.
+
+## Milestone 6: Curated content paths — planned
+
+- Publish stable landing pages for the Lucifer Chronicles, AI-Assisted
+  Engineering, and State of Dev series.
+- Publish a stable project landing page for the Game Engine.
+- Curate each page into a useful reading path while retaining tags for
+  cross-cutting discovery.
+- Expose the hubs through the primary site navigation and verify their
+  production routes after deployment.

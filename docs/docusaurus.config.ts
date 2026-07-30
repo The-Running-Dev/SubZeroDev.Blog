@@ -78,6 +78,34 @@ const config: Config = {
           label: 'Tags'
         },
         {
+          label: 'Series',
+          position: 'left',
+          items: [
+            {
+              to: '/series/lucifer-chronicles/',
+              label: 'Lucifer Chronicles'
+            },
+            {
+              to: '/series/ai-assisted-engineering/',
+              label: 'AI-Assisted Engineering'
+            },
+            {
+              to: '/series/state-of-dev/',
+              label: 'State of Dev'
+            }
+          ]
+        },
+        {
+          label: 'Projects',
+          position: 'left',
+          items: [
+            {
+              to: '/projects/game-engine/',
+              label: 'Game Engine'
+            }
+          ]
+        },
+        {
           type: 'docSidebar',
           sidebarId: 'docs',
           position: 'left',
