@@ -28,10 +28,10 @@ RUN npm ci --omit=dev
 # ---- runtime -----------------------------------------------------------------
 FROM ${NODE_IMAGE} AS runtime
 
-# git: version control. gh: GitHub CLI (Tier C, arrives in a later PR, but
-# installed now so the image layer doesn't change shape underneath it).
-# pwsh: runs build/Test-Documentation.ps1 and build/Test-DocumentationArtifact.ps1
-# unmodified, so this container can never drift from what CI actually runs.
+# git: version control. gh: GitHub CLI (Tier C remote tools, Tier D
+# monitoring). pwsh: runs build/Test-Documentation.ps1 and
+# build/Test-DocumentationArtifact.ps1 unmodified, so this container can
+# never drift from what CI actually runs.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates curl gnupg git less \
     && curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /usr/share/keyrings/microsoft.gpg \
@@ -55,6 +55,12 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 USER node
 ENV HOME=/home/node
 ENV BLOG_MCP_REPO=/repo
+
+# Documentation only -- EXPOSE does not publish the port by itself. HTTP
+# mode binds 127.0.0.1 by default, which `-p` cannot forward into; pass
+# `-e BLOG_MCP_HTTP_HOST=0.0.0.0` explicitly when running `... http` with a
+# published port.
+EXPOSE 8765
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["stdio"]
