@@ -225,13 +225,14 @@ If CI fails, review feedback arrives before merge, or the deployment fails:
      already in progress"` error, that is not necessarily a real conflict:
      in [PR #35](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/35)
      both occurred back to back on an otherwise-mergeable PR and cleared on
-     their own. Confirm actual state first (`gh pr view <pr> --json
-     mergeable,mergeStateStatus,autoMergeRequest` — `mergeable_state:
-     "blocked"` with `auto_merge: null` after a real block, such as an
-     unresolved review thread, means something else is wrong and retrying
-     won't help; see §9). If state looks otherwise clean, waiting roughly
-     15–20 seconds and retrying once resolved it in that one observed case
-     — this is not documented GitHub API behavior, just what worked once.
+     their own. Confirm actual state first: `gh pr view <pr> --json
+     mergeable,mergeStateStatus,autoMergeRequest` returns `mergeStateStatus:
+     "BLOCKED"` with `autoMergeRequest: null` after a real block, such as an
+     unresolved review thread (see §9) — that means something else is wrong
+     and retrying won't help. If state looks otherwise clean (e.g.
+     `mergeStateStatus: "CLEAN"`), waiting roughly 15–20 seconds and
+     retrying once resolved it in that one observed case — this is not
+     documented GitHub API behavior, just what worked once.
 6. Update the PR description if the scope materially changed.
 
 Do not treat a passing lightweight Markdown check as proof that the production Docusaurus build passes.

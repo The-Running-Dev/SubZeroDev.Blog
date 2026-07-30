@@ -90,9 +90,12 @@ this; a PR merged cleanly through every required check still blocked on
 `required_conversation_resolution` because of exactly this gap.
 
 - **Tool:** `blog_pr_comments({ pr, unresolvedOnly: true })` — paginates to
-  completion internally (`pageInfo.hasNextPage`, capped at 20 pages /
-  ~2000 threads as a defensive bound), so it cannot under-report unresolved
-  threads on a PR with more than one page of them.
+  completion internally (`pageInfo.hasNextPage`, capped at 20 pages / ~2000
+  threads as a defensive bound). It cannot silently under-report: if
+  pagination doesn't reach a genuine end (the page cap is hit, or a page
+  reports more exist with no cursor to continue from), it fails loudly
+  (`kind: 'infrastructure'`) instead of returning a partial thread list as
+  if it were complete.
 - **Fallback:** a single `first: N` page can miss threads beyond it and
   incorrectly look clean. Paginate with `after`:
   ```
@@ -162,10 +165,10 @@ If a required check fails, a review thread blocks the PR, or the head changes:
      error, that is not necessarily a real conflict: in
      [PR #35](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/35)
      both occurred back to back on an otherwise-mergeable PR and cleared on
-     their own. Confirm actual state first (`gh pr view <pr> --json
-     mergeable,mergeStateStatus,autoMergeRequest`) — `mergeable_state:
-     "blocked"` with `auto_merge: null` after a real block, such as an
-     unresolved review thread (§3), means something else is wrong and
+     their own. Confirm actual state first: `gh pr view <pr> --json
+     mergeable,mergeStateStatus,autoMergeRequest` returns `mergeStateStatus:
+     "BLOCKED"` with `autoMergeRequest: null` after a real block, such as an
+     unresolved review thread (§3) — that means something else is wrong and
      retrying won't help. If state looks otherwise clean, waiting roughly
      15–20 seconds and retrying once resolved it in that one observed case
      — this is not documented GitHub API behavior, just what worked once.

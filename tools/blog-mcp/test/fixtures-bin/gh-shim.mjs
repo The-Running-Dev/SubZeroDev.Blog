@@ -70,16 +70,26 @@ if (group === 'api' && args[1] !== 'graphql' && String(args[1] ?? '').includes('
 }
 
 if (group === 'api' && args[1] === 'graphql') {
-  // GH_SHIM_THREADS_PAGES_JSON simulates real pagination: an array of
-  // {nodes, pageInfo} pages. The `after` variable (passed as a bare
-  // "after=<index>" -f argument by the query builder) selects which page
-  // to return; index 0 is served when no `after` argument is present.
+  // GH_SHIM_THREADS_PAGES_JSON simulates real pagination: an ordered array
+  // of {nodes, pageInfo} pages, each with its own opaque pageInfo.endCursor
+  // string (not a numeric index -- real GraphQL cursors are opaque tokens,
+  // and a shim that only accepts numbers would hide bugs in real cursor
+  // propagation). No `after` argument serves page 0; an `after=<cursor>`
+  // argument is matched against the *previous* page's endCursor to find
+  // which page comes next, exactly like a real paginated API.
   if (process.env.GH_SHIM_THREADS_PAGES_JSON) {
     const pages = JSON.parse(process.env.GH_SHIM_THREADS_PAGES_JSON);
     const afterArg = args.find((a) => a.startsWith('after='));
-    const pageIndex = afterArg ? Number(afterArg.slice('after='.length)) : 0;
-    const page = pages[pageIndex] ?? { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } };
-    const payload = { repository: { pullRequest: { reviewThreads: { pageInfo: page.pageInfo, nodes: page.nodes } } } };
+    const afterCursor = afterArg ? afterArg.slice('after='.length) : undefined;
+    let page;
+    if (afterCursor === undefined) {
+      page = pages[0];
+    } else {
+      const priorIndex = pages.findIndex((p) => p.pageInfo.endCursor === afterCursor);
+      page = priorIndex === -1 ? undefined : pages[priorIndex + 1];
+    }
+    const resolved = page ?? { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } };
+    const payload = { repository: { pullRequest: { reviewThreads: { pageInfo: resolved.pageInfo, nodes: resolved.nodes } } } };
     process.stdout.write(JSON.stringify(payload) + '\n');
     process.exit(0);
   }
