@@ -66,3 +66,26 @@ it is direction, not a claim about current behavior.
   cross-cutting discovery.
 - Expose the hubs through the primary site navigation and verify their
   production routes after deployment.
+
+## Milestone 7: Deterministic publishing tools — in progress
+
+Publishing has been driven by an agent reading prose instructions in
+`AGENTS.md` and `.agents/workflows/`. Every step those documents describe is
+mechanically deterministic; `tools/blog-mcp/` exposes them as MCP tools so an
+agent no longer has to remember to get them right by reading prose.
+
+- Phase 1–3 (read-only): front-matter validation (delivers this plan's
+  Milestone 5 "validation for post front matter and duplicate slugs" bullet
+  outright), content-hub coverage validation, and wrappers around
+  `build/Test-Documentation.ps1` and `build/Test-DocumentationArtifact.ps1`.
+- Phase 4–5 (local, reversible): post/tag/hub authoring writes and local git
+  (branch, stage, commit) behind a shared write-path allowlist.
+- Phase 6 (planned): remote tools (push, PR creation, auto-merge), gated
+  behind an explicit opt-in and off by default.
+- Phase 7 (planned): CI and deploy monitoring, encoding as code the rule
+  that a published URL is never reported before the `Docs Deploy` run for
+  the exact merge commit shows `completed`/`success`.
+- Phase 8 (planned): an HTTP/SSE transport alongside the default stdio one.
+
+See `tools/blog-mcp/README.md` for the current tool catalogue and what each
+phase still owes.

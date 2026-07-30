@@ -8,5 +8,15 @@
   "dev_command": "./docs.ps1 -Live",
   "dev_port": 3000,
   "author_id": "subzerodev",
-  "default_tags": []
+  "default_tags": [],
+  "canonical_url": "https://blog.subzerodev.com",
+  "required_checks": ["Documentation links and terminology", "Verify Documentation Build"],
+  "deploy_workflow": "Docs Deploy",
+  "branch_prefixes": ["blog", "content", "fix", "feature", "docs"],
+  "hubs": [
+    { "id": "lucifer-chronicles", "path": "docs/src/pages/series/lucifer-chronicles.tsx", "match": { "tags": ["lucifer"] } },
+    { "id": "ai-assisted-engineering", "path": "docs/src/pages/series/ai-assisted-engineering.tsx", "match": { "tags": ["ai-assisted-engineering"] } },
+    { "id": "state-of-dev", "path": "docs/src/pages/series/state-of-dev.tsx", "match": { "slugPrefix": "state-of-dev-" } },
+    { "id": "game-engine", "path": "docs/src/pages/projects/game-engine.tsx", "match": {} }
+  ]
 }

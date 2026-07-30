@@ -1,0 +1,29 @@
+{
+  "name": "@subzerodev/blog-mcp",
+  "version": "0.1.0",
+  "description": "MCP server exposing SubZeroDev Blog's deterministic publishing steps as callable tools.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "blog-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "typescript": "6.0.3",
+    "yaml": "^2.9.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.2",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

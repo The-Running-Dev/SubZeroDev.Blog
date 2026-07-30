@@ -37,6 +37,12 @@ Before editing:
   build and delivery files.
 - `build/Test-Documentation.ps1`: documentation quality gate.
 - `.config/DocumentationRules.psd1`: generated-file and terminology rules.
+- `.config/blog.json`: machine-readable publishing configuration shared by
+  the authoring workflow and `tools/blog-mcp/`.
+- `tools/blog-mcp/`: MCP server exposing this repository's deterministic
+  publishing steps (front-matter validation, post authoring, tag and hub
+  maintenance, local git) as callable tools. See
+  `tools/blog-mcp/README.md`.
 - `artifacts/`: local build output; never commit.
 
 Shared theme and build behavior belong in
@@ -94,12 +100,33 @@ git status --short --branch
 The production build requires Docker. If Docker is unavailable locally, do not
 claim the build passed; verify the corresponding GitHub Actions check.
 
+`tools/blog-mcp/` wraps the same checks (plus front-matter, duplicate-slug,
+and content-hub validation that nothing else in this repository enforces) as
+callable MCP tools, and carries its own build and test suite:
+
+```bash
+cd tools/blog-mcp
+npm install
+npm run build
+npm test
+```
+
+These tools reuse `build/Test-Documentation.ps1` and
+`build/Test-DocumentationArtifact.ps1` unmodified rather than
+reimplementing them, so the two never drift apart. See
+`tools/blog-mcp/README.md`.
+
 ## Git and pull requests
 
 Use focused commits with concise conventional messages. After the applicable
 local validation passes, open a ready pull request and arm automatic squash
 merge against the exact validated head commit. Use a draft pull request only
 when the user explicitly requests a hold, a draft, or no auto-merge.
+
+Stage only files that belong to the change, named explicitly. Never run
+`git add -A` or `git add .`: a broad add can silently sweep up unrelated
+working-tree state. `tools/blog-mcp`'s `blog_stage` tool enforces this as an
+explicit path allowlist rather than relying on the same discipline by hand.
 
 For a post-only change, arm auto-merge immediately after publishing the PR.
 For code, styling, configuration, or workflow changes, run any available
