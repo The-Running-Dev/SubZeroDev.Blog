@@ -4,7 +4,7 @@ description: Declarative external state and repository artifacts as two control 
 slug: ai-workflow-architecture
 authors:
   - subzerodev
-date: 2026-07-29T08:50:00
+date: 2026-07-29T08:50:00Z
 tags:
   - ai-assisted-engineering
   - automation

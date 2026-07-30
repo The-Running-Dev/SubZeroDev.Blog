@@ -4,7 +4,7 @@ description: What is proven, what is experimental, what is planned, and the targ
 slug: ai-workflow-state-and-roadmap
 authors:
   - subzerodev
-date: 2026-07-29T08:30:00
+date: 2026-07-29T08:30:00Z
 tags:
   - ai-assisted-engineering
   - automation

@@ -4,7 +4,7 @@ description: Delivery, quality, AI efficiency, and human load — plus the workf
 slug: ai-workflow-metrics
 authors:
   - subzerodev
-date: 2026-07-29T08:35:00
+date: 2026-07-29T08:35:00Z
 tags:
   - ai-assisted-engineering
   - automation

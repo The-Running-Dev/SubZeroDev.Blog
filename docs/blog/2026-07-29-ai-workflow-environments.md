@@ -4,7 +4,7 @@ description: Why execution stays local for now, what the vendor cloud environmen
 slug: ai-workflow-environments
 authors:
   - subzerodev
-date: 2026-07-29T08:45:00
+date: 2026-07-29T08:45:00Z
 tags:
   - ai-assisted-engineering
   - automation

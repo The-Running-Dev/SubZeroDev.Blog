@@ -4,7 +4,7 @@ description: One-sentence summary for readers and metadata.
 slug: post-slug
 authors:
   - subzerodev
-date: YYYY-MM-DDTHH:MM:SS
+date: YYYY-MM-DDTHH:MM:SSZ
 tags:
   - replace-with-a-key-from-tags-yml
 ---
