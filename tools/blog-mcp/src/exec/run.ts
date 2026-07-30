@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { InfrastructureError } from '../errors.js';
+import { scrubSecrets } from './scrub.js';
 
 const MAX_CAPTURE_BYTES = 256 * 1024;
 const TRUNCATION_MARKER = '\n… [truncated]';
@@ -39,7 +40,7 @@ function capture(chunks: Buffer[], maxBytes: number): { text: string; truncated:
     total += slice.length;
   }
   const truncated = total < chunks.reduce((sum, c) => sum + c.length, 0);
-  const text = Buffer.concat(kept).toString('utf8');
+  const text = scrubSecrets(Buffer.concat(kept).toString('utf8'));
   return { text: truncated ? text + TRUNCATION_MARKER : text, truncated };
 }
 
