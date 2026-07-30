@@ -94,7 +94,7 @@ main h1 {
 .blog-post-page main > article {
   position: relative;
   overflow: hidden;
-  padding: clamp(1.5rem, 4vw, 3.25rem);
+  padding: clamp(1.25rem, 3vw, 2rem);
   border: 1px solid var(--sz-border);
   border-radius: 1.25rem;
   background: var(--sz-panel);
@@ -255,52 +255,27 @@ main h1 {
   overscroll-behavior: contain;
 }
 
-.blog-post-page nav[aria-label='Blog recent posts navigation'] [class*='sidebarItemTitle'] {
-  margin: 0.25rem 0.25rem 0.85rem !important;
-  color: var(--ifm-font-color-base);
-  font-size: 1rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.blog-post-page nav[aria-label='Blog recent posts navigation'] [class*='yearGroupHeading'] {
-  margin: 0.85rem 0.25rem 0.35rem;
-  color: var(--sz-muted);
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-}
-
-.blog-post-page nav[aria-label='Blog recent posts navigation'] [class*='sidebarItemList'] {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.blog-post-page nav[aria-label='Blog recent posts navigation'] li[class*='sidebarItem'] {
-  margin: 0;
-}
-
 .blog-post-page nav[aria-label='Blog recent posts navigation'] [class*='sidebarItemLink'] {
   display: block;
   margin: 0;
-  padding: 0.7rem 0.8rem;
-  border: 1px solid var(--sz-border);
-  border-radius: 0.75rem;
-  background: var(--sz-panel);
-  box-shadow: var(--sz-shadow);
+  padding: 0.3rem 0 0.3rem 0.65rem;
+  border-left: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
   color: var(--ifm-font-color-base);
-  font-size: 0.88rem;
-  line-height: 1.35;
-  transition: border-color 160ms ease, color 160ms ease;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
 .blog-post-page nav[aria-label='Blog recent posts navigation'] [class*='sidebarItemLink']:hover {
-  border-color: var(--sz-border-strong);
+  border-left-color: var(--sz-accent);
+  background: var(--sz-accent-soft);
   color: var(--ifm-font-color-base);
   text-decoration: none;
 }
 
 .blog-post-page nav[aria-label='Blog recent posts navigation'] [aria-current='page'] {
-  border-color: var(--sz-accent);
+  border-left-color: var(--sz-accent);
+  background: var(--sz-accent-soft);
   color: var(--ifm-font-color-base);
   font-weight: 700;
 }
@@ -326,10 +301,6 @@ input:focus-visible {
 }
 
 @media (max-width: 996px) {
-  .blog-post-page main > article {
-    padding: 1.5rem;
-  }
-
   .blog-post-page nav[aria-label='Blog recent posts navigation'] {
     position: static;
     max-height: none;
