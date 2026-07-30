@@ -67,7 +67,7 @@ it is direction, not a claim about current behavior.
 - Expose the hubs through the primary site navigation and verify their
   production routes after deployment.
 
-## Milestone 7: Deterministic publishing tools — in progress
+## Milestone 7: Deterministic publishing tools — complete
 
 Publishing has been driven by an agent reading prose instructions in
 `AGENTS.md` and `.agents/workflows/`. Every step those documents describe is
@@ -98,6 +98,22 @@ agent no longer has to remember to get them right by reading prose.
   alongside the default stdio one, stateless (a fresh server per request,
   no session store), bound to `127.0.0.1` by default, with bearer-token
   auth and `Origin` allowlisting.
+- Phase 9 (delivered): `.agents/workflows/create-blog-post.md` and
+  `.agents/workflows/publish-change.md` now name the `blog_*` tool for each
+  step, with the original manual/CLI instructions kept as an explicit
+  fallback for sessions without the tool layer. Also corrects a real gap
+  found while writing this phase: `gh pr view --json
+  reviewRequests,latestReviews` alone does not surface this repository's
+  configured `qodo-code-review` bot, whose findings still block merge via
+  `required_conversation_resolution` — both workflow files and `AGENTS.md`
+  now point at the GraphQL `reviewThreads` query (or `blog_pr_comments`)
+  instead.
 
-See `tools/blog-mcp/README.md` for the current tool catalogue and what each
-phase still owes.
+Phases 1–5 delivered in pull request
+[#32](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/32); Phase 6 in
+[#33](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/33); Phase 7 in
+[#34](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/34); Phase 8 in
+[#35](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/35); Phase 9 in
+the pull request that introduced this line.
+
+See `tools/blog-mcp/README.md` for the current tool catalogue.

@@ -5,8 +5,9 @@ An MCP server that exposes this repository's deterministic publishing steps
 git — as callable tools, so an agent no longer has to remember to get them
 right by reading prose. See [AGENTS.md](../../AGENTS.md) and
 [.agents/workflows/](../../.agents/workflows/) for the human-facing
-description of the same workflow; this package is its deterministic
-counterpart.
+description of the same workflow — each step there now names the specific
+tool that implements it, with the original manual/CLI instructions kept as
+an explicit fallback for sessions without this tool layer.
 
 Local authoring, git, and CI/deploy monitoring are on by default. Remote
 actions (push, PR creation, auto-merge) are opt-in and off by default — see

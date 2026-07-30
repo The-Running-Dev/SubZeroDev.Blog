@@ -130,8 +130,14 @@ explicit path allowlist rather than relying on the same discipline by hand.
 
 For a post-only change, arm auto-merge immediately after publishing the PR.
 For code, styling, configuration, or workflow changes, run any available
-automated review and address valid findings before arming auto-merge. Required
-PR checks are:
+automated review and address valid findings before arming auto-merge. Check
+by review **thread**, not just requested reviewers: this repository has
+`qodo-code-review` configured, and it leaves unresolved conversation threads
+without appearing in `gh pr view --json reviewRequests,latestReviews` — that
+check alone is not sufficient, since `required_conversation_resolution`
+blocks the merge on those threads regardless. Query review threads via
+`tools/blog-mcp`'s `blog_pr_comments` tool or the GraphQL `reviewThreads`
+query in `.agents/workflows/publish-change.md`. Required PR checks are:
 
 - `Documentation links and terminology`
 - `Verify Documentation Build`
