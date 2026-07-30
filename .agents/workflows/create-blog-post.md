@@ -154,13 +154,27 @@ This does not bypass repository protection: GitHub merges only after all
 required checks pass, the branch is current when required, and all review
 threads are resolved. The repository deletes the remote branch after merge.
 
-Do not wait for successful checks or click Merge manually. Report the PR URL,
-the validated head SHA, and that auto-merge is armed.
+Do not require a user to wait for successful checks or click Merge manually.
+The agent must monitor the exact head's checks and report the PR, merge,
+deployment, and publication outcomes.
 
-### 8. Handle exceptions instead of watching CI
+### 8. Monitor CI, merge, and deployment
 
-GitHub owns the successful-check path after auto-merge is armed. If the agent
-is still monitoring and CI fails, or if review feedback arrives before merge:
+After auto-merge is armed:
+
+1. Monitor `Documentation links and terminology` and `Verify Documentation
+   Build` for the exact head SHA and report their final outcome.
+2. Confirm the PR merged with the expected squash strategy and record the
+   resulting merge commit SHA.
+3. Locate the `Docs Deploy` workflow for that merge commit and wait for its
+   final outcome.
+4. After a successful deployment, verify the canonical post URL over HTTPS:
+
+   `https://blog.subzerodev.com/<slug>/`
+
+5. Report the PR URL, merge commit, deployment result, and published post URL.
+
+If CI fails, review feedback arrives before merge, or the deployment fails:
 
 1. Inspect the failing job, logs, or full review thread.
 2. Make only the changes required to fix the valid finding.
@@ -187,12 +201,12 @@ When review findings arrive:
 
 Do not post a review reply unless explicitly requested.
 
-### 10. Confirm automatic publication when requested
+### 10. Confirm automatic publication
 
-When asked for status or after GitHub reports completion, confirm that the PR
-merged with the allowed squash strategy and that the deployment workflow began.
-Do not require a user to click Merge or to authorize a merge that was already
-armed automatically.
+Report publication proactively after the deployment and HTTPS route check are
+successful. Do not require a user to click Merge, authorize an already armed
+merge, or ask separately for the public URL. If deployment or route validation
+fails, report the failure and do not present a post URL as published.
 
 After merging, report:
 
@@ -200,3 +214,5 @@ After merging, report:
 - target branch
 - merge method
 - resulting merge commit SHA
+- deployment result
+- canonical published post URL
