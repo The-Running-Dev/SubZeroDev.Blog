@@ -13,9 +13,9 @@ tags:
 
 *Part 6 of [The AI-Assisted Software Engineering Workflow](https://blog.subzerodev.com/ai-assisted-engineering-workflow).*
 
-## Current state
+## Current State
 
-### Proven or actively used
+### Proven or Actively Used
 
 <!-- truncate -->
 
@@ -33,7 +33,7 @@ tags:
 - Terraform-managed Cloudflare DNS
 - Protocol extraction after successful tasks
 
-### Active experiments
+### Active Experiments
 
 - Portable project development images
 - Dropbox-based multi-machine workspace transport
@@ -53,7 +53,7 @@ tags:
 
 ## Roadmap
 
-### Near term
+### Near Term
 
 1. Keep this document current as the operating model changes.
 2. Implement and prove `/create-blog`, `/preview`, and `/publish`.
@@ -62,7 +62,7 @@ tags:
 5. Begin recording cycle-time and review-effectiveness metrics.
 6. Keep active project concurrency at two, with three as the normal ceiling.
 
-### Next stage
+### Next Stage
 
 1. Build the thin Terraform runner plugin.
 2. Move GitHub repository configuration and Cloudflare DNS into reusable Terraform
@@ -72,7 +72,7 @@ tags:
 5. Add safe preview and approval boundaries before infrastructure changes.
 6. Automate work-session handoff and recovery checkpoints.
 
-### Longer term
+### Longer Term
 
 1. Make the project definition the canonical desired state.
 2. Have specialized plugins claim and reconcile parts of that state.
@@ -82,7 +82,7 @@ tags:
 5. Turn repeated successful workflows into reusable skills and plugins.
 6. Publish selected lessons automatically from the private living record.
 
-## Target model: Projects as Code
+## Target Model: Projects as Code
 
 The natural endpoint is a repository that describes not only the software, but the
 complete system around it:
@@ -115,7 +115,7 @@ Intent
 The repository becomes the operational contract. Models can change, machines can
 change, and individual tools can be replaced without losing the process.
 
-## One-sentence definition
+## One-Sentence Definition
 
 > An AI-assisted software engineering operating system in which
 > repository-defined protocols, specialized models, automated review gates, and

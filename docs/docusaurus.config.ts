@@ -28,6 +28,9 @@ const config: Config = {
           sidebarPath: './sidebar.ts',
           routeBasePath: 'docs'
         },
+        theme: {
+          customCss: './src/css/custom.css'
+        },
         blog: {
           path: 'blog',
           routeBasePath: '/',

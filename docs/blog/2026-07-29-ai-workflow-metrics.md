@@ -12,7 +12,7 @@ tags:
 
 *Part 5 of [The AI-Assisted Software Engineering Workflow](https://blog.subzerodev.com/ai-assisted-engineering-workflow).*
 
-## Metrics to track
+## Metrics to Track
 
 ### Delivery
 
@@ -35,7 +35,7 @@ tags:
 - Rework after implementation
 - Escaped defects after merge
 
-### AI efficiency
+### AI Efficiency
 
 - Model and effort level by task type
 - Planning and implementation usage
@@ -44,7 +44,7 @@ tags:
 - Manual edits required
 - Outcome quality relative to quota consumed
 
-### Human load
+### Human Load
 
 - Concurrent active projects
 - Time spent restoring project context

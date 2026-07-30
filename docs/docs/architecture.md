@@ -9,7 +9,7 @@ The site is a small consumer overlay on a shared Docusaurus container image.
 This keeps shared theme and build behavior centralized while allowing the blog
 to own its content, routes, and deployment settings.
 
-## Route ownership
+## Route Ownership
 
 | Route | Source | Ownership |
 | --- | --- | --- |
@@ -23,7 +23,7 @@ to own its content, routes, and deployment settings.
 | `/docs/` | `docs/docs/index.md` | Generated documentation landing page |
 | `/docs/**` | Markdown under `docs/docs/` | Authored project documentation |
 
-## Build boundary
+## Build Boundary
 
 The `docs/` directory is copied over the shared template during a build.
 Repository files can configure Docusaurus and add content, but shared

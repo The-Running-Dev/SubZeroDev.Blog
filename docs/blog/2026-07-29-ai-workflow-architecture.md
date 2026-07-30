@@ -19,7 +19,7 @@ The workflow is converging on two complementary control layers.
 
 <!-- truncate -->
 
-### Declarative external state
+### Declarative External State
 
 Terraform owns infrastructure and service configuration, including:
 
@@ -33,7 +33,7 @@ Terraform owns infrastructure and service configuration, including:
 Terraform contributes planning, state management, drift detection, idempotency,
 and the ability to use a large provider ecosystem.
 
-### Repository artifacts and intelligent work
+### Repository Artifacts and Intelligent Work
 
 Agents and Automator own content and engineering artifacts, including:
 
@@ -60,7 +60,7 @@ The AI’s long-term role is primarily planner and operator: interpret intent,
 update the desired state, preview changes, invoke deterministic systems, and
 review the outcome.
 
-## Terraform runner plugin
+## Terraform Runner Plugin
 
 Rather than building separate imperative integrations for GitHub, Cloudflare,
 hosting platforms, and future providers, Automator needs a thin Terraform runner
@@ -79,7 +79,7 @@ Terraform providers supply domain-specific integrations. Automator coordinates
 them. This keeps the platform focused on orchestration instead of rebuilding
 mature infrastructure tooling.
 
-## Content and blog publishing
+## Content and Blog Publishing
 
 The blog is live and was brought online in approximately 30 minutes. It is
 Git-backed and deliberately avoids a database.

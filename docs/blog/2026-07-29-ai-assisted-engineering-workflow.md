@@ -15,7 +15,7 @@ tags:
 **Last updated:** July 29, 2026  
 **Maturity:** Actively used and rapidly evolving
 
-## Executive summary
+## Executive Summary
 
 This workflow treats AI systems as specialized members of a software engineering
 team rather than as interchangeable coding assistants. Repository conventions,
@@ -37,7 +37,7 @@ infrastructure, documentation, workflows, agent behavior, publishing, and
 governance should be declarative, version-controlled, reproducible, and
 increasingly automated.
 
-## Core operating principles
+## Core Operating Principles
 
 1. **Specialize AI roles.** Use each model or tool where it performs best instead
    of searching for one universally “best” AI.
@@ -61,7 +61,7 @@ increasingly automated.
 10. **Measure outcomes.** Quota use, cycle time, review effectiveness, rework, and
     project concurrency should be tracked empirically.
 
-## The series
+## The Series
 
 The rest of the record is published in six parts. It is one document, split only
 so that each part is readable on its own.
