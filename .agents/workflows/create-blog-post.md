@@ -47,8 +47,8 @@ Create a short implementation plan covering:
 3. Any required controlled-tag additions
 4. Local validation
 5. Commit and push
-6. Draft PR creation
-7. CI and review follow-up
+6. Ready PR creation and automatic merge setup
+7. Exception and review follow-up
 
 Proceed with implementation unless a material repository rule or missing input requires clarification.
 
@@ -123,9 +123,11 @@ Commit all intended changes with:
 
 Push `<branch-name>` to the remote repository. Verify that the remote branch contains the same commit/tree as the validated local changes.
 
-### 7. Open a Draft PR
+### 7. Open a ready PR and arm automatic merge
 
-Open a Draft PR from `<branch-name>` into `main`. Use `<pr-title>` as the PR title.
+Open a ready PR from `<branch-name>` into `main`. Use `<pr-title>` as the PR
+title. Use a draft only when the user explicitly asks to hold publication, keep
+the PR a draft, or disable auto-merge.
 
 The PR body should contain:
 
@@ -140,20 +142,32 @@ The PR body should contain:
 - List the validation commands and checks performed.
 - Include the documentation build result when available.
 
-Do not mark the PR ready or merge it unless explicitly requested.
+After creating the PR, capture the exact validated commit SHA and enable
+automatic squash merge:
 
-### 8. Monitor CI
+```powershell
+$headSha = git rev-parse HEAD
+gh pr merge <pr-url-or-number> --auto --squash --match-head-commit $headSha
+```
 
-After pushing:
+This does not bypass repository protection: GitHub merges only after all
+required checks pass, the branch is current when required, and all review
+threads are resolved. The repository deletes the remote branch after merge.
 
-1. Locate the GitHub Actions run associated with the exact PR head commit.
-2. Wait for all relevant jobs to finish.
-3. If CI fails, inspect the failing job and its logs.
-4. Identify the concrete repository rule or build error.
-5. Make only the changes required to fix the failure.
-6. Commit and push the fix.
-7. Update the PR description if the scope materially changed.
-8. Wait for the replacement CI run.
+Do not wait for successful checks or click Merge manually. Report the PR URL,
+the validated head SHA, and that auto-merge is armed.
+
+### 8. Handle exceptions instead of watching CI
+
+GitHub owns the successful-check path after auto-merge is armed. If the agent
+is still monitoring and CI fails, or if review feedback arrives before merge:
+
+1. Inspect the failing job, logs, or full review thread.
+2. Make only the changes required to fix the valid finding.
+3. Re-run all relevant local validation.
+4. Commit and push the correction.
+5. Capture the replacement head SHA and arm auto-merge again with that SHA.
+6. Update the PR description if the scope materially changed.
 
 Do not treat a passing lightweight Markdown check as proof that the production Docusaurus build passes.
 
@@ -166,23 +180,19 @@ When review findings arrive:
 3. Address valid findings without unnecessarily rewriting the post.
 4. Re-run all relevant validation.
 5. Commit and push the corrections.
-6. Wait for CI to pass again.
-7. Report which findings were addressed.
+6. Resolve a thread only when the validated fix directly satisfies it; leave
+   ambiguous findings unresolved and report them.
+7. Re-arm auto-merge against the replacement validated head SHA.
+8. Report which findings were addressed and whether auto-merge is armed.
 
-Do not resolve review threads or post review replies unless explicitly requested.
+Do not post a review reply unless explicitly requested.
 
-### 10. Merge when authorized
+### 10. Confirm automatic publication when requested
 
-Only merge after the user explicitly confirms that the PR is verified and should be merged.
-
-Immediately before merging:
-
-1. Confirm the PR is open and not a draft.
-2. Confirm it is mergeable.
-3. Confirm required CI checks passed for the current head SHA.
-4. Ensure the head SHA has not changed since validation.
-
-Use an allowed repository merge method. If merge commits are disabled, use squash merge unless the repository or user requires rebase.
+When asked for status or after GitHub reports completion, confirm that the PR
+merged with the allowed squash strategy and that the deployment workflow began.
+Do not require a user to click Merge or to authorize a merge that was already
+armed automatically.
 
 After merging, report:
 
