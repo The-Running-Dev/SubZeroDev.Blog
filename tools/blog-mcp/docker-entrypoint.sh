@@ -27,8 +27,7 @@ case "$MODE" in
     exec node /app/dist/index.js --repo "$REPO"
     ;;
   http)
-    echo "blog-mcp: HTTP/SSE transport is not implemented in this build (stdio only)." >&2
-    exit 1
+    exec node /app/dist/http-bin.js --repo "$REPO"
     ;;
   *)
     echo "blog-mcp: unknown transport '$MODE' (expected 'stdio' or 'http')." >&2

@@ -94,7 +94,10 @@ agent no longer has to remember to get them right by reading prose.
   `AGENTS.md` and becomes a predicate the tool structurally enforces —
   `blog_verify_published_url` has no code path that returns a URL without a
   confirmed successful deploy.
-- Phase 8 (planned): an HTTP/SSE transport alongside the default stdio one.
+- Phase 8 (delivered): an HTTP transport (`tools/blog-mcp/src/http.ts`)
+  alongside the default stdio one, stateless (a fresh server per request,
+  no session store), bound to `127.0.0.1` by default, with bearer-token
+  auth and `Origin` allowlisting.
 
 See `tools/blog-mcp/README.md` for the current tool catalogue and what each
 phase still owes.

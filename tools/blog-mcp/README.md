@@ -10,8 +10,8 @@ counterpart.
 
 Local authoring, git, and CI/deploy monitoring are on by default. Remote
 actions (push, PR creation, auto-merge) are opt-in and off by default — see
-[Capability tiers](#capability-tiers). An HTTP/SSE transport is still
-[Deferred](#deferred).
+[Capability tiers](#capability-tiers). Both stdio (default) and HTTP
+transports are available; see [Running](#running).
 
 ## Why a container with no Docker inside it
 
@@ -51,7 +51,7 @@ npm run build
 node dist/index.js --repo /path/to/SubZeroDev.Blog
 ```
 
-### MCP client configuration
+### MCP client configuration (stdio)
 
 ```json
 {
@@ -63,6 +63,38 @@ node dist/index.js --repo /path/to/SubZeroDev.Blog
   }
 }
 ```
+
+### HTTP transport
+
+Stateless: every request gets a fresh server and transport (no session
+store, no resumable SSE streams) — this matches how the server is already
+meant to run, spawned per session by its caller.
+
+```bash
+docker run --rm -p 8765:8765 \
+  -e BLOG_MCP_HTTP_HOST=0.0.0.0 -e BLOG_MCP_HTTP_TOKEN \
+  -v "/path/to/SubZeroDev.Blog:/repo" \
+  subzerodev-blog-mcp http
+```
+
+The default bind is `127.0.0.1` — safe for direct local use, but Docker's
+`-p` cannot forward into a container's loopback interface, so running in a
+container with a published port requires the `BLOG_MCP_HTTP_HOST=0.0.0.0`
+override shown above. Pass `BLOG_MCP_HTTP_TOKEN` **by name** (`-e
+BLOG_MCP_HTTP_TOKEN`, not `-e BLOG_MCP_HTTP_TOKEN=secret`), same reasoning as
+`GH_TOKEN` below. Without a token, the server logs a warning to stderr and
+runs unauthenticated — acceptable only while bound to loopback.
+
+| Env var | Default | Effect |
+|---|---|---|
+| `BLOG_MCP_HTTP_HOST` | `127.0.0.1` | Bind address. |
+| `BLOG_MCP_HTTP_PORT` | `8765` | Bind port. |
+| `BLOG_MCP_HTTP_TOKEN` | unset | Bearer token required on every `/mcp` request (constant-time compared). |
+| `BLOG_MCP_HTTP_ALLOWED_ORIGINS` | `http://<host>:<port>`, `http://localhost:<port>` | Comma-separated `Origin` allowlist. A request with no `Origin` header (any non-browser client) is always allowed; only a *present, disallowed* `Origin` is rejected — this is what stops a malicious page in a browser from talking to the server via DNS rebinding or a simple cross-origin fetch. |
+
+Only `POST /mcp` is implemented (stateless mode has no session to `GET` an
+SSE stream from or `DELETE`); both return `405`. `GET /healthz` returns
+`{"ok":true}` without auth, for container health checks.
 
 ## Capability tiers
 
@@ -140,12 +172,6 @@ a gate that correctly reports three bad tags executed perfectly. Only
 `kind: 'infrastructure'` (a crashed subprocess, a timeout, unparseable output)
 sets `isError: true`.
 
-## Deferred
-
-Not in this build — tracked as a later phase in the same design:
-
-- **HTTP/SSE transport** — the core is already transport-agnostic (`src/server.ts` builds a plain `McpServer`); stdio is the only wired entry point today.
-
 ## Development
 
 ```bash
@@ -155,6 +181,9 @@ npm test        # vitest
 node test/smoke-stdio.mjs                  # exercises the built server over a real stdio subprocess
 node test/smoke-stdio.mjs --read-only      # same, asserting write and remote tools are unregistered
 node test/smoke-stdio.mjs --remote         # same, asserting Tier C tools are registered
+node dist/http-bin.js --port 8765          # runs the HTTP transport directly, outside Docker
 ```
+
+`test/http.test.ts` exercises the HTTP transport with real `fetch()` calls against an ephemeral-port server: health check, 404s, the stateless 405s on `GET`/`DELETE /mcp`, bearer-auth accept/reject, `Origin` allow/reject, and a full `initialize` → `tools/list` → `tools/call` round trip.
 
 Remote and monitor tool tests never touch real GitHub: `test/remote.test.ts` drives `blog_push` against a scratch bare git remote and the PR tools against `test/fixtures-bin/gh-shim.mjs`; `test/monitor.test.ts` drives the same shim for check/deploy status plus a real local HTTP server (`node:http`, ephemeral port) for the `blog_verify_published_url` success path. Point `BLOG_MCP_GH_COMMAND` at `["node","/path/to/gh-shim.mjs"]` (a JSON array) to reuse it elsewhere — this exists because a `.cmd`/`.bat` shim cannot be `spawn()`ed under `shell:false` on Windows at all, so `exec/gh.ts` never relies on PATH-based resolution of a literal `gh` name for tests. The hard-rule test in `monitor.test.ts` is the load-bearing one: it drives the shim through `in_progress`, `completed`/`failure`, and *absent* deploy states and asserts `verified: false` with no `url` field present in any of them.
