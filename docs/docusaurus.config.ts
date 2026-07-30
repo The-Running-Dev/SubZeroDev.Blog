@@ -84,6 +84,11 @@ const config: Config = {
         }
       ]
     },
+    colorMode: {
+      defaultMode: 'dark',
+      disableSwitch: false,
+      respectPrefersColorScheme: false
+    },
     footer: { style: 'dark', links: [] }
   } satisfies Preset.ThemeConfig
 };
