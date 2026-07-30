@@ -73,14 +73,14 @@ body {
   background: var(--sz-accent-soft);
 }
 
-main h1,
-.blog-post-page main h1 {
+main h1 {
   font-size: clamp(2.25rem, 4vw, 3.25rem);
   letter-spacing: -0.045em;
   line-height: 1.12;
 }
 
-.blog-list-page main h2 {
+.blog-list-page main h2,
+.blog-post-page main h1 {
   font-size: clamp(1.6rem, 2.5vw, 2rem);
   letter-spacing: -0.03em;
   line-height: 1.2;
