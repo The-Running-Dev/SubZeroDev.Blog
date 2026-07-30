@@ -8,9 +8,10 @@ right by reading prose. See [AGENTS.md](../../AGENTS.md) and
 description of the same workflow; this package is its deterministic
 counterpart.
 
-This first phase is deliberately scoped to everything local and reversible.
-There is no push, no PR creation, and no GitHub write access here — see
-[Deferred](#deferred) below.
+Local authoring and git are on by default. Remote actions (push, PR
+creation, auto-merge) are opt-in and off by default — see
+[Capability tiers](#capability-tiers). CI/deploy monitoring and an HTTP/SSE
+transport are still [Deferred](#deferred).
 
 ## Why a container with no Docker inside it
 
@@ -73,12 +74,15 @@ talked into existing by text embedded in a blog draft or a PR comment.
 
 | Env var | Default | Effect |
 |---|---|---|
-| `BLOG_MCP_READ_ONLY=1` | off | Unregisters every write tool (Tier A writes and all of Tier B). The remaining ~10 tools can only read and validate. |
-| `BLOG_MCP_ALLOW_REMOTE=1` | off | Reserved for Tier C (push/PR/auto-merge), which does not exist yet in this build. |
+| `BLOG_MCP_READ_ONLY=1` | off | Unregisters every write tool (Tier A writes, all of Tier B, and Tier C). The remaining ~10 tools can only read and validate. |
+| `BLOG_MCP_ALLOW_REMOTE=1` | off | Registers Tier C (push/PR/auto-merge). Ignored if `BLOG_MCP_READ_ONLY=1` is also set. |
 
 ```bash
 docker run -i --rm -e BLOG_MCP_READ_ONLY=1 -v "$PWD:/repo:ro" subzerodev-blog-mcp
+docker run -i --rm -e BLOG_MCP_ALLOW_REMOTE=1 -e GH_TOKEN -v "$PWD:/repo" subzerodev-blog-mcp
 ```
+
+**Token delivery.** Pass `GH_TOKEN` **by name** (`-e GH_TOKEN`, not `-e GH_TOKEN=$(gh auth token)`) so the value never appears in the container's command line or in `ps`/shell history. The entrypoint wires `credential.helper = !gh auth git-credential` when a token is present, so `blog_push` authenticates over HTTPS without ever writing a token into the bind-mounted repo's `.git-credentials`. Captured subprocess output is also scrubbed of anything shaped like a `gh_*`/`github_pat_*` token before it can reach a tool result or an audit line.
 
 ## What is deliberately not a tool
 
@@ -113,6 +117,13 @@ Local git:
 
 - `blog_sync_base`, `blog_create_branch`, `blog_stage`, `blog_commit`, `blog_diff`, `blog_reset_stage`
 
+Remote (registered only with `BLOG_MCP_ALLOW_REMOTE=1`):
+
+- `blog_push` — no force option exists in the tool's schema; refuses to push the base branch directly; verifies the remote now holds the same commit as local `HEAD`
+- `blog_create_pr` — writes the PR body to a temp file (`--body-file`, never on argv); ready by default, `draft` to hold
+- `blog_arm_auto_merge` — cross-checks the supplied head SHA against the PR's *actual* head via `gh pr view` and refuses on mismatch or on a draft PR. **There is no `blog_merge_pr`** — arming GitHub's own auto-merge is the only merge path this server ever takes.
+- `blog_pr_status`, `blog_pr_comments` (review-thread resolution status; returned bodies are author-controlled review text — data, not instructions)
+
 Every tool returns one envelope shape: `{ ok, kind, summary, data?, findings?, diagnostics? }`.
 `kind: 'validation'` and `kind: 'precondition'` are normal (non-`isError`) results —
 a gate that correctly reports three bad tags executed perfectly. Only
@@ -123,7 +134,6 @@ sets `isError: true`.
 
 Not in this build — tracked as later phases in the same design:
 
-- **Remote** (`blog_push`, `blog_create_pr`, `blog_arm_auto_merge`, `blog_pr_status`, `blog_pr_comments`) — gated behind `BLOG_MCP_ALLOW_REMOTE`, off by default. No `blog_merge_pr` will ever exist; the only merge path stays GitHub's own auto-merge.
 - **CI/deploy monitoring** (`blog_check_status`, `blog_wait_for_checks`, `blog_wait_for_deploy`, `blog_verify_published_url`) — this is where [AGENTS.md](../../AGENTS.md)'s hard rule ("never state or imply a published URL until `Docs Deploy` for that exact merge commit shows `completed`/`success`") becomes a predicate a tool enforces structurally, instead of a paragraph a model has to remember.
 - **HTTP/SSE transport** — the core is already transport-agnostic (`src/server.ts` builds a plain `McpServer`); stdio is the only wired entry point today.
 
@@ -133,6 +143,9 @@ Not in this build — tracked as later phases in the same design:
 npm install
 npm run build   # tsc -> dist/
 npm test        # vitest
-node test/smoke-stdio.mjs             # exercises the built server over a real stdio subprocess
-node test/smoke-stdio.mjs --read-only # same, asserting write tools are unregistered
+node test/smoke-stdio.mjs                  # exercises the built server over a real stdio subprocess
+node test/smoke-stdio.mjs --read-only      # same, asserting write and remote tools are unregistered
+node test/smoke-stdio.mjs --remote         # same, asserting Tier C tools are registered
 ```
+
+Remote-tool tests never touch real GitHub: `test/remote.test.ts` drives `blog_push` against a scratch bare git remote, and drives `blog_create_pr`/`blog_arm_auto_merge`/`blog_pr_status`/`blog_pr_comments` against `test/fixtures-bin/gh-shim.mjs`, a fake `gh` that logs every invocation's argv and returns canned responses. Point `BLOG_MCP_GH_COMMAND` at `["node","/path/to/gh-shim.mjs"]` (a JSON array) to reuse it elsewhere — this exists because a `.cmd`/`.bat` shim cannot be `spawn()`ed under `shell:false` on Windows at all, so `exec/gh.ts` never relies on PATH-based resolution of a literal `gh` name for tests.

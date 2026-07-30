@@ -2,7 +2,8 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { resolveRepoRoot, loadConfig } from './config.js';
 import { registerAuthoringTools, registerAuthoringWriteTools } from './tools/authoring.js';
 import { registerLocalGitTools } from './tools/localGit.js';
-import { isReadOnly } from './tools/context.js';
+import { registerRemoteTools } from './tools/remote.js';
+import { isReadOnly, isRemoteEnabled } from './tools/context.js';
 
 export interface CreateServerOptions {
   repoRoot?: string;
@@ -32,11 +33,12 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
   if (!isReadOnly()) {
     registerAuthoringWriteTools(ctx);
     registerLocalGitTools(ctx);
+    if (isRemoteEnabled()) {
+      registerRemoteTools(ctx);
+    }
   }
 
-  // Tier C (remote: push/PR/auto-merge) and Tier D (CI/deploy monitoring)
-  // are not implemented in this PR. BLOG_MCP_ALLOW_REMOTE exists as an env
-  // var so the capability boundary is already in place when they land.
+  // Tier D (CI/deploy monitoring) is not implemented yet.
 
   return server;
 }

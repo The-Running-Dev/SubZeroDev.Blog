@@ -80,8 +80,11 @@ agent no longer has to remember to get them right by reading prose.
   `build/Test-Documentation.ps1` and `build/Test-DocumentationArtifact.ps1`.
 - Phase 4–5 (local, reversible): post/tag/hub authoring writes and local git
   (branch, stage, commit) behind a shared write-path allowlist.
-- Phase 6 (planned): remote tools (push, PR creation, auto-merge), gated
-  behind an explicit opt-in and off by default.
+- Phase 6 (delivered): remote tools (`blog_push`, `blog_create_pr`,
+  `blog_arm_auto_merge`, `blog_pr_status`, `blog_pr_comments`), gated behind
+  `BLOG_MCP_ALLOW_REMOTE`, off by default. No merge tool exists other than
+  arming GitHub's own auto-merge; a GitHub token is never written to disk in
+  the container.
 - Phase 7 (planned): CI and deploy monitoring, encoding as code the rule
   that a published URL is never reported before the `Docs Deploy` run for
   the exact merge commit shows `completed`/`success`.

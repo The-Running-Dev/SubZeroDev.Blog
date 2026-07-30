@@ -13,6 +13,13 @@ if [ -d "$REPO/.git" ] || [ -f "$REPO/.git" ]; then
   git config --global --add safe.directory "$REPO"
 fi
 
+if [ -n "${GH_TOKEN:-}" ] || [ -n "${GITHUB_TOKEN:-}" ]; then
+  # blog_push authenticates over HTTPS via gh's own credential helper, so
+  # the token is read from GH_TOKEN/gh's own auth state at push time and
+  # never written into a .git-credentials file on the bind-mounted repo.
+  git config --global credential.helper '!gh auth git-credential'
+fi
+
 MODE="${1:-${BLOG_MCP_TRANSPORT:-stdio}}"
 
 case "$MODE" in

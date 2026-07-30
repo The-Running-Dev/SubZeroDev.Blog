@@ -17,9 +17,14 @@ function send(child, message) {
 
 async function main() {
   const readOnly = process.argv.includes('--read-only');
+  const remote = process.argv.includes('--remote');
   const child = spawn('node', [serverEntry, '--repo', repoRoot], {
     stdio: ['pipe', 'pipe', 'pipe'],
-    env: { ...process.env, ...(readOnly ? { BLOG_MCP_READ_ONLY: '1' } : {}) }
+    env: {
+      ...process.env,
+      ...(readOnly ? { BLOG_MCP_READ_ONLY: '1' } : {}),
+      ...(remote ? { BLOG_MCP_ALLOW_REMOTE: '1' } : {})
+    }
   });
 
   let stderrBuf = '';
@@ -82,6 +87,12 @@ async function main() {
   if (readOnly && hasWriteTool) throw new Error('BLOG_MCP_READ_ONLY=1 but blog_create_post is still registered.');
   if (!readOnly && !hasWriteTool) throw new Error('blog_create_post is missing from the default (non-read-only) tool list.');
   console.log(`[smoke] capability gating ok (readOnly=${readOnly})`);
+
+  const hasRemoteTool = toolNames.includes('blog_push');
+  const remoteExpected = remote && !readOnly;
+  if (remoteExpected && !hasRemoteTool) throw new Error('BLOG_MCP_ALLOW_REMOTE=1 but blog_push is not registered.');
+  if (!remoteExpected && hasRemoteTool) throw new Error('blog_push is registered without BLOG_MCP_ALLOW_REMOTE=1 (or despite read-only).');
+  console.log(`[smoke] remote gating ok (remote=${remote}, readOnly=${readOnly})`);
 
   if (!toolNames.includes('blog_validate_posts')) throw new Error('blog_validate_posts is missing from tools/list.');
 

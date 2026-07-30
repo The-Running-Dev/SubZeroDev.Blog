@@ -1,0 +1,206 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it, beforeAll, afterAll, beforeEach } from 'vitest';
+import { gitOrThrow } from '../src/exec/git.js';
+import { registerRemoteTools } from '../src/tools/remote.js';
+import { loadConfig } from '../src/config.js';
+import type { ToolResult } from '../src/result.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const GH_SHIM_SCRIPT = path.join(__dirname, 'fixtures-bin', 'gh-shim.mjs');
+
+/** Minimal stand-in for McpServer: captures each registered tool's callback so tests can invoke it directly. */
+class FakeServer {
+  tools = new Map<string, (args: unknown) => Promise<{ structuredContent: ToolResult }>>();
+  registerTool(name: string, _config: unknown, cb: (args: unknown) => Promise<{ structuredContent: ToolResult }>): void {
+    this.tools.set(name, cb);
+  }
+}
+
+async function call(server: FakeServer, name: string, args: unknown): Promise<ToolResult> {
+  const cb = server.tools.get(name);
+  if (!cb) throw new Error(`tool '${name}' was not registered`);
+  const result = await cb(args);
+  return result.structuredContent;
+}
+
+describe('blog_push against a real scratch bare remote', () => {
+  let scratchRoot: string;
+  let bareRemote: string;
+  let clone: string;
+  let server: FakeServer;
+
+  beforeAll(async () => {
+    scratchRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'blog-mcp-push-'));
+    bareRemote = path.join(scratchRoot, 'origin.git');
+    clone = path.join(scratchRoot, 'clone');
+
+    fs.mkdirSync(bareRemote);
+    await gitOrThrow(['init', '--bare', '-b', 'main'], { repoRoot: bareRemote });
+
+    const seed = path.join(scratchRoot, 'seed');
+    fs.mkdirSync(seed);
+    await gitOrThrow(['init', '-b', 'main'], { repoRoot: seed });
+    await gitOrThrow(['config', 'user.email', 'test@example.test'], { repoRoot: seed });
+    await gitOrThrow(['config', 'user.name', 'Test'], { repoRoot: seed });
+    fs.writeFileSync(path.join(seed, 'README.md'), '# seed\n');
+    await gitOrThrow(['add', 'README.md'], { repoRoot: seed });
+    await gitOrThrow(['commit', '-m', 'chore: seed'], { repoRoot: seed });
+    await gitOrThrow(['remote', 'add', 'origin', bareRemote], { repoRoot: seed });
+    await gitOrThrow(['push', 'origin', 'main'], { repoRoot: seed });
+
+    await gitOrThrow(['clone', bareRemote, clone], { repoRoot: scratchRoot });
+    await gitOrThrow(['config', 'user.email', 'test@example.test'], { repoRoot: clone });
+    await gitOrThrow(['config', 'user.name', 'Test'], { repoRoot: clone });
+
+    const config = loadConfig(clone);
+    server = new FakeServer();
+    registerRemoteTools({ server: server as unknown as import('@modelcontextprotocol/sdk/server/mcp.js').McpServer, repoRoot: clone, config });
+  });
+
+  afterAll(() => {
+    fs.rmSync(scratchRoot, { recursive: true, force: true });
+  });
+
+  it('refuses to push the base branch directly', async () => {
+    const result = await call(server, 'blog_push', { branch: 'main' });
+    expect(result.ok).toBe(false);
+    expect(result.kind).toBe('precondition');
+  });
+
+  it('pushes a feature branch and verifies the remote matches local HEAD', async () => {
+    await gitOrThrow(['switch', '-c', 'blog/remote-fixture'], { repoRoot: clone });
+    fs.writeFileSync(path.join(clone, 'fixture.txt'), 'x');
+    await gitOrThrow(['add', 'fixture.txt'], { repoRoot: clone });
+    await gitOrThrow(['commit', '-m', 'chore: fixture'], { repoRoot: clone });
+
+    const result = await call(server, 'blog_push', { branch: 'blog/remote-fixture' });
+    expect(result.ok).toBe(true);
+    expect((result.data as { verified: boolean }).verified).toBe(true);
+  });
+});
+
+describe('remote tools against a gh shim (no real GitHub involved)', () => {
+  let scratchRoot: string;
+  let ghRepo: string;
+  let ghShimLog: string;
+  let server: FakeServer;
+  let originalGhCommand: string | undefined;
+
+  beforeAll(async () => {
+    scratchRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'blog-mcp-gh-'));
+    ghRepo = path.join(scratchRoot, 'gh-repo');
+    ghShimLog = path.join(scratchRoot, 'gh-shim.log');
+
+    // gh-shim tools resolve owner/repo from this remote's URL shape, not
+    // its reachability -- they never actually fetch/push through it, so
+    // this repo need not be a real clone of anything.
+    fs.mkdirSync(ghRepo);
+    await gitOrThrow(['init', '-b', 'main'], { repoRoot: ghRepo });
+    await gitOrThrow(['config', 'user.email', 'test@example.test'], { repoRoot: ghRepo });
+    await gitOrThrow(['config', 'user.name', 'Test'], { repoRoot: ghRepo });
+    fs.writeFileSync(path.join(ghRepo, 'README.md'), '# fixture\n');
+    await gitOrThrow(['add', 'README.md'], { repoRoot: ghRepo });
+    await gitOrThrow(['commit', '-m', 'chore: fixture'], { repoRoot: ghRepo });
+    await gitOrThrow(['remote', 'add', 'origin', 'https://github.com/test-owner/test-repo.git'], { repoRoot: ghRepo });
+
+    originalGhCommand = process.env.BLOG_MCP_GH_COMMAND;
+    process.env.BLOG_MCP_GH_COMMAND = JSON.stringify(['node', GH_SHIM_SCRIPT]);
+    process.env.GH_SHIM_LOG = ghShimLog;
+
+    const config = loadConfig(ghRepo);
+    server = new FakeServer();
+    registerRemoteTools({ server: server as unknown as import('@modelcontextprotocol/sdk/server/mcp.js').McpServer, repoRoot: ghRepo, config });
+  });
+
+  afterAll(() => {
+    if (originalGhCommand !== undefined) {
+      process.env.BLOG_MCP_GH_COMMAND = originalGhCommand;
+    } else {
+      delete process.env.BLOG_MCP_GH_COMMAND;
+    }
+    delete process.env.GH_SHIM_LOG;
+    delete process.env.GH_SHIM_HEAD_SHA;
+    delete process.env.GH_SHIM_IS_DRAFT;
+    delete process.env.GH_SHIM_PR_NUMBER;
+    fs.rmSync(scratchRoot, { recursive: true, force: true });
+  });
+
+  beforeEach(() => {
+    fs.writeFileSync(ghShimLog, '');
+    delete process.env.GH_SHIM_HEAD_SHA;
+    delete process.env.GH_SHIM_IS_DRAFT;
+  });
+
+  it('blog_create_pr calls `gh pr create` with a --body-file (never body on argv) and returns the parsed PR', async () => {
+    process.env.GH_SHIM_PR_NUMBER = '7';
+    const result = await call(server, 'blog_create_pr', {
+      title: 'Test PR',
+      body: 'Body content that could be arbitrarily long.',
+      base: 'main',
+      head: 'blog/remote-fixture'
+    });
+    expect(result.ok).toBe(true);
+    expect((result.data as { pr: number }).pr).toBe(7);
+
+    const invocations = fs
+      .readFileSync(ghShimLog, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line) as string[]);
+    const createCall = invocations.find((argv) => argv[0] === 'pr' && argv[1] === 'create');
+    expect(createCall).toBeDefined();
+    expect(createCall).toContain('--body-file');
+    expect(createCall?.join(' ')).not.toContain('Body content that could be arbitrarily long.');
+    delete process.env.GH_SHIM_PR_NUMBER;
+  });
+
+  it('blog_arm_auto_merge refuses when the validated SHA does not match the PR head', async () => {
+    process.env.GH_SHIM_HEAD_SHA = 'a'.repeat(40);
+    const result = await call(server, 'blog_arm_auto_merge', { pr: 42, headSha: 'b'.repeat(40) });
+    expect(result.ok).toBe(false);
+    expect(result.kind).toBe('precondition');
+    expect(result.summary).toContain('does not match');
+  });
+
+  it('blog_arm_auto_merge refuses a draft PR', async () => {
+    process.env.GH_SHIM_IS_DRAFT = 'true';
+    process.env.GH_SHIM_HEAD_SHA = 'c'.repeat(40);
+    const result = await call(server, 'blog_arm_auto_merge', { pr: 42, headSha: 'c'.repeat(40) });
+    expect(result.ok).toBe(false);
+    expect(result.summary.toLowerCase()).toContain('draft');
+  });
+
+  it('blog_arm_auto_merge arms merge when the SHA matches and calls the exact match-head-commit argv', async () => {
+    process.env.GH_SHIM_HEAD_SHA = 'd'.repeat(40);
+    const result = await call(server, 'blog_arm_auto_merge', { pr: 42, headSha: 'd'.repeat(40) });
+    expect(result.ok).toBe(true);
+
+    const invocations = fs
+      .readFileSync(ghShimLog, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line) as string[]);
+    const mergeCall = invocations.find((argv) => argv[0] === 'pr' && argv[1] === 'merge');
+    expect(mergeCall).toEqual(['pr', 'merge', '42', '--auto', '--squash', '--match-head-commit', 'd'.repeat(40)]);
+  });
+
+  it('blog_pr_status reads the full PR JSON', async () => {
+    const result = await call(server, 'blog_pr_status', { pr: 42 });
+    expect(result.ok).toBe(true);
+    expect((result.data as { number: number }).number).toBe(42);
+  });
+
+  it('blog_pr_comments returns review threads and honors unresolvedOnly', async () => {
+    const all = await call(server, 'blog_pr_comments', { pr: 42 });
+    expect(all.ok).toBe(true);
+    expect((all.data as { threads: unknown[] }).threads.length).toBe(2);
+
+    const unresolved = await call(server, 'blog_pr_comments', { pr: 42, unresolvedOnly: true });
+    const threads = (unresolved.data as { threads: Array<{ isResolved: boolean }> }).threads;
+    expect(threads.length).toBe(1);
+    expect(threads[0]?.isResolved).toBe(false);
+  });
+});
