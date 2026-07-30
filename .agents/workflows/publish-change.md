@@ -82,3 +82,8 @@ HTTPS before reporting it as published. For a blog post, report its canonical
 `https://blog.subzerodev.com/<slug>/` URL. Report the PR URL, head SHA, merge
 commit, deployment result, published URL when applicable, and any unresolved
 exception.
+
+**Hard rule:** never state or imply a published URL until the `Docs Deploy` run
+for that exact merge commit shows `completed`/`success`. A merged PR is not a
+deployed site. Poll the run status until it finishes — do not estimate timing
+or report the URL as done while deploy is still in flight.

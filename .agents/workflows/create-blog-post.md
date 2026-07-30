@@ -208,6 +208,12 @@ successful. Do not require a user to click Merge, authorize an already armed
 merge, or ask separately for the public URL. If deployment or route validation
 fails, report the failure and do not present a post URL as published.
 
+**Hard rule:** never state or imply a published URL until the `Docs Deploy` run
+for that exact merge commit shows `completed`/`success`. A merged PR is not a
+deployed site — deploy runs after merge and takes its own time. Poll the run
+status until it finishes; do not report the URL as done based on the merge
+alone.
+
 After merging, report:
 
 - PR link
