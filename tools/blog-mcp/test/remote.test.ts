@@ -188,4 +188,67 @@ describe('remote tools against a gh shim (no real GitHub involved)', () => {
     expect(threads.length).toBe(1);
     expect(threads[0]?.isResolved).toBe(false);
   });
+
+  it('blog_pr_comments paginates until hasNextPage is false, not just the first page', async () => {
+    // A page-1-only bug would report 1 thread here instead of 3 -- exactly
+    // the failure mode a reviewer flagged against a first:100-with-no-pagination
+    // query: a PR with more unresolved threads than fit on one page would
+    // silently look clean. Cursors are opaque strings (not sequential
+    // indices) to prove the client round-trips whatever the API hands back,
+    // rather than happening to work only because a numeric cursor lined up
+    // with an array index.
+    process.env.GH_SHIM_THREADS_PAGES_JSON = JSON.stringify([
+      {
+        nodes: [{ id: 'thread-page0', isResolved: false, comments: { nodes: [{ path: 'a.md', line: 1, body: 'page 0', url: 'x' }] } }],
+        pageInfo: { hasNextPage: true, endCursor: 'cursor-after-page-0-xyz' }
+      },
+      {
+        nodes: [{ id: 'thread-page1', isResolved: false, comments: { nodes: [{ path: 'a.md', line: 2, body: 'page 1', url: 'x' }] } }],
+        pageInfo: { hasNextPage: true, endCursor: 'cursor-after-page-1-abc' }
+      },
+      {
+        nodes: [{ id: 'thread-page2', isResolved: true, comments: { nodes: [{ path: 'a.md', line: 3, body: 'page 2', url: 'x' }] } }],
+        pageInfo: { hasNextPage: false, endCursor: null }
+      }
+    ]);
+    try {
+      const result = await call(server, 'blog_pr_comments', { pr: 42 });
+      const threads = (result.data as { threads: Array<{ threadId: string }> }).threads;
+      expect(threads.map((t) => t.threadId)).toEqual(['thread-page0', 'thread-page1', 'thread-page2']);
+    } finally {
+      delete process.env.GH_SHIM_THREADS_PAGES_JSON;
+    }
+  });
+
+  it('blog_pr_comments fails loudly (does not silently under-report) when hasNextPage is true but endCursor is missing', async () => {
+    process.env.GH_SHIM_THREADS_PAGES_JSON = JSON.stringify([
+      {
+        nodes: [{ id: 'thread-only', isResolved: false, comments: { nodes: [{ path: 'a.md', line: 1, body: 'x', url: 'x' }] } }],
+        pageInfo: { hasNextPage: true, endCursor: null } // API claims more exist but gives nothing to continue from.
+      }
+    ]);
+    try {
+      const result = await call(server, 'blog_pr_comments', { pr: 42 });
+      expect(result.ok).toBe(false);
+      expect(result.kind).toBe('infrastructure');
+    } finally {
+      delete process.env.GH_SHIM_THREADS_PAGES_JSON;
+    }
+  });
+
+  it('blog_pr_comments fails loudly when pagination exceeds the page cap', async () => {
+    // 21 pages that all claim hasNextPage: true -- exceeds MAX_REVIEW_THREAD_PAGES (20).
+    const pages = Array.from({ length: 21 }, (_, i) => ({
+      nodes: [{ id: `thread-${i}`, isResolved: false, comments: { nodes: [{ path: 'a.md', line: 1, body: 'x', url: 'x' }] } }],
+      pageInfo: { hasNextPage: true, endCursor: `cursor-${i}` }
+    }));
+    process.env.GH_SHIM_THREADS_PAGES_JSON = JSON.stringify(pages);
+    try {
+      const result = await call(server, 'blog_pr_comments', { pr: 42 });
+      expect(result.ok).toBe(false);
+      expect(result.kind).toBe('infrastructure');
+    } finally {
+      delete process.env.GH_SHIM_THREADS_PAGES_JSON;
+    }
+  });
 });

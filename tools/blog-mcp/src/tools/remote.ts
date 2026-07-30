@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { z } from 'zod';
 import { ok, precondition } from '../result.js';
+import { InfrastructureError } from '../errors.js';
 import { gitOrThrow, git, headSha as gitHeadSha, remoteUrl, currentBranch } from '../exec/git.js';
 import { ghOrThrow, ghJson, ghGraphQl } from '../exec/gh.js';
 import { resolveOwnerRepo } from '../domain/github.js';
@@ -21,25 +22,29 @@ interface PrViewJson {
   autoMergeRequest?: unknown;
 }
 
+interface ReviewThreadNode {
+  id: string;
+  isResolved: boolean;
+  comments: { nodes: Array<{ path: string; line: number | null; body: string; url: string }> };
+}
+
 interface ReviewThreadsResponse {
   repository: {
     pullRequest: {
       reviewThreads: {
-        nodes: Array<{
-          id: string;
-          isResolved: boolean;
-          comments: { nodes: Array<{ path: string; line: number | null; body: string; url: string }> };
-        }>;
+        pageInfo: { hasNextPage: boolean; endCursor: string | null };
+        nodes: ReviewThreadNode[];
       };
     };
   };
 }
 
 const REVIEW_THREADS_QUERY = `
-query($owner: String!, $repo: String!, $number: Int!) {
+query($owner: String!, $repo: String!, $number: Int!, $after: String) {
   repository(owner: $owner, name: $repo) {
     pullRequest(number: $number) {
-      reviewThreads(first: 100) {
+      reviewThreads(first: 100, after: $after) {
+        pageInfo { hasNextPage endCursor }
         nodes {
           id
           isResolved
@@ -51,6 +56,47 @@ query($owner: String!, $repo: String!, $number: Int!) {
     }
   }
 }`;
+
+const MAX_REVIEW_THREAD_PAGES = 20;
+
+interface ReviewThreadFetch {
+  nodes: ReviewThreadNode[];
+  /** True when pagination did not run to a genuine end -- the page cap was hit while more pages remained, or the API reported hasNextPage with no cursor to continue from. Callers must not treat `nodes` as complete when this is true. */
+  truncated: boolean;
+}
+
+/**
+ * Paginates reviewThreads to completion rather than trusting a single
+ * first:100 page -- a PR with more than 100 threads would otherwise let
+ * this silently under-report unresolved ones, which is exactly the
+ * scenario required_conversation_resolution cares about getting right.
+ * Capped at MAX_REVIEW_THREAD_PAGES as a defensive bound, not because that
+ * many pages is expected -- but if the cap (or a missing cursor on a page
+ * that claims more exist) is ever hit, that is signaled via `truncated`
+ * rather than silently returned as if it were the full list.
+ */
+async function fetchAllReviewThreads(repoRoot: string, owner: string, repo: string, pr: number): Promise<ReviewThreadFetch> {
+  const allNodes: ReviewThreadNode[] = [];
+  let cursor: string | undefined;
+  for (let page = 0; page < MAX_REVIEW_THREAD_PAGES; page++) {
+    const fields: Record<string, string | number> = { owner, repo, number: pr };
+    if (cursor) fields.after = cursor;
+    const response = await ghGraphQl<ReviewThreadsResponse>(REVIEW_THREADS_QUERY, fields, { repoRoot });
+    const { nodes, pageInfo } = response.repository.pullRequest.reviewThreads;
+    allNodes.push(...nodes);
+    if (!pageInfo.hasNextPage) {
+      return { nodes: allNodes, truncated: false };
+    }
+    if (!pageInfo.endCursor) {
+      // The API says more pages exist but gave nothing to continue from --
+      // cannot safely claim completeness.
+      return { nodes: allNodes, truncated: true };
+    }
+    cursor = pageInfo.endCursor;
+  }
+  // Exhausted MAX_REVIEW_THREAD_PAGES while hasNextPage was still true.
+  return { nodes: allNodes, truncated: true };
+}
 
 /**
  * Tier C: push, PR creation, and auto-merge. Only registered when
@@ -197,8 +243,16 @@ export function registerRemoteTools(ctx: ToolContext): void {
       const remote = await remoteUrl({ repoRoot }).catch(() => undefined);
       const { owner, repo } = resolveOwnerRepo(config.cloneUrl, remote);
 
-      const response = await ghGraphQl<ReviewThreadsResponse>(REVIEW_THREADS_QUERY, { owner, repo, number: args.pr }, { repoRoot });
-      const threads = response.repository.pullRequest.reviewThreads.nodes.map((node) => {
+      const { nodes, truncated } = await fetchAllReviewThreads(repoRoot, owner, repo, args.pr);
+      if (truncated) {
+        // Returning a partial "here are the unresolved threads" list would
+        // be actively unsafe -- a caller checking merge-readiness could act
+        // on a false "clean" result. Fail loudly instead.
+        throw new InfrastructureError(
+          `Could not fully enumerate review threads for PR #${args.pr}: pagination did not complete (hit the ${MAX_REVIEW_THREAD_PAGES}-page cap, or the API reported more pages with no cursor to continue from). Refusing to report a possibly-incomplete unresolved-thread list.`
+        );
+      }
+      const threads = nodes.map((node) => {
         const first = node.comments.nodes[0];
         return {
           threadId: node.id,
