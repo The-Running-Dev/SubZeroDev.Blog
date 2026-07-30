@@ -253,6 +253,11 @@ nav[aria-label='Blog recent posts navigation'] {
   padding: 0.25rem;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+nav[aria-label='Blog recent posts navigation']::-webkit-scrollbar {
+  display: none;
 }
 
 nav[aria-label='Blog recent posts navigation'] [class*='sidebarItemLink'] {
