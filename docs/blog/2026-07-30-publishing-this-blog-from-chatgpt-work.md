@@ -57,18 +57,6 @@ That means I do not have to restate the whole operational contract every time I 
 
 For a personal story, I can tell it as I would tell it to a person and revise the draft until it sounds like me. For a technical post, I can start with a rough observation or a specification and ask for a factual, structured article. In both cases, the same downstream checks apply.
 
-## The Current Interface and the Intended One
-
-The target interface is intentionally small:
-
-- `/create-blog` creates the draft and required metadata.
-- `/preview` renders and validates it.
-- `/publish` commits, pushes, opens or updates the PR, and follows the repository’s delivery process.
-
-Right now, those steps can be performed through a repository-aware agent using explicit workflow instructions and GitHub-connected tools. The next step is to make the commands a reusable skill, then expose the shared capability through MCP and an Automator or NPX plugin.
-
-The point is not to make ChatGPT the permanent owner of the publishing system. The point is to make every LLM client a thin interface over the same controlled capability. ChatGPT Work is simply the first interface I am using because it lets me create and direct posts from the device already in my hand.
-
 ## Guardrails
 
 A few boundaries keep this useful instead of reckless:
