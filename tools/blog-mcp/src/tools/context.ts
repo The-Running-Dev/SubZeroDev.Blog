@@ -19,6 +19,16 @@ export function isRemoteEnabled(): boolean {
 }
 
 /**
+ * Monitoring (Tier D: check/deploy status, the hard-rule URL verifier) is
+ * read-only -- it never writes to the repo or to GitHub -- so it defaults
+ * on, independent of BLOG_MCP_READ_ONLY. Set BLOG_MCP_ALLOW_MONITOR=0 to
+ * unregister it explicitly.
+ */
+export function isMonitorEnabled(): boolean {
+  return process.env.BLOG_MCP_ALLOW_MONITOR !== '0' && process.env.BLOG_MCP_ALLOW_MONITOR !== 'false';
+}
+
+/**
  * Wraps a tool handler so PreconditionError/InfrastructureError become the
  * matching envelope kind, and any other thrown error is treated as
  * infrastructure (a bug, not a validation outcome) rather than silently

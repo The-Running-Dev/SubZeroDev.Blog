@@ -6,25 +6,10 @@ import { describe, expect, it, beforeAll, afterAll, beforeEach } from 'vitest';
 import { gitOrThrow } from '../src/exec/git.js';
 import { registerRemoteTools } from '../src/tools/remote.js';
 import { loadConfig } from '../src/config.js';
-import type { ToolResult } from '../src/result.js';
+import { FakeServer, call } from './helpers/fakeServer.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const GH_SHIM_SCRIPT = path.join(__dirname, 'fixtures-bin', 'gh-shim.mjs');
-
-/** Minimal stand-in for McpServer: captures each registered tool's callback so tests can invoke it directly. */
-class FakeServer {
-  tools = new Map<string, (args: unknown) => Promise<{ structuredContent: ToolResult }>>();
-  registerTool(name: string, _config: unknown, cb: (args: unknown) => Promise<{ structuredContent: ToolResult }>): void {
-    this.tools.set(name, cb);
-  }
-}
-
-async function call(server: FakeServer, name: string, args: unknown): Promise<ToolResult> {
-  const cb = server.tools.get(name);
-  if (!cb) throw new Error(`tool '${name}' was not registered`);
-  const result = await cb(args);
-  return result.structuredContent;
-}
 
 describe('blog_push against a real scratch bare remote', () => {
   let scratchRoot: string;

@@ -85,9 +85,15 @@ agent no longer has to remember to get them right by reading prose.
   `BLOG_MCP_ALLOW_REMOTE`, off by default. No merge tool exists other than
   arming GitHub's own auto-merge; a GitHub token is never written to disk in
   the container.
-- Phase 7 (planned): CI and deploy monitoring, encoding as code the rule
-  that a published URL is never reported before the `Docs Deploy` run for
-  the exact merge commit shows `completed`/`success`.
+- Phase 7 (delivered): CI and deploy monitoring (`blog_check_status`,
+  `blog_wait_for_checks`, `blog_wait_for_merge`, `blog_deploy_status`,
+  `blog_wait_for_deploy`, `blog_verify_published_url`,
+  `blog_publish_report`), on by default since it is read-only. This is
+  where the "never report a published URL before `Docs Deploy` for the
+  exact merge commit shows `completed`/`success`" rule stops being prose in
+  `AGENTS.md` and becomes a predicate the tool structurally enforces —
+  `blog_verify_published_url` has no code path that returns a URL without a
+  confirmed successful deploy.
 - Phase 8 (planned): an HTTP/SSE transport alongside the default stdio one.
 
 See `tools/blog-mcp/README.md` for the current tool catalogue and what each
