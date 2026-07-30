@@ -250,7 +250,7 @@ main h1 {
   position: sticky;
   top: calc(var(--ifm-navbar-height) + 1.25rem);
   max-height: calc(100vh - var(--ifm-navbar-height) - 2.5rem);
-  padding: 0;
+  padding: 0.25rem;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
