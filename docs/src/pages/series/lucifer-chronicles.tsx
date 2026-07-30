@@ -25,6 +25,11 @@ export default function LuciferChronicles(): React.JSX.Element {
           description:
             'A sleepless trip to Hell becomes a cosmic argument about ego, free will, God, and customer support.',
           href: '/night-in-hell-discussing-philosophy-with-lucifer/'
+        },
+        {
+          title: 'The Absurdity of Humanity',
+          description: "God and Lucifer inspect humanity's missing escape hatch.",
+          href: '/the-absurdity-of-humanity/'
         }
       ]}
     />
