@@ -248,6 +248,8 @@ The funny part is that this accidentally demonstrates the engine better than any
 
 Need to showcase:
 
+These are the chapter's intended design targets, not claims that every system already exists.
+
 - dialogue?
 - relationships?
 - economy?
