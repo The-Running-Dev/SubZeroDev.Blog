@@ -4,10 +4,13 @@ import { registerAuthoringTools, registerAuthoringWriteTools } from './tools/aut
 import { registerLocalGitTools } from './tools/localGit.js';
 import { registerRemoteTools } from './tools/remote.js';
 import { registerMonitorTools } from './tools/monitor.js';
+import { registerRepoInfoTools } from './tools/repoInfo.js';
 import { isReadOnly, isRemoteEnabled, isMonitorEnabled } from './tools/context.js';
 
 export interface CreateServerOptions {
   repoRoot?: string;
+  /** Optional path to an append-only audit log for mutating tool calls. See exec/auditLog.ts. */
+  auditLogPath?: string;
 }
 
 const SERVER_VERSION = '0.1.0';
@@ -28,9 +31,10 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
     version: SERVER_VERSION
   });
 
-  const ctx = { server, repoRoot, config };
+  const ctx = { server, repoRoot, config, ...(options.auditLogPath ? { auditLogPath: options.auditLogPath } : {}) };
 
   registerAuthoringTools(ctx);
+  registerRepoInfoTools(ctx);
   if (!isReadOnly()) {
     registerAuthoringWriteTools(ctx);
     registerLocalGitTools(ctx);

@@ -138,11 +138,25 @@ checkout anywhere.
   Verified end-to-end in the built Docker image against the real public
   remote with no bind mount: fresh clone, zero validation findings, and a
   second run reconciling via fast-forward.
-- Phases 2–7: planned. See the phase list in this milestone's design plan for
-  repo hygiene/observability, per-consumer capability tiers, the `serve` mode
-  with an in-process MCP-client-driven web UI, and a cron scheduler that only
-  ever holds a PR and arms GitHub's own auto-merge at the scheduled time
-  (never merges directly, never fires early on unverified assumptions about
-  build behavior).
+- Phase 2 (delivered): repo hygiene and observability. Every tool that
+  mutates the working tree, git state, or a PR/merge is now serialized behind
+  an in-process mutex (`src/exec/repoLock.ts`) and appends a scrubbed,
+  best-effort line to `${BLOG_MCP_WORKSPACE}/state/audit.log`
+  (`src/exec/auditLog.ts`) — the hard prerequisite for `serve` mode's
+  multiple actors (external MCP client, web UI, scheduler tick) sharing one
+  working tree. Three new read-only tools: `blog_log` (defaults to
+  `origin/<base>`, not `HEAD`, since a long-lived container's working tree
+  may be parked on a stale branch), `blog_branches`, and `blog_repo_health`.
+  `blog_sync_base` gained `--prune` and an optional `ffOnly` that fast-forwards
+  the local base branch only when it's checked out and clean — a first fix
+  for the working-tree-parking problem a persistent volume has that a bind
+  mount never did.
+- Phases 3–7: planned. See the phase list in this milestone's design plan for
+  per-consumer capability tiers, the `serve` mode with an in-process
+  MCP-client-driven web UI, and a cron scheduler that only ever holds a PR
+  and arms GitHub's own auto-merge at the scheduled time (never merges
+  directly, never fires early on unverified assumptions about build
+  behavior).
 
-Phase 1 delivered in the pull request that introduced this section.
+Phase 1 delivered in the pull request that introduced this section; Phase 2
+in the pull request that introduced this line.

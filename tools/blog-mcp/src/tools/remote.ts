@@ -7,7 +7,7 @@ import { InfrastructureError } from '../errors.js';
 import { gitOrThrow, git, headSha as gitHeadSha, remoteUrl, currentBranch } from '../exec/git.js';
 import { ghOrThrow, ghJson, ghGraphQl } from '../exec/gh.js';
 import { resolveOwnerRepo } from '../domain/github.js';
-import { wrapTool, type ToolContext } from './context.js';
+import { wrapTool, wrapMutatingTool, type ToolContext } from './context.js';
 
 interface PrViewJson {
   number: number;
@@ -119,7 +119,7 @@ export function registerRemoteTools(ctx: ToolContext): void {
         setUpstream: z.boolean().optional()
       }
     },
-    wrapTool(async (args: { branch?: string; setUpstream?: boolean }) => {
+    wrapMutatingTool(ctx, 'blog_push', async (args: { branch?: string; setUpstream?: boolean }) => {
       const branch = args.branch ?? (await currentBranch({ repoRoot }));
       if (branch === config.baseBranch) {
         return precondition(`Refusing to push '${branch}' directly; it is the base branch. Open a PR instead.`);
@@ -156,7 +156,7 @@ export function registerRemoteTools(ctx: ToolContext): void {
         labels: z.array(z.string()).optional()
       }
     },
-    wrapTool(async (args: { title: string; body: string; base?: string; head?: string; draft?: boolean; labels?: string[] }) => {
+    wrapMutatingTool(ctx, 'blog_create_pr', async (args: { title: string; body: string; base?: string; head?: string; draft?: boolean; labels?: string[] }) => {
       const base = args.base ?? config.baseBranch;
       const head = args.head ?? (await currentBranch({ repoRoot }));
       if (head === base) {
@@ -192,7 +192,7 @@ export function registerRemoteTools(ctx: ToolContext): void {
         headSha: z.string().optional()
       }
     },
-    wrapTool(async (args: { pr: number; headSha?: string }) => {
+    wrapMutatingTool(ctx, 'blog_arm_auto_merge', async (args: { pr: number; headSha?: string }) => {
       const headSha = args.headSha ?? (await gitHeadSha({ repoRoot }));
       const prView = await ghJson<PrViewJson>(['pr', 'view', String(args.pr), '--json', 'number,url,isDraft,headRefOid'], { repoRoot });
 

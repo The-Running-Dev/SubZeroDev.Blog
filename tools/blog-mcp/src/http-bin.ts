@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import path from 'node:path';
 import { createHttpServer } from './http.js';
 import { ensureRepo, ensureRepoOptionsFromEnv } from './bootstrap/repo.js';
 
@@ -26,8 +27,12 @@ async function main(): Promise<void> {
     `blog-mcp: repo ready at ${repo.repoRoot} (${repo.action}, branch ${repo.branch}${repo.dirty ? ', dirty' : ''})\n`
   );
 
+  // repoOptions.repoPath is always '<workspace>/repo' -- see ensureRepoOptionsFromEnv.
+  const auditLogPath = path.join(path.dirname(repoOptions.repoPath), 'state', 'audit.log');
+
   createHttpServer({
     repoRoot: repo.repoRoot,
+    auditLogPath,
     ...(host ? { host } : {}),
     ...(port !== undefined ? { port } : {}),
     ...(token ? { token } : {}),

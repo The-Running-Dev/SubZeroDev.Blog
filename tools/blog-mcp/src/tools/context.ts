@@ -3,11 +3,15 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { BlogConfig } from '../config.js';
 import { toCallToolResult, infrastructureFailure, precondition, type ToolResult } from '../result.js';
 import { PreconditionError, InfrastructureError } from '../errors.js';
+import { withRepoLock } from '../exec/repoLock.js';
+import { appendAuditLog } from '../exec/auditLog.js';
 
 export interface ToolContext {
   server: McpServer;
   repoRoot: string;
   config: BlogConfig;
+  /** Optional -- unset in tests and any caller with no workspace concept. See exec/auditLog.ts. */
+  auditLogPath?: string;
 }
 
 export function isReadOnly(): boolean {
@@ -56,5 +60,30 @@ export function wrapTool<A>(handler: (args: A) => Promise<ToolResult>) {
       const message = err instanceof Error ? err.message : String(err);
       return toCallToolResult(infrastructureFailure(`Unexpected error: ${message}`)) as CallToolResult;
     }
+  };
+}
+
+/**
+ * Like wrapTool, but for tools that mutate the repo's working tree, git
+ * state, or a PR/merge on GitHub: serializes them behind the repo mutex
+ * (exec/repoLock.ts) and appends a scrubbed, best-effort audit line
+ * (exec/auditLog.ts) once the call completes. `wrapTool` never throws --
+ * every outcome, including a validation/precondition failure, resolves to a
+ * CallToolResult -- so the lock only ever needs to serialize, never retry.
+ */
+export function wrapMutatingTool<A>(ctx: ToolContext, toolName: string, handler: (args: A) => Promise<ToolResult>) {
+  const inner = wrapTool(handler);
+  return async (args: A, extra?: unknown): Promise<CallToolResult> => {
+    return withRepoLock(async () => {
+      const result = await inner(args, extra);
+      const structured = result.structuredContent as { ok?: boolean; kind?: string; summary?: string } | undefined;
+      appendAuditLog(ctx.auditLogPath, {
+        tool: toolName,
+        ok: structured?.ok === true,
+        ...(structured?.kind ? { kind: structured.kind } : {}),
+        ...(structured?.summary ? { summary: structured.summary } : {})
+      });
+      return result;
+    });
   };
 }

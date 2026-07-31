@@ -188,6 +188,9 @@ Read-only:
 - `blog_validate_posts` — front matter, slugs (including permanence against `HEAD`), dates, the `<!-- truncate -->` marker, single-H1-in-excerpt, template-placeholder leftovers, tag/author membership. Nothing in the repository validated this before; see `MILESTONES.md` Milestone 5.
 - `blog_validate_hubs` — resolvable hrefs, no duplicate hrefs, and a post whose tag matches a hub's rule but is missing from it (the class of bug that produced PR #31)
 - `blog_run_doc_gate`, `blog_run_artifact_check` (honestly reports `delegated-to-ci` when no production artifact is present), `blog_preflight`
+- `blog_log` — recent commits, defaulting to `origin/<base>` rather than `HEAD` (a long-lived container's working tree may be parked on a stale branch), NUL-separated records and a control-character field separator so a crafted commit subject can't spoof the output shape
+- `blog_branches` — local branches with ahead/behind counts against `origin/<base>` and the currently-checked-out one flagged
+- `blog_repo_health` — one consolidated view (branch, dirty, parked-off-base, ahead/behind) for dashboards/monitoring; never used to gate a decision by itself
 
 Local filesystem writes:
 
@@ -197,7 +200,10 @@ Local filesystem writes:
 
 Local git:
 
-- `blog_sync_base`, `blog_create_branch`, `blog_stage`, `blog_commit`, `blog_diff`, `blog_reset_stage`
+- `blog_sync_base` — `git fetch --prune origin <base>`; pass `ffOnly` to also fast-forward the local base branch, but only when it's the one currently checked out and the tree is clean (never switches branches, never touches a feature branch)
+- `blog_create_branch`, `blog_stage`, `blog_commit`, `blog_diff`, `blog_reset_stage`
+
+Every tool that mutates the working tree, git state, or a PR/merge — every tool above except `blog_diff` and the read-only tiers — is serialized behind an in-process mutex (`src/exec/repoLock.ts`) and appends a scrubbed, best-effort line to `${BLOG_MCP_WORKSPACE}/state/audit.log` (`src/exec/auditLog.ts`) once it completes. The mutex exists because `serve` mode (a later phase) will have multiple actors — an external MCP client, a web UI, a scheduler tick — sharing one working tree and one `HEAD`; without it, two concurrent branch/stage/commit calls would race. The audit log is a no-op (never throws, never blocks) when no workspace path is available, which is the case for every unit test.
 
 Remote (registered only with `BLOG_MCP_ALLOW_REMOTE=1`):
 
@@ -241,3 +247,5 @@ node dist/http-bin.js --port 8765          # runs the HTTP transport directly, o
 `test/bootstrap-repo.test.ts` exercises `ensureRepo()` against a real scratch bare git remote (not a mock): fresh clone, idempotent re-run (fast-forward), refusal on a non-empty non-git directory, refusal on a mismatched `origin`, dirty-tree boot-without-switching, and an unmerged feature branch staying parked. `test/smoke-stdio.mjs` clones this repository itself (a fast, local-filesystem clone) into a scratch `BLOG_MCP_WORKSPACE` rather than pointing at the live checkout directly, since clone-mode has no bind mount to point at.
 
 Remote and monitor tool tests never touch real GitHub: `test/remote.test.ts` drives `blog_push` against a scratch bare git remote and the PR tools against `test/fixtures-bin/gh-shim.mjs`; `test/monitor.test.ts` drives the same shim for check/deploy status plus a real local HTTP server (`node:http`, ephemeral port) for the `blog_verify_published_url` success path. Point `BLOG_MCP_GH_COMMAND` at `["node","/path/to/gh-shim.mjs"]` (a JSON array) to reuse it elsewhere — this exists because a `.cmd`/`.bat` shim cannot be `spawn()`ed under `shell:false` on Windows at all, so `exec/gh.ts` never relies on PATH-based resolution of a literal `gh` name for tests. The hard-rule test in `monitor.test.ts` is the load-bearing one: it drives the shim through `in_progress`, `completed`/`failure`, and *absent* deploy states and asserts `verified: false` with no `url` field present in any of them.
+
+`test/repoInfo.test.ts` exercises `blog_log`/`blog_branches`/`blog_repo_health` and `blog_sync_base`'s `ffOnly` fast-forward against a scratch bare remote, and asserts the audit log picks up a mutating call (`blog_sync_base`) while never logging a read-only one (`blog_log`). `test/repoLock.test.ts` proves the mutex actually serializes overlapping calls (not just "happens to run in order") and that one rejected call never wedges the queue for calls behind it. `test/auditLog.test.ts` covers the no-op-when-unset path, secret scrubbing, and that a write failure never throws.

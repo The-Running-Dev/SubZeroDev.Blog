@@ -5,6 +5,7 @@ import { createServer, type CreateServerOptions } from './server.js';
 
 export interface HttpServerOptions {
   repoRoot?: string;
+  auditLogPath?: string;
   host?: string;
   port?: number;
   /** Bearer token required on every request. If unset, the server logs a warning and allows unauthenticated access -- acceptable only because the default bind is loopback-only. */
@@ -54,7 +55,10 @@ export function createHttpServer(options: HttpServerOptions = {}): http.Server {
   const port = options.port ?? DEFAULT_PORT;
   const token = options.token;
   const allowedOrigins = options.allowedOrigins ?? [`http://${host}:${port}`, `http://localhost:${port}`];
-  const serverOptions: CreateServerOptions = options.repoRoot ? { repoRoot: options.repoRoot } : {};
+  const serverOptions: CreateServerOptions = {
+    ...(options.repoRoot ? { repoRoot: options.repoRoot } : {}),
+    ...(options.auditLogPath ? { auditLogPath: options.auditLogPath } : {})
+  };
 
   if (!token) {
     process.stderr.write(

@@ -13,7 +13,7 @@ import { insertHubEntry, assertStillParses, type HubEntry } from '../domain/hubs
 import { listPostFiles, loadPost, validateAllPosts, validateHubs, type HubValidationContext } from '../domain/validate.js';
 import { checkAllowedPath } from '../domain/paths.js';
 import { currentBranch, status, remoteUrl } from '../exec/git.js';
-import { isReadOnly, isRemoteEnabled, wrapTool, type ToolContext } from './context.js';
+import { isReadOnly, isRemoteEnabled, wrapTool, wrapMutatingTool, type ToolContext } from './context.js';
 
 async function toolVersions(repoRoot: string): Promise<Record<string, string>> {
   const versions: Record<string, string> = { node: process.version };
@@ -319,7 +319,7 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
         overwrite: z.boolean().optional()
       }
     },
-    wrapTool(async (args) => {
+    wrapMutatingTool(ctx, 'blog_create_post', async (args) => {
       const date = args.date ?? new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
       const authors = args.authors ?? [config.authorId];
       const filename = buildFilename(date, args.slug);
@@ -385,7 +385,7 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
         compatibilityRouteAdded: z.boolean().optional()
       }
     },
-    wrapTool(async (args) => {
+    wrapMutatingTool(ctx, 'blog_update_post', async (args) => {
       const files = listPostFiles(repoRoot, config.blogDir);
       const match = files.map((f) => loadPost(repoRoot, f)).find((p) => p.frontMatter?.slug === args.slug);
       if (!match || match.frontMatter === null) {
@@ -447,7 +447,7 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
         description: z.string()
       }
     },
-    wrapTool(async (args) => {
+    wrapMutatingTool(ctx, 'blog_add_tag', async (args) => {
       const filePath = tagsYmlPath(repoRoot, config.blogDir);
       const relativePath = path.relative(repoRoot, filePath).split(path.sep).join('/');
       const existing = loadTags(repoRoot, config.blogDir);
@@ -487,7 +487,7 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
         position: z.number().int().nonnegative().optional()
       }
     },
-    wrapTool(async (args) => {
+    wrapMutatingTool(ctx, 'blog_add_hub_entry', async (args) => {
       const hubConfig = config.hubs.find((h) => h.id === args.hub);
       if (!hubConfig) return precondition(`Unknown hub '${args.hub}'.`);
 
