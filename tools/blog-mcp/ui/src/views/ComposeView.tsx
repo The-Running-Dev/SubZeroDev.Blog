@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { api, post } from '../lib/api';
+import { api, post, ApiError } from '../lib/api';
 import { isoToDatetimeLocal } from '../lib/formatDate';
 
 interface Tag {
@@ -93,6 +93,24 @@ export default function ComposeView() {
   const logLine = useCallback((text: string, isError = false) => {
     setLog((prev) => [...prev, { text, isError }]);
   }, []);
+
+  // Surfaces the specific validation rule(s) that failed, not just the
+  // generic top-level summary ("FAILED: Not written: ...") -- without this,
+  // a rejected publish (e.g. an empty Tags field) looks identical to every
+  // other failure in the log, with no way to tell what to actually fix.
+  const logError = useCallback(
+    (err: unknown) => {
+      const message = err instanceof Error ? err.message : String(err);
+      logLine(message, true);
+      if (err instanceof ApiError && err.findings) {
+        for (const f of err.findings) {
+          if (f.severity !== 'error') continue;
+          logLine(`  - [${f.rule}] ${f.message}`, true);
+        }
+      }
+    },
+    [logLine]
+  );
 
   const setCheckedTags = useCallback(
     (tags: string[] | undefined) => {
@@ -196,7 +214,9 @@ export default function ComposeView() {
         } else if (extracted) {
           setTitle(extracted.heading);
           setBody(rawMarkdown);
-          logLine(`No front matter found -- read "${extracted.heading}" as the title (Slug auto-fills from it) and used the whole input as Body.`);
+          logLine(
+            `No front matter found -- read "${extracted.heading}" as the title (Slug auto-fills from it) and used the whole input as Body. Description and Tags still need filling in before Publish.`
+          );
         } else {
           setBody(rawMarkdown);
           logLine('No "---" front matter fences found and no leading heading to salvage a title from -- pasted the whole input into Body as-is.');
@@ -221,7 +241,7 @@ export default function ComposeView() {
       logLine('Parsed front matter and body from the pasted markdown.');
       setMode('compose');
     } catch (err) {
-      logLine(err instanceof Error ? err.message : String(err), true);
+      logError(err);
     }
   }
 
@@ -319,7 +339,7 @@ export default function ComposeView() {
         logLine(`Auto-merge armed: ${armResult.summary ?? ''}`);
       }
     } catch (err) {
-      logLine(err instanceof Error ? err.message : String(err), true);
+      logError(err);
     }
   }
 

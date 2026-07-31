@@ -1,5 +1,13 @@
 const CSRF_HEADER = 'X-Blog-Mcp-Csrf';
 
+export interface Finding {
+  path?: string;
+  line?: number;
+  severity: 'error' | 'warning';
+  rule: string;
+  message: string;
+}
+
 export interface Envelope<T = unknown> {
   ok: boolean;
   kind?: string;
@@ -7,6 +15,21 @@ export interface Envelope<T = unknown> {
   /** Present on routes that respond with a plain {error} shape (login, logout, malformed-request 4xxs) rather than the ToolResult envelope. */
   error?: string;
   data?: T;
+  findings?: Finding[];
+}
+
+/**
+ * Thrown by api()/post() on any non-ok response -- carries `findings` (when
+ * the envelope had any) so callers can show exactly which validation rule
+ * failed, not just the generic top-level summary.
+ */
+export class ApiError extends Error {
+  findings?: Finding[];
+  constructor(message: string, findings?: Finding[]) {
+    super(message);
+    this.name = 'ApiError';
+    this.findings = findings;
+  }
 }
 
 /**
@@ -30,7 +53,7 @@ export async function api<T = unknown>(path: string, options?: { method?: 'GET' 
   const body = (await res.json()) as Envelope<T>;
   if (!res.ok || body.ok === false) {
     const message = body.error || body.summary || `Request failed (${res.status})`;
-    throw new Error(message);
+    throw new ApiError(message, body.findings);
   }
   return body;
 }
