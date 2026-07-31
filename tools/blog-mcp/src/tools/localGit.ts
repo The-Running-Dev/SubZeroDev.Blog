@@ -108,7 +108,7 @@ export function registerLocalGitTools(ctx: ToolContext): void {
       }
     },
     wrapMutatingTool(ctx, 'blog_stage', async (args: { paths: string[] }) => {
-      const check = checkAllowedPaths(repoRoot, args.paths);
+      const check = checkAllowedPaths(repoRoot, args.paths, ctx.capabilities?.writablePathPrefixes);
       if (!check.ok) return precondition(check.reason ?? 'One or more paths are not allowed.');
 
       await gitOrThrow(['add', '--', ...args.paths], { repoRoot });

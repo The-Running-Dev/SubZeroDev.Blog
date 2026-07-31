@@ -5,6 +5,23 @@ import { toCallToolResult, infrastructureFailure, precondition, type ToolResult 
 import { PreconditionError, InfrastructureError } from '../errors.js';
 import { withRepoLock } from '../exec/repoLock.js';
 import { appendAuditLog } from '../exec/auditLog.js';
+import { DEFAULT_ALLOWED_PREFIXES } from '../domain/paths.js';
+
+/**
+ * A consumer's registration profile. `POST /mcp` (and stdio) always uses
+ * defaultCapabilities() below, computed fresh from env on every server
+ * construction -- unchanged from before this existed. A later phase's UI or
+ * scheduler session instead builds its own Capabilities and passes it into
+ * createServer() explicitly, so BLOG_MCP_READ_ONLY keeps meaning something
+ * even once multiple consumer profiles share one process.
+ */
+export interface Capabilities {
+  write: boolean;
+  remote: boolean;
+  monitor: boolean;
+  scheduler: boolean;
+  writablePathPrefixes: string[];
+}
 
 export interface ToolContext {
   server: McpServer;
@@ -12,6 +29,8 @@ export interface ToolContext {
   config: BlogConfig;
   /** Optional -- unset in tests and any caller with no workspace concept. See exec/auditLog.ts. */
   auditLogPath?: string;
+  /** Optional -- unset in tests that build a ToolContext by hand; every check that reads it falls back to the default (env-derived, or DEFAULT_ALLOWED_PREFIXES) when absent. */
+  capabilities?: Capabilities;
 }
 
 export function isReadOnly(): boolean {
@@ -30,6 +49,29 @@ export function isRemoteEnabled(): boolean {
  */
 export function isMonitorEnabled(): boolean {
   return process.env.BLOG_MCP_ALLOW_MONITOR !== '0' && process.env.BLOG_MCP_ALLOW_MONITOR !== 'false';
+}
+
+/** No scheduler tools exist yet (a later phase adds them); reads the env var now so that phase doesn't also have to touch this resolver. */
+export function isSchedulerEnabled(): boolean {
+  return process.env.BLOG_MCP_ALLOW_SCHEDULER === '1' || process.env.BLOG_MCP_ALLOW_SCHEDULER === 'true';
+}
+
+/**
+ * The env-derived profile used whenever a caller doesn't pass an explicit
+ * `capabilities` override -- i.e. every stdio and `/mcp` HTTP server today.
+ * Mirrors createServer's previous inline gating exactly: remote and
+ * scheduler are only meaningful when write is also on, matching the old
+ * nested `if (!isReadOnly()) { ...; if (isRemoteEnabled()) ... }` shape.
+ */
+export function defaultCapabilities(): Capabilities {
+  const write = !isReadOnly();
+  return {
+    write,
+    remote: write && isRemoteEnabled(),
+    monitor: isMonitorEnabled(),
+    scheduler: write && isSchedulerEnabled(),
+    writablePathPrefixes: DEFAULT_ALLOWED_PREFIXES
+  };
 }
 
 /**

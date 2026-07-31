@@ -151,12 +151,25 @@ checkout anywhere.
   the local base branch only when it's checked out and clean — a first fix
   for the working-tree-parking problem a persistent volume has that a bind
   mount never did.
-- Phases 3–7: planned. See the phase list in this milestone's design plan for
-  per-consumer capability tiers, the `serve` mode with an in-process
-  MCP-client-driven web UI, and a cron scheduler that only ever holds a PR
-  and arms GitHub's own auto-merge at the scheduled time (never merges
-  directly, never fires early on unverified assumptions about build
-  behavior).
+- Phase 3 (delivered): per-consumer capability tiers. Registration tiers were
+  read from `process.env` at call time (`isReadOnly`/`isRemoteEnabled`/
+  `isMonitorEnabled`), a process-global that `serve` mode's UI and cron
+  actors sharing one process would have silently broken —
+  `BLOG_MCP_READ_ONLY` would have stopped meaning anything the moment the UI
+  needed write access. `createServer({ capabilities })` now accepts an
+  explicit `Capabilities` object (`write`, `remote`, `monitor`, `scheduler`,
+  `writablePathPrefixes`) that overrides the env-derived defaults entirely;
+  `src/index.ts` and `src/http-bin.ts` both omit it, so stdio and `/mcp` HTTP
+  are byte-for-byte unchanged. `writablePathPrefixes` also threads through to
+  `blog_stage`/`blog_add_hub_entry`, so a narrower profile (the cron
+  scheduler, a later phase) can be denied `.github/workflows/`, `.config/`,
+  `tools/`, and `build/` while every other consumer keeps the full default
+  allowlist.
+- Phases 4–7: planned. See the phase list in this milestone's design plan for
+  the `serve` mode with an in-process MCP-client-driven web UI and a cron
+  scheduler that only ever holds a PR and arms GitHub's own auto-merge at the
+  scheduled time (never merges directly, never fires early on unverified
+  assumptions about build behavior).
 
 Phase 1 delivered in the pull request that introduced this section; Phase 2
-in the pull request that introduced this line.
+and Phase 3 in the pull requests that introduced those lines.

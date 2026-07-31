@@ -493,7 +493,7 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
 
       const filePath = path.join(repoRoot, hubConfig.path);
       const relativePath = hubConfig.path;
-      const check = checkAllowedPath(repoRoot, relativePath);
+      const check = checkAllowedPath(repoRoot, relativePath, ctx.capabilities?.writablePathPrefixes);
       if (!check.ok) return precondition(check.reason ?? `'${relativePath}' is not writable.`);
 
       const sourceText = fs.readFileSync(filePath, 'utf8');

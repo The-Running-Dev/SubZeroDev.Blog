@@ -5,45 +5,54 @@ import { registerLocalGitTools } from './tools/localGit.js';
 import { registerRemoteTools } from './tools/remote.js';
 import { registerMonitorTools } from './tools/monitor.js';
 import { registerRepoInfoTools } from './tools/repoInfo.js';
-import { isReadOnly, isRemoteEnabled, isMonitorEnabled } from './tools/context.js';
+import { defaultCapabilities, type Capabilities, type ToolContext } from './tools/context.js';
 
 export interface CreateServerOptions {
   repoRoot?: string;
   /** Optional path to an append-only audit log for mutating tool calls. See exec/auditLog.ts. */
   auditLogPath?: string;
+  /** Overrides the env-derived registration profile. Omit for stdio/`/mcp` HTTP -- both keep using defaultCapabilities(), unchanged. A later phase's UI/scheduler session passes its own narrower profile explicitly. */
+  capabilities?: Capabilities;
 }
 
 const SERVER_VERSION = '0.1.0';
 
 /**
  * Builds a fully-registered McpServer. Transport-agnostic: callers (stdio in
- * src/index.ts, HTTP in a later PR) connect this to whichever transport they
- * need. Capability tiers gate tool *registration*: BLOG_MCP_READ_ONLY omits
- * every write tool from the list the client ever sees, rather than
- * registering them and refusing at call time.
+ * src/index.ts, HTTP in src/http.ts) connect this to whichever transport
+ * they need. Capabilities gate tool *registration*, not just behavior: an
+ * unregistered tool cannot be invoked at all, which is a stronger guarantee
+ * than a registered tool that merely refuses at call time.
  */
 export function createServer(options: CreateServerOptions = {}): McpServer {
   const repoRoot = resolveRepoRoot(options.repoRoot);
   const config = loadConfig(repoRoot);
+  const capabilities = options.capabilities ?? defaultCapabilities();
 
   const server = new McpServer({
     name: 'subzerodev-blog-mcp',
     version: SERVER_VERSION
   });
 
-  const ctx = { server, repoRoot, config, ...(options.auditLogPath ? { auditLogPath: options.auditLogPath } : {}) };
+  const ctx: ToolContext = {
+    server,
+    repoRoot,
+    config,
+    capabilities,
+    ...(options.auditLogPath ? { auditLogPath: options.auditLogPath } : {})
+  };
 
   registerAuthoringTools(ctx);
   registerRepoInfoTools(ctx);
-  if (!isReadOnly()) {
+  if (capabilities.write) {
     registerAuthoringWriteTools(ctx);
     registerLocalGitTools(ctx);
-    if (isRemoteEnabled()) {
+    if (capabilities.remote) {
       registerRemoteTools(ctx);
     }
   }
-  if (isMonitorEnabled()) {
-    // Read-only against GitHub, so available independent of BLOG_MCP_READ_ONLY.
+  if (capabilities.monitor) {
+    // Read-only against GitHub, so available independent of capabilities.write.
     registerMonitorTools(ctx);
   }
 
