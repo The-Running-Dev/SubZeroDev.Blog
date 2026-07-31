@@ -419,8 +419,9 @@ sets `isError: true`.
 
 ```bash
 npm install
+npm --prefix ui install   # one-time -- the admin UI (tools/blog-mcp/ui/) is a separate npm project
 npm run build   # tsc -> dist/
-npm test        # vitest
+npm test        # vitest; `pretest` builds ui/ first, since src/serve/static.ts now serves its output
 node test/smoke-stdio.mjs                  # exercises the built server over a real stdio subprocess
 node test/smoke-stdio.mjs --read-only      # same, asserting write and remote tools are unregistered
 node test/smoke-stdio.mjs --remote         # same, asserting Tier C tools are registered
