@@ -54,8 +54,13 @@ docker pull ghcr.io/the-running-dev/subzerodev-blog-mcp:latest
 ```
 
 Substitute `ghcr.io/the-running-dev/subzerodev-blog-mcp:latest` for
-`subzerodev-blog-mcp` in any `docker run`/`docker-compose.yml` reference
-below to run the published image instead of one built locally.
+`subzerodev-blog-mcp` in any `docker run` command below to run the
+published image instead of one built locally. This does **not** apply to
+`docker-compose.yml`: its services still declare a `build:` section, so
+`docker compose up -d --build` (the documented command) always rebuilds
+locally regardless of what `image:` is named -- see the comment on
+`docker-compose.yml`'s `image:` line for why that stays as-is rather than
+pointing at the registry.
 
 Run with only env vars and a named volume — no bind mount anywhere
 (stdio transport, the default):
