@@ -459,7 +459,7 @@ export default function ComposeView() {
               onChange={(event) => setRawMarkdown(event.target.value)}
             />
             <button type="button" onClick={() => void handleParseRawMarkdown()}>
-              Parse into fields
+              Parse
             </button>
           </div>
         )}
