@@ -17,6 +17,8 @@ export interface ServeServerOptions {
   mcpToken?: string;
   /** Origins allowed on /mcp. Defaults to this server's own origin. */
   mcpAllowedOrigins?: string[];
+  /** Caps concurrent /mcp sessions -- same meaning as src/http.ts's HttpServerOptions.maxSessions. */
+  mcpMaxSessions?: number;
   /** scrypt hash (see src/serve/auth.ts's hashPassword) required for /login. Unset means the UI and /api are entirely disabled -- see the startup warning. */
   uiPasswordHash?: string;
 }
@@ -113,13 +115,14 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
     );
   }
 
-  const mcpHandler = createMcpRequestHandler({
+  const { handler: mcpHandler, close: closeMcp } = createMcpRequestHandler({
     ...(options.repoRoot ? { repoRoot: options.repoRoot } : {}),
     ...(options.auditLogPath ? { auditLogPath: options.auditLogPath } : {}),
     ...(options.stateDir ? { stateDir: options.stateDir } : {}),
     host,
     port,
     ...(options.mcpToken ? { token: options.mcpToken } : {}),
+    ...(options.mcpMaxSessions !== undefined ? { maxSessions: options.mcpMaxSessions } : {}),
     allowedOrigins
   });
 
@@ -278,6 +281,11 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
       }
     })();
   });
+
+  // Same reasoning as src/http.ts's createHttpServer: stop the idle-session
+  // sweeper and drain any open /mcp sessions once this server actually
+  // closes, rather than leaking both.
+  httpServer.on('close', closeMcp);
 
   httpServer.on('error', (err: NodeJS.ErrnoException) => {
     process.stderr.write(`blog-mcp serve: failed to start on ${host}:${port}: ${err.message}\n`);

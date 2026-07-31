@@ -230,3 +230,46 @@ describe('HTTP transport Origin validation', () => {
     expect(status).toBe(403);
   });
 });
+
+describe('HTTP transport session admission control and shutdown', () => {
+  it('rejects a new session with 503 once maxSessions is reached, and admits one again after the existing session is deleted', async () => {
+    const server = createHttpServer({ repoRoot: REPO_ROOT, host: '127.0.0.1', port: 0, maxSessions: 1 });
+    await new Promise<void>((resolve) => server.once('listening', resolve));
+    const address = server.address() as AddressInfo;
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+
+    const first = await postRpc(baseUrl, initBody);
+    expect(first.status).toBe(200);
+    expect(first.sessionId).toBeTruthy();
+
+    const second = await postRpc(baseUrl, { ...initBody, id: 2 });
+    expect(second.status).toBe(503);
+
+    const del = await fetch(`${baseUrl}/mcp`, { method: 'DELETE', headers: { 'mcp-session-id': first.sessionId as string } });
+    expect(del.status).toBe(200);
+
+    const third = await postRpc(baseUrl, { ...initBody, id: 3 });
+    expect(third.status).toBe(200);
+    expect(third.sessionId).toBeTruthy();
+
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  });
+
+  it('closing the server tears down the idle-session sweeper and any open sessions without hanging', async () => {
+    const server = createHttpServer({ repoRoot: REPO_ROOT, host: '127.0.0.1', port: 0 });
+    await new Promise<void>((resolve) => server.once('listening', resolve));
+    const address = server.address() as AddressInfo;
+    const baseUrl = `http://127.0.0.1:${address.port}`;
+
+    const init = await postRpc(baseUrl, initBody);
+    expect(init.sessionId).toBeTruthy();
+
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('server.close() did not complete in time')), 2000);
+      server.close(() => {
+        clearTimeout(timer);
+        resolve();
+      });
+    });
+  });
+});

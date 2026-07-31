@@ -20,9 +20,15 @@ async function main(): Promise<void> {
   const mcpToken = process.env.BLOG_MCP_HTTP_TOKEN;
   const allowedOriginsEnv = process.env.BLOG_MCP_HTTP_ALLOWED_ORIGINS;
   const uiPasswordHash = process.env.BLOG_MCP_UI_PASSWORD_HASH;
+  const maxSessionsEnv = process.env.BLOG_MCP_HTTP_MAX_SESSIONS;
+  const mcpMaxSessions = maxSessionsEnv ? Number(maxSessionsEnv) : undefined;
 
   if (portArg && (!Number.isInteger(port) || port === undefined || port <= 0)) {
     process.stderr.write(`blog-mcp serve: invalid port '${portArg}'\n`);
+    process.exit(1);
+  }
+  if (maxSessionsEnv && (!Number.isInteger(mcpMaxSessions) || mcpMaxSessions === undefined || mcpMaxSessions <= 0)) {
+    process.stderr.write(`blog-mcp serve: invalid BLOG_MCP_HTTP_MAX_SESSIONS '${maxSessionsEnv}'\n`);
     process.exit(1);
   }
 
@@ -44,6 +50,7 @@ async function main(): Promise<void> {
     ...(port !== undefined ? { port } : {}),
     ...(mcpToken ? { mcpToken } : {}),
     ...(allowedOriginsEnv ? { mcpAllowedOrigins: allowedOriginsEnv.split(',').map((s) => s.trim()) } : {}),
+    ...(mcpMaxSessions !== undefined ? { mcpMaxSessions } : {}),
     ...(uiPasswordHash ? { uiPasswordHash } : {})
   });
 

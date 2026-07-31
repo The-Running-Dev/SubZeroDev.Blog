@@ -14,6 +14,8 @@ export interface HttpServerOptions {
   token?: string;
   /** Origins allowed to talk to this server (browser-based clients send Origin; CLI/server clients typically don't). Defaults to the server's own http://<host>:<port>. */
   allowedOrigins?: string[];
+  /** Caps concurrent MCP sessions (each holds its own McpServer instance). A POST that would create a session beyond this limit is rejected with 503 rather than admitted -- otherwise a reachable client (more likely if BLOG_MCP_HTTP_TOKEN is unset) could keep initializing new sessions and hold them all open until the 30-minute idle reap. */
+  maxSessions?: number;
 }
 
 const DEFAULT_HOST = '127.0.0.1';
@@ -53,6 +55,7 @@ interface McpSession {
 /** No request (POST reusing the session, or GET) for this long reaps the session -- matches src/serve/auth.ts's UI session TTL for consistency, not a spec requirement. Guards against a crashed/disappeared client that never sends DELETE leaking its McpServer forever. */
 const SESSION_IDLE_TTL_MS = 30 * 60 * 1000;
 const SESSION_SWEEP_INTERVAL_MS = 5 * 60 * 1000;
+const DEFAULT_MAX_SESSIONS = 100;
 
 function extractSessionId(req: IncomingMessage): string | undefined {
   const header = req.headers['mcp-session-id'];
@@ -79,11 +82,18 @@ function extractSessionId(req: IncomingMessage): string | undefined {
  * separate feature this deployment model (a handful of long-lived clients,
  * not thousands of flaky mobile ones) doesn't need yet.
  */
-export function createMcpRequestHandler(options: HttpServerOptions = {}): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export interface McpRequestHandler {
+  handler: (req: IncomingMessage, res: ServerResponse) => Promise<void>;
+  /** Stops the idle-session sweeper and closes every live session's transport + McpServer. Call when the owning HTTP server closes, so repeated handler construction (tests, hot reload) doesn't accumulate background timers and abandoned sessions. */
+  close: () => void;
+}
+
+export function createMcpRequestHandler(options: HttpServerOptions = {}): McpRequestHandler {
   const host = options.host ?? DEFAULT_HOST;
   const port = options.port ?? DEFAULT_PORT;
   const token = options.token;
   const allowedOrigins = options.allowedOrigins ?? [`http://${host}:${port}`, `http://localhost:${port}`];
+  const maxSessions = options.maxSessions ?? DEFAULT_MAX_SESSIONS;
   const serverOptions: CreateServerOptions = {
     ...(options.repoRoot ? { repoRoot: options.repoRoot } : {}),
     ...(options.auditLogPath ? { auditLogPath: options.auditLogPath } : {}),
@@ -127,6 +137,11 @@ export function createMcpRequestHandler(options: HttpServerOptions = {}): (req: 
     transport.onclose = () => {
       const sessionId = transport.sessionId;
       if (sessionId) sessions.delete(sessionId);
+      // server.close() just delegates to transport.close() (see Protocol.close
+      // in the SDK), which is idempotent (guarded by _closed) -- so this is
+      // always safe here, whether onclose fired from a DELETE, the idle
+      // sweep, or cleanup() below, and never double-frees anything.
+      void server.close();
     };
     // Registered before awaiting anything below: an early client disconnect
     // can fire 'close' while connect()/handleRequest() are still in flight.
@@ -227,10 +242,18 @@ export function createMcpRequestHandler(options: HttpServerOptions = {}): (req: 
       return;
     }
 
+    // A reachable, unauthenticated client (or just a misbehaving one) could
+    // otherwise keep initializing sessions forever, each holding its own
+    // McpServer, until the 30-minute idle reap -- cap admission instead.
+    if (sessions.size >= maxSessions) {
+      rpcError(res, 503, -32000, 'Too many concurrent sessions. Try again later.');
+      return;
+    }
+
     await handleNewSession(req, res);
   }
 
-  return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
+  const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
     try {
       await handleIncoming(req, res);
     } catch (err) {
@@ -240,17 +263,31 @@ export function createMcpRequestHandler(options: HttpServerOptions = {}): (req: 
       }
     }
   };
+
+  const close = (): void => {
+    clearInterval(sweep);
+    for (const session of sessions.values()) {
+      void session.transport.close();
+    }
+  };
+
+  return { handler, close };
 }
 
 /** Standalone `/mcp`-only server: `createMcpRequestHandler` is the entire handler. */
 export function createHttpServer(options: HttpServerOptions = {}): http.Server {
   const host = options.host ?? DEFAULT_HOST;
   const port = options.port ?? DEFAULT_PORT;
-  const handler = createMcpRequestHandler(options);
+  const { handler, close } = createMcpRequestHandler(options);
 
   const httpServer = http.createServer((req: IncomingMessage, res: ServerResponse) => {
     void handler(req, res);
   });
+
+  // Fires once, after the server stops accepting connections and all
+  // existing ones have ended -- the right moment to stop the idle-session
+  // sweeper and drain any sessions still open, rather than leaking both.
+  httpServer.on('close', close);
 
   httpServer.on('error', (err: NodeJS.ErrnoException) => {
     process.stderr.write(`blog-mcp http: failed to start on ${host}:${port}: ${err.message}\n`);

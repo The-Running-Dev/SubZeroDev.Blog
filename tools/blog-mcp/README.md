@@ -165,6 +165,7 @@ runs unauthenticated — acceptable only while bound to loopback.
 | `BLOG_MCP_HTTP_PORT` | `8765` | Bind port. |
 | `BLOG_MCP_HTTP_TOKEN` | unset | Bearer token required on every `/mcp` request (constant-time compared). |
 | `BLOG_MCP_HTTP_ALLOWED_ORIGINS` | `http://<host>:<port>`, `http://localhost:<port>` | Comma-separated `Origin` allowlist. A request with no `Origin` header (any non-browser client) is always allowed; only a *present, disallowed* `Origin` is rejected — this is what stops a malicious page in a browser from talking to the server via DNS rebinding or a simple cross-origin fetch. |
+| `BLOG_MCP_HTTP_MAX_SESSIONS` | `100` | Caps concurrent `/mcp` sessions. A `POST` that would create a session beyond this limit gets `503` instead of being admitted — otherwise a reachable client (more likely with no `BLOG_MCP_HTTP_TOKEN` set) could keep initializing sessions, each holding its own `McpServer`, until the 30-minute idle reap. |
 
 `GET /healthz` returns `{"ok":true}` without auth, for container health checks.
 
