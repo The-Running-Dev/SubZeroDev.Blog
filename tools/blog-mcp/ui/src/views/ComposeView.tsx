@@ -43,9 +43,12 @@ export default function ComposeView() {
   const [rawMarkdown, setRawMarkdown] = useState('');
 
   const [exists, setExists] = useState(false);
-  const [pushedSha, setPushedSha] = useState<string | null>(null);
   const [pr, setPr] = useState<number | null>(null);
   const [log, setLog] = useState<LogLine[]>([]);
+  // On by default -- most publishes should just merge once checks pass,
+  // without a separate manual step. Unchecking it leaves the PR open for a
+  // manual review/merge instead.
+  const [autoMerge, setAutoMerge] = useState(true);
 
   const hasTagVocab = existingTags.length > 0;
   // Guards against re-running the prefill effect a second time if this
@@ -214,7 +217,6 @@ export default function ComposeView() {
       logLine('Pushing...');
       const pushResult = await post<{ localSha: string }>('/api/push', {});
       const sha = pushResult.data?.localSha ?? null;
-      setPushedSha(sha);
 
       logLine('Opening pull request...');
       const prResult = await post<{ pr: number; url: string }>('/api/pr', {
@@ -222,28 +224,21 @@ export default function ComposeView() {
         body: 'Published via blog-mcp’s UI.',
         head: newBranch
       });
-      setPr(prResult.data?.pr ?? null);
-      logLine(`Opened PR #${prResult.data?.pr}: ${prResult.data?.url}`);
-    } catch (err) {
-      logLine(err instanceof Error ? err.message : String(err), true);
-    }
-  }
+      const newPr = prResult.data?.pr ?? null;
+      setPr(newPr);
+      logLine(`Opened PR #${newPr}: ${prResult.data?.url}`);
 
-  async function handleArm() {
-    if (!pr) return;
-    if (!pushedSha) {
-      logLine('No known-good pushed SHA to validate against -- publish first.', true);
-      return;
-    }
-    try {
-      // Deliberately the SHA this session itself just pushed, not whatever
-      // /api/pr/:number currently reports -- fetching the "expected" value
-      // from the same place the check validates against would make the
-      // cross-check tautological and defeat the reason blog_arm_auto_merge
-      // takes an explicit headSha at all: to catch the branch having moved
-      // (someone else pushed) between publish and arming.
-      const armResult = await post<Record<string, never>>(`/api/pr/${pr}/merge`, { headSha: pushedSha });
-      logLine(`Auto-merge armed: ${armResult.summary ?? ''}`);
+      if (autoMerge && newPr && sha) {
+        logLine('Arming auto-merge...');
+        // Deliberately the SHA this session itself just pushed, not whatever
+        // /api/pr/:number currently reports -- fetching the "expected" value
+        // from the same place the check validates against would make the
+        // cross-check tautological and defeat the reason blog_arm_auto_merge
+        // takes an explicit headSha at all: to catch the branch having moved
+        // (someone else pushed) between the push above and arming here.
+        const armResult = await post<Record<string, never>>(`/api/pr/${newPr}/merge`, { headSha: sha });
+        logLine(`Auto-merge armed: ${armResult.summary ?? ''}`);
+      }
     } catch (err) {
       logLine(err instanceof Error ? err.message : String(err), true);
     }
@@ -270,9 +265,9 @@ export default function ComposeView() {
         </button>
       </div>
       <p className="muted">
-        Create a new post or load an existing one by slug, then publish: branch → write → stage → commit → push → open PR. Opening
-        the PR does not merge anything by itself -- click &quot;Arm auto-merge&quot; afterward to tell GitHub to merge that PR
-        automatically once its required checks pass. Nothing merges before then.
+        Create a new post or load an existing one by slug, then publish: branch → write → stage → commit → push → open PR. With
+        &quot;Auto-Merge&quot; checked, that PR is also armed to merge automatically once its required checks pass -- uncheck it to
+        leave the PR open for a manual review/merge instead. Nothing merges before the PR is actually opened.
       </p>
       <div className="compose-form">
         <datalist id="existing-slugs">
@@ -384,15 +379,13 @@ export default function ComposeView() {
           <button type="button" className="primary" onClick={() => void handlePublish()}>
             Create/update &amp; open PR
           </button>
-          <button
-            type="button"
-            className="primary"
-            disabled={!pr}
-            onClick={() => void handleArm()}
-            title="Tells GitHub to merge this PR automatically once its required checks pass -- does not merge it immediately"
+          <label
+            className="tag-chip"
+            title="When checked, the opened PR is told to merge automatically once its required checks pass -- it still doesn't merge immediately"
           >
-            Arm auto-merge
-          </button>
+            <input type="checkbox" checked={autoMerge} onChange={(event) => setAutoMerge(event.target.checked)} />
+            Auto-Merge
+          </label>
           {pr && (
             <button type="button" onClick={() => navigate(`/pr?pr=${pr}`)}>
               View PR status
