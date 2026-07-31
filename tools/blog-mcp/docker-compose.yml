@@ -1,13 +1,28 @@
-# Runs blog-mcp in `serve` mode: /mcp, /healthz, the web UI, and (when
-# enabled) the cron scheduler, all in one long-running process -- the mode
-# this tool was built for an always-on deployment like docker-compose.
+# Two forms of the same image, sharing config via a plain YAML anchor
+# (`x-blog-mcp-common` below) rather than Compose's own `extends:` -- one
+# service per transport, not one service with a command override, so each
+# has its own explicit block to read and either can be brought up on its
+# own.
 #
-# `serve` is a strict superset of plain `http` mode: /mcp and /healthz work
-# identically whether or not BLOG_MCP_UI_PASSWORD_HASH is set, so this one
-# service covers both "I just want /mcp reachable over HTTP" and "I want the
-# full web UI" -- see tools/blog-mcp/README.md's "Serve mode (web UI)"
-# section. To run pure `http` mode instead, override `command: http` (the UI
-# env vars below are simply ignored in that case).
+# `serve` (/mcp, /healthz, the web UI, and the cron scheduler when enabled)
+# is the default -- `docker compose up -d` starts only this one, unchanged
+# from before this file had two services. `serve` is already a strict
+# superset of plain `http` mode: /mcp and /healthz work identically whether
+# or not BLOG_MCP_UI_PASSWORD_HASH is set -- see tools/blog-mcp/README.md's
+# "Serve mode (web UI)" section.
+#
+# `http` (bare /mcp + /healthz, no UI, no scheduler) is opt-in via the
+# `http` Compose profile: `docker compose --profile http up -d http`. Useful
+# when you want a locked-down credential (e.g. BLOG_MCP_HTTP_READONLY_TOKEN)
+# on a process that can never expose the write-capable web UI even if
+# BLOG_MCP_UI_PASSWORD_HASH later gets set by mistake.
+#
+# Do not run both at once against the same volume: the repo mutex
+# (src/exec/repoLock.ts) only serializes writes within one process, not
+# across two, so two containers sharing one working tree would race on git
+# operations. Give the second one its own BLOG_MCP_WORKSPACE-backed volume
+# (and its own published port -- both default to the same one) if you
+# genuinely need both transports live simultaneously.
 #
 # stdio mode has no service here on purpose: it is spawned per MCP-client
 # session (`docker run -i --rm ...`), not a standing background process --
@@ -16,25 +31,33 @@
 # Copy .env.example to .env (git-ignored) and fill in real values before
 # running `docker compose up -d`.
 
+x-blog-mcp-common: &blog-mcp-common
+  build:
+    context: .
+  image: subzerodev-blog-mcp
+  restart: unless-stopped
+  env_file:
+    - .env
+  environment:
+    # Required for the published port below to reach the container at all
+    # -- Docker's port publishing cannot forward into a container's
+    # loopback interface. Fixed here rather than left to .env so a missing
+    # or wrong value there can't silently break connectivity.
+    BLOG_MCP_HTTP_HOST: 0.0.0.0
+  ports:
+    - "${BLOG_MCP_HTTP_PORT:-8765}:${BLOG_MCP_HTTP_PORT:-8765}"
+  volumes:
+    - blog-workspace:/workspace
+
 services:
-  blog-mcp:
-    build:
-      context: .
-    image: subzerodev-blog-mcp
+  serve:
+    <<: *blog-mcp-common
     command: serve
-    restart: unless-stopped
-    env_file:
-      - .env
-    environment:
-      # Required for the published port below to reach the container at all
-      # -- Docker's port publishing cannot forward into a container's
-      # loopback interface. Fixed here rather than left to .env so a missing
-      # or wrong value there can't silently break connectivity.
-      BLOG_MCP_HTTP_HOST: 0.0.0.0
-    ports:
-      - "${BLOG_MCP_HTTP_PORT:-8765}:${BLOG_MCP_HTTP_PORT:-8765}"
-    volumes:
-      - blog-workspace:/workspace
+
+  http:
+    <<: *blog-mcp-common
+    command: http
+    profiles: ["http"]
 
 volumes:
   # Persists the clone (and scheduler/audit state under its state/

@@ -52,7 +52,7 @@
       null,
       rows.map((row) => el('tr', null, row.map((cell) => el('td', null, [String(cell)]))))
     );
-    return el('table', null, [thead, tbody]);
+    return el('div', { className: 'table-wrap' }, [el('table', null, [thead, tbody])]);
   }
 
   // --- login page -----------------------------------------------------------
@@ -133,17 +133,19 @@
     const h = data.data || {};
     content.replaceChildren(
       el('h2', null, ['Repo health']),
-      el('p', null, [`Branch: ${h.branch} (base: ${h.baseBranch})`]),
-      el('p', null, [`Dirty: ${h.dirty}`]),
-      el('p', null, [`Parked off base: ${h.parked}`]),
-      el('p', null, [`Ahead/behind vs base: ${h.ahead}/${h.behind}`])
+      el('div', { className: 'panel' }, [
+        el('p', null, [`Branch: ${h.branch} (base: ${h.baseBranch})`]),
+        el('p', null, [`Dirty: ${h.dirty}`]),
+        el('p', null, [`Parked off base: ${h.parked}`]),
+        el('p', null, [`Ahead/behind vs base: ${h.ahead}/${h.behind}`])
+      ])
     );
   }
 
   function viewPr() {
     const input = el('input', { type: 'number', placeholder: 'PR number' }, []);
-    const button = el('button', { type: 'button' }, ['Look up']);
-    const result = el('div', null, []);
+    const button = el('button', { type: 'button', className: 'primary' }, ['Look up']);
+    const result = el('div', { className: 'panel' }, []);
     button.addEventListener('click', async () => {
       result.replaceChildren();
       const pr = input.value;
@@ -161,43 +163,105 @@
         result.replaceChildren(el('p', { className: 'error' }, [err.message]));
       }
     });
-    content.replaceChildren(el('h2', null, ['PR status']), el('div', null, [input, button]), result);
+    content.replaceChildren(
+      el('h2', null, ['PR status']),
+      el('div', { className: 'compose-actions' }, [input, button]),
+      result
+    );
   }
 
-  function viewCompose() {
+  async function viewCompose() {
     const state = { exists: false, branch: null, path: null, pr: null };
 
-    const slugInput = el('input', { type: 'text', placeholder: 'slug (e.g. my-post)' }, []);
+    // Best-effort: a failure here just means no autocomplete/checkboxes,
+    // never blocks the form from rendering.
+    let existingSlugs = [];
+    try {
+      const postsData = await api('/api/posts');
+      existingSlugs = ((postsData.data && postsData.data.posts) || []).map((p) => p.slug);
+    } catch {
+      /* no suggestions available */
+    }
+    let existingTags = [];
+    try {
+      const tagsData = await api('/api/tags');
+      existingTags = (tagsData.data && tagsData.data.tags) || [];
+    } catch {
+      /* no known tag vocabulary to offer */
+    }
+
+    const slugList = el(
+      'datalist',
+      { id: 'existing-slugs' },
+      existingSlugs.map((s) => el('option', { value: s }, []))
+    );
+    const slugInput = el('input', { type: 'text', placeholder: 'slug (e.g. my-post)', list: 'existing-slugs' }, []);
     const titleInput = el('input', { type: 'text', placeholder: 'Title' }, []);
     const descInput = el('input', { type: 'text', placeholder: 'Description' }, []);
-    const tagsInput = el('input', { type: 'text', placeholder: 'tags (comma-separated)' }, []);
     const bodyInput = el('textarea', { rows: '12', placeholder: 'Body (markdown, include <!-- truncate --> when updating)' }, []);
     const loadButton = el('button', { type: 'button' }, ['Load existing']);
-    const publishButton = el('button', { type: 'button' }, ['Create/update & open PR']);
-    const armButton = el('button', { type: 'button', disabled: 'disabled' }, ['Arm auto-merge']);
+    const publishButton = el('button', { type: 'button', className: 'primary' }, ['Create/update & open PR']);
+    const armButton = el('button', { type: 'button', className: 'primary', disabled: 'disabled' }, ['Arm auto-merge']);
     const statusLog = el('ul', { className: 'compose-log' }, []);
+
+    // One checkbox per tag declared in docs/blog/tags.yml -- picking from a
+    // known vocabulary instead of free-typing avoids the "Unknown tag key"
+    // validation error a typo'd tag name would otherwise only surface at
+    // publish time. But blog_create_post requires at least one tag, and
+    // /api/tags is fetched best-effort above -- if it failed, or the
+    // vocabulary is genuinely empty, checkboxes alone would leave no way to
+    // enter a tag at all, silently turning Publish into an always-rejects
+    // button. Fall back to the old free-text field in that case instead.
+    const tagCheckboxes = existingTags.map((tag) => {
+      const checkbox = el('input', { type: 'checkbox', id: `tag-${tag.key}`, value: tag.key }, []);
+      const chip = el('label', { className: 'tag-chip', for: `tag-${tag.key}` }, [checkbox, tag.label || tag.key]);
+      return { key: tag.key, checkbox, chip };
+    });
+    const tagFallbackInput = el('input', { type: 'text', placeholder: 'tags (comma-separated)' }, []);
+    const tagsField = tagCheckboxes.length ? el('div', { className: 'tag-checklist' }, tagCheckboxes.map((t) => t.chip)) : tagFallbackInput;
+    if (!tagCheckboxes.length) {
+      logNoTagVocabulary();
+    }
 
     function logLine(text, isError) {
       statusLog.appendChild(el('li', isError ? { className: 'error' } : null, [text]));
     }
 
+    function logNoTagVocabulary() {
+      statusLog.appendChild(
+        el('li', { className: 'error' }, [
+          'Could not load a tag vocabulary from /api/tags -- falling back to a free-text tags field. A typo’d tag name will only be caught at publish time.'
+        ])
+      );
+    }
+
     function tagList() {
-      return tagsInput.value
+      if (tagCheckboxes.length) {
+        return tagCheckboxes.filter((t) => t.checkbox.checked).map((t) => t.key);
+      }
+      return tagFallbackInput.value
         .split(',')
         .map((t) => t.trim())
         .filter(Boolean);
     }
 
-    loadButton.addEventListener('click', async () => {
+    function setCheckedTags(tags) {
+      if (tagCheckboxes.length) {
+        const wanted = new Set(tags || []);
+        for (const t of tagCheckboxes) t.checkbox.checked = wanted.has(t.key);
+      } else {
+        tagFallbackInput.value = (tags || []).join(', ');
+      }
+    }
+
+    async function loadExisting(slug) {
       statusLog.replaceChildren();
-      const slug = slugInput.value.trim();
-      if (!slug) return;
       try {
         const data = await api(`/api/posts/${encodeURIComponent(slug)}`);
         const fm = data.data.frontMatter || {};
         titleInput.value = fm.title || '';
         descInput.value = fm.description || '';
-        tagsInput.value = (fm.tags || []).join(', ');
+        setCheckedTags(fm.tags);
         bodyInput.value = data.data.body || '';
         state.exists = true;
         state.path = data.data.path;
@@ -206,6 +270,21 @@
         state.exists = false;
         logLine(`No existing post found for '${slug}' -- Publish will create a new one. (${err.message})`);
       }
+      if (!tagCheckboxes.length) logNoTagVocabulary();
+    }
+
+    loadButton.addEventListener('click', () => {
+      const slug = slugInput.value.trim();
+      if (slug) loadExisting(slug);
+    });
+
+    // Fires once the user picks a suggestion from the datalist dropdown (or
+    // types an exact existing slug and blurs/tabs away) -- picking from the
+    // list is then enough on its own, "Load existing" stays around for
+    // typing a slug from memory without opening the dropdown.
+    slugInput.addEventListener('change', () => {
+      const slug = slugInput.value.trim();
+      if (slug && existingSlugs.includes(slug)) loadExisting(slug);
     });
 
     publishButton.addEventListener('click', async () => {
@@ -293,7 +372,18 @@
       el('p', { className: 'muted' }, [
         'Create a new post or load an existing one by slug, then publish: branch → write → stage → commit → push → open PR. Arming auto-merge is a separate, explicit step.'
       ]),
-      el('div', { className: 'compose-form' }, [slugInput, loadButton, titleInput, descInput, tagsInput, bodyInput, publishButton, armButton]),
+      el('div', { className: 'compose-form' }, [
+        slugList,
+        el('div', { className: 'field' }, [
+          el('span', { className: 'field-label' }, ['Slug']),
+          el('div', { className: 'slug-row' }, [slugInput, loadButton])
+        ]),
+        el('div', { className: 'field' }, [el('span', { className: 'field-label' }, ['Title']), titleInput]),
+        el('div', { className: 'field' }, [el('span', { className: 'field-label' }, ['Description']), descInput]),
+        el('div', { className: 'field' }, [el('span', { className: 'field-label' }, ['Tags']), tagsField]),
+        el('div', { className: 'field' }, [el('span', { className: 'field-label' }, ['Body']), bodyInput]),
+        el('div', { className: 'compose-actions' }, [publishButton, armButton])
+      ]),
       statusLog
     );
   }

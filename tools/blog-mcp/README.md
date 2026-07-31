@@ -65,14 +65,25 @@ BLOG_MCP_GIT_USER_NAME=blog-bot BLOG_MCP_GIT_USER_EMAIL=bot@subzerodev.com \
 node dist/index.js
 ```
 
-Or, for an always-on deployment (`serve` mode specifically -- see
-[Serve mode (web UI)](#serve-mode-web-ui)), `docker-compose.yml` is provided:
+Or, for an always-on deployment, `docker-compose.yml` is provided as two
+service *forms* of the same image sharing config via a plain YAML anchor
+(`x-blog-mcp-common`), not Compose's own `extends:`:
 
 ```bash
 cd tools/blog-mcp
 cp .env.example .env   # fill in real values; .env is git-ignored
-docker compose up -d --build
+docker compose up -d --build          # `serve` (default): /mcp + the web UI
+docker compose --profile http up -d --build http   # `http` only: bare /mcp, no UI
 ```
+
+`serve` (see [Serve mode (web UI)](#serve-mode-web-ui)) is the default --
+plain `docker compose up -d` starts only it, since it's already a strict
+superset of `http` mode. `http` is opt-in via the `http` Compose profile,
+naming the service explicitly so `serve` doesn't also start alongside it.
+Don't bring both up against the same volume at once: the repo mutex
+(`src/exec/repoLock.ts`) only serializes writes within one process, not
+across two, so two containers sharing one working tree would race on git
+operations.
 
 `BLOG_MCP_HTTP_HOST` is fixed to `0.0.0.0` in `docker-compose.yml` itself
 (required for the published port to reach the container at all -- see the
