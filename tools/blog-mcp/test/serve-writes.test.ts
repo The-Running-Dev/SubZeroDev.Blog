@@ -54,7 +54,10 @@ describe('serve mode write routes', () => {
     await gitOrThrow(['config', 'user.name', 'Test'], { repoRoot: seed });
     fs.writeFileSync(path.join(seed, 'README.md'), '# seed\n');
     fs.mkdirSync(path.join(seed, '.config'));
-    fs.writeFileSync(path.join(seed, '.config', 'blog.json'), JSON.stringify({ base_branch: 'main' }));
+    // clone_url is a GitHub-shaped URL so blog_arm_auto_merge's review-thread
+    // check can resolve owner/repo -- the real git remote below is a local
+    // bare path (needed for real push testing), which cannot resolve to one.
+    fs.writeFileSync(path.join(seed, '.config', 'blog.json'), JSON.stringify({ base_branch: 'main', clone_url: 'https://github.com/test-owner/test-repo.git' }));
     fs.mkdirSync(path.join(seed, 'docs', 'blog'), { recursive: true });
     fs.writeFileSync(
       path.join(seed, 'docs', 'blog', 'tags.yml'),
@@ -197,11 +200,13 @@ describe('serve mode write routes', () => {
     expect(createCall?.join(' ')).not.toContain('Opened by the Phase 5 write-path test.');
   });
 
-  it('POST /api/pr/:number/merge arms auto-merge once the head SHA matches', async () => {
+  it('POST /api/pr/:number/merge arms auto-merge once the head SHA matches and there are no unresolved review threads', async () => {
     const localSha = await gitHeadSha({ repoRoot: clone });
     process.env.GH_SHIM_HEAD_SHA = localSha;
+    process.env.GH_SHIM_THREADS_JSON = '[]';
 
     const { status, envelope } = await post<{ pr: number }>('/api/pr/99/merge', { headSha: localSha });
+    delete process.env.GH_SHIM_THREADS_JSON;
     expect(status).toBe(200);
     expect(envelope.ok).toBe(true);
     expect(envelope.data?.pr).toBe(99);
@@ -221,6 +226,15 @@ describe('serve mode write routes', () => {
     expect(status).toBe(200);
     expect(envelope.ok).toBe(false);
     expect(envelope.kind).toBe('precondition');
+  });
+
+  it('POST /api/posts/:slug with a malformed percent-encoded slug is a 400, not a crash', async () => {
+    const res = await fetch(`${baseUrl}/api/posts/abc%zz`, {
+      method: 'POST',
+      headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1', 'content-type': 'application/json' },
+      body: JSON.stringify({ body: 'irrelevant' })
+    });
+    expect(res.status).toBe(400);
   });
 
   it('POST /api/posts/:slug updates the post', async () => {

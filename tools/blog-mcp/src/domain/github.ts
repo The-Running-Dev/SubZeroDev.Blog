@@ -18,16 +18,29 @@ export function parseOwnerRepo(url: string): OwnerRepo {
   throw new PreconditionError(`Could not parse an owner/repo pair out of remote URL '${url}'.`);
 }
 
+function tryParseOwnerRepo(url: string): OwnerRepo | undefined {
+  try {
+    return parseOwnerRepo(url);
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Resolves owner/repo, cross-checking the configured clone_url against the
  * actual `git remote get-url origin` when both are available -- a stale
  * .config/blog.json (this repo was renamed, or the config was copied into a
  * fork) is exactly the kind of drift that should surface as an error rather
  * than silently target the wrong repository.
+ *
+ * "Available" means parseable as a GitHub URL, not merely present: a remote
+ * that isn't GitHub-shaped at all (a local bare path, as in this package's
+ * own scratch-remote tests) is treated the same as an absent one, falling
+ * through to whichever source *does* parse, rather than throwing.
  */
 export function resolveOwnerRepo(configuredCloneUrl: string, actualRemoteUrl: string | undefined): OwnerRepo {
-  const configured = configuredCloneUrl ? parseOwnerRepo(configuredCloneUrl) : undefined;
-  const actual = actualRemoteUrl ? parseOwnerRepo(actualRemoteUrl) : undefined;
+  const configured = configuredCloneUrl ? tryParseOwnerRepo(configuredCloneUrl) : undefined;
+  const actual = actualRemoteUrl ? tryParseOwnerRepo(actualRemoteUrl) : undefined;
 
   if (configured && actual) {
     if (configured.owner !== actual.owner || configured.repo !== actual.repo) {

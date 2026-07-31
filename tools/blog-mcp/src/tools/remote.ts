@@ -205,6 +205,28 @@ export function registerRemoteTools(ctx: ToolContext): void {
         );
       }
 
+      // GitHub's branch protection (required_conversation_resolution) is the
+      // actual gate that stops an unsafe merge -- arming auto-merge on a PR
+      // with unresolved threads cannot itself complete a merge early. But
+      // arming it anyway leaves the caller (a human, the UI, or the
+      // scheduler) waiting indefinitely with no explanation of why nothing
+      // happens; refusing up front turns a silent stall into an immediate,
+      // actionable message.
+      const remote = await remoteUrl({ repoRoot }).catch(() => undefined);
+      const { owner, repo } = resolveOwnerRepo(config.cloneUrl, remote);
+      const { nodes, truncated } = await fetchAllReviewThreads(repoRoot, owner, repo, args.pr);
+      if (truncated) {
+        throw new InfrastructureError(
+          `Could not fully enumerate review threads for PR #${args.pr}: pagination did not complete. Refusing to arm auto-merge on a possibly-incomplete unresolved-thread check.`
+        );
+      }
+      const unresolvedCount = nodes.filter((node) => !node.isResolved).length;
+      if (unresolvedCount > 0) {
+        return precondition(
+          `PR #${args.pr} has ${unresolvedCount} unresolved review thread(s); refusing to arm auto-merge. Resolve them (see blog_pr_comments) and retry.`
+        );
+      }
+
       await ghOrThrow(['pr', 'merge', String(args.pr), '--auto', '--squash', '--match-head-commit', headSha], { repoRoot });
       return ok(`Armed auto-merge on PR #${args.pr} for ${headSha.slice(0, 12)}`, { pr: args.pr, headSha });
     })

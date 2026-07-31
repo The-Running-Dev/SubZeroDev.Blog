@@ -143,6 +143,24 @@ describe('serve mode', () => {
       expect(res.headers.get('content-security-policy')).toContain("default-src 'self'");
     });
 
+    it('GET / slides the session cookie rather than only setting it once at login', async () => {
+      const res = await fetch(`${baseUrl}/`, { headers: { cookie } });
+      expect(res.status).toBe(200);
+      const refreshed = res.headers.get('set-cookie');
+      expect(refreshed).not.toBeNull();
+      expect(sessionCookieFrom(res)).toBe(cookie);
+      expect(refreshed).toMatch(/Max-Age=\d+/);
+    });
+
+    it('/api slides the session cookie on every authenticated request, not just at login', async () => {
+      const res = await fetch(`${baseUrl}/api/posts`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      expect(res.status).toBe(200);
+      const refreshed = res.headers.get('set-cookie');
+      expect(refreshed).not.toBeNull();
+      expect(sessionCookieFrom(res)).toBe(cookie);
+      expect(refreshed).toMatch(/Max-Age=\d+/);
+    });
+
     it('/api allows a request with no Origin header at all -- verified against a real browser, a same-origin request does not reliably send one', async () => {
       const res = await fetch(`${baseUrl}/api/posts`, { headers: { cookie, 'x-blog-mcp-csrf': '1' } });
       expect(res.status).toBe(200);
@@ -171,6 +189,18 @@ describe('serve mode', () => {
       const body = (await res.json()) as { ok: boolean; data: { posts: Array<{ slug: string }> } };
       expect(body.ok).toBe(true);
       expect(body.data.posts.length).toBeGreaterThan(0);
+    });
+
+    it('GET /api/posts/:slug with a malformed percent-encoded slug is a 400, not a crash', async () => {
+      const res = await fetch(`${baseUrl}/api/posts/abc%zz`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      expect(res.status).toBe(400);
+    });
+
+    it('a malformed percent-encoded Cookie header is treated as no session, not a crash', async () => {
+      const res = await fetch(`${baseUrl}/api/posts`, {
+        headers: { cookie: 'blog_mcp_session=abc%zz', origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' }
+      });
+      expect(res.status).toBe(401);
     });
 
     it('GET /api/posts/:slug returns one specific post', async () => {

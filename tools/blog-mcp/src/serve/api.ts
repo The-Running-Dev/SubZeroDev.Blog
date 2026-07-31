@@ -48,6 +48,15 @@ function asRecord(body: unknown): Record<string, unknown> {
   return typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {};
 }
 
+/** A malformed percent-encoding (e.g. a lone '%') makes decodeURIComponent throw URIError -- caught here so a bad URL is a 400, not an uncaught exception that falls through to the top-level 500 handler. */
+function safeDecodeSlug(raw: string): string | undefined {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return undefined;
+  }
+}
+
 /** Returns undefined for any path/method this route table doesn't recognize -- the caller falls through to a 404. */
 export async function handleApiRequest(
   pathname: string,
@@ -65,7 +74,9 @@ export async function handleApiRequest(
 
     const getPostMatch = /^\/api\/posts\/([^/]+)$/.exec(pathname);
     if (getPostMatch) {
-      return callTool(serverOptions, 'blog_get_post', { slug: decodeURIComponent(getPostMatch[1] as string) });
+      const slug = safeDecodeSlug(getPostMatch[1] as string);
+      if (slug === undefined) return { status: 400, body: { error: 'Malformed slug in URL path.' } };
+      return callTool(serverOptions, 'blog_get_post', { slug });
     }
 
     if (pathname === '/api/repo/status') {
@@ -114,7 +125,9 @@ export async function handleApiRequest(
 
     const updatePostMatch = /^\/api\/posts\/([^/]+)$/.exec(pathname);
     if (updatePostMatch) {
-      return callTool(serverOptions, 'blog_update_post', { ...args, slug: decodeURIComponent(updatePostMatch[1] as string) });
+      const slug = safeDecodeSlug(updatePostMatch[1] as string);
+      if (slug === undefined) return { status: 400, body: { error: 'Malformed slug in URL path.' } };
+      return callTool(serverOptions, 'blog_update_post', { ...args, slug });
     }
 
     if (pathname === '/api/branch') {

@@ -77,6 +77,16 @@ describe('ensureRepo against a scratch bare remote', () => {
     ).rejects.toThrow(/is not a git repository/);
   });
 
+  it('refuses with a controlled error, not a raw ENOTDIR crash, when repoPath exists as a plain file', async () => {
+    const repoPath = path.join(scratchRoot, 'repopath-is-a-file', 'repo');
+    fs.mkdirSync(path.dirname(repoPath), { recursive: true });
+    fs.writeFileSync(repoPath, 'not a directory');
+
+    await expect(
+      ensureRepo({ repoPath, cloneUrl: bareRemote, gitUserName: GIT_USER_NAME, gitUserEmail: GIT_USER_EMAIL })
+    ).rejects.toThrow(/is not a directory/);
+  });
+
   it('refuses when origin does not match BLOG_MCP_CLONE_URL, and never repoints the remote', async () => {
     const repoPath = path.join(scratchRoot, 'wrong-remote', 'repo');
     fs.mkdirSync(repoPath, { recursive: true });

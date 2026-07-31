@@ -108,6 +108,9 @@ export async function ensureRepo(options: EnsureRepoOptions): Promise<EnsureRepo
   const { repoPath, cloneUrl, gitUserName, gitUserEmail } = options;
 
   const exists = fs.existsSync(repoPath);
+  if (exists && !fs.statSync(repoPath).isDirectory()) {
+    throw new PreconditionError(`'${repoPath}' exists but is not a directory. Refusing to clone over it -- move or remove it first.`);
+  }
   const entries = exists ? fs.readdirSync(repoPath) : [];
 
   if (!exists || entries.length === 0) {

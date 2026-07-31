@@ -23,6 +23,7 @@ export interface ServeServerOptions {
 
 const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_PORT = 8765;
+const SESSION_TTL_SECONDS = 30 * 60; // must match auth.ts's SESSION_TTL_MS -- the cookie's Max-Age is cosmetic (the server-side map is what actually enforces expiry), but a shorter cookie TTL would log a user out client-side before the server session actually expires
 const SESSION_COOKIE = 'blog_mcp_session';
 const CSRF_HEADER = 'x-blog-mcp-csrf';
 const MAX_LOGIN_BODY_BYTES = 4096;
@@ -42,7 +43,16 @@ function parseCookies(header: string | undefined): Record<string, string> {
     if (eq === -1) continue;
     const key = part.slice(0, eq).trim();
     const value = part.slice(eq + 1).trim();
-    if (key) cookies[key] = decodeURIComponent(value);
+    if (!key) continue;
+    // A malformed percent-encoding (e.g. a stray '%' from a hand-crafted or
+    // corrupted Cookie header) makes decodeURIComponent throw URIError --
+    // treated as an absent cookie (so touchSession() below just fails auth)
+    // rather than crashing the request with an uncaught exception.
+    try {
+      cookies[key] = decodeURIComponent(value);
+    } catch {
+      // skip this cookie
+    }
   }
   return cookies;
 }
@@ -149,7 +159,7 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
 
     clearLoginAttempts();
     const sessionId = createSession();
-    sendJson(res, 200, { ok: true }, { 'set-cookie': sessionCookieHeader(sessionId, 30 * 60) });
+    sendJson(res, 200, { ok: true }, { 'set-cookie': sessionCookieHeader(sessionId, SESSION_TTL_SECONDS) });
   }
 
   function handleLogout(req: IncomingMessage, res: ServerResponse): void {
@@ -172,10 +182,17 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
       return;
     }
     const cookies = parseCookies(req.headers.cookie);
-    if (!touchSession(cookies[SESSION_COOKIE])) {
+    const sessionId = cookies[SESSION_COOKIE];
+    if (!sessionId || !touchSession(sessionId)) {
       sendJson(res, 401, { error: 'Not authenticated.' });
       return;
     }
+    // Slides the cookie's own Max-Age to match the server-side expiry that
+    // touchSession() just extended -- without this, the browser would
+    // silently drop the cookie 30 minutes after login regardless of
+    // continued activity, even though the server still considers the
+    // session valid.
+    const refreshedCookie = sessionCookieHeader(sessionId, SESSION_TTL_SECONDS);
 
     let parsedBody: unknown;
     if (req.method === 'POST') {
@@ -183,17 +200,17 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
         const raw = await readBoundedBody(req, MAX_API_BODY_BYTES);
         parsedBody = raw ? JSON.parse(raw) : {};
       } catch {
-        sendJson(res, 400, { error: 'Invalid JSON body.' });
+        sendJson(res, 400, { error: 'Invalid JSON body.' }, { 'set-cookie': refreshedCookie });
         return;
       }
     }
 
     const result = await handleApiRequest(url.pathname, req.method ?? 'GET', url, serverOptions, parsedBody);
     if (!result) {
-      sendJson(res, 404, { error: 'Not found.' });
+      sendJson(res, 404, { error: 'Not found.' }, { 'set-cookie': refreshedCookie });
       return;
     }
-    sendJson(res, result.status, result.body);
+    sendJson(res, result.status, result.body, { 'set-cookie': refreshedCookie });
   }
 
   function handleStatic(req: IncomingMessage, res: ServerResponse, pathname: string): boolean {
@@ -239,11 +256,16 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
           // a replacement for the /api auth check, which is what actually
           // protects repo data.
           const cookies = parseCookies(req.headers.cookie);
-          if (!touchSession(cookies[SESSION_COOKIE])) {
+          const sessionId = cookies[SESSION_COOKIE];
+          if (!sessionId || !touchSession(sessionId)) {
             res.writeHead(302, { location: '/login' });
             res.end();
             return;
           }
+          // Same sliding-expiry refresh as handleApi -- otherwise a user who
+          // only ever reloads '/' (never hitting /api) would still get
+          // logged out client-side after 30 minutes despite staying active.
+          res.setHeader('set-cookie', sessionCookieHeader(sessionId, SESSION_TTL_SECONDS));
         }
         if (handleStatic(req, res, url.pathname)) {
           return;

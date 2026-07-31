@@ -37,7 +37,12 @@ describe('scheduler engine: runTick', () => {
     await gitOrThrow(['config', 'user.email', 'test@example.test'], { repoRoot: seed });
     await gitOrThrow(['config', 'user.name', 'Test'], { repoRoot: seed });
     fs.writeFileSync(path.join(seed, 'README.md'), '# seed\n');
-    await gitOrThrow(['add', 'README.md'], { repoRoot: seed });
+    // clone_url is a GitHub-shaped URL so blog_arm_auto_merge's review-thread
+    // check can resolve owner/repo -- the real git remote below is a local
+    // bare path (needed for real push testing), which cannot resolve to one.
+    fs.mkdirSync(path.join(seed, '.config'));
+    fs.writeFileSync(path.join(seed, '.config', 'blog.json'), JSON.stringify({ base_branch: 'main', clone_url: 'https://github.com/test-owner/test-repo.git' }));
+    await gitOrThrow(['add', 'README.md', '.config'], { repoRoot: seed });
     await gitOrThrow(['commit', '-m', 'chore: seed'], { repoRoot: seed });
     await gitOrThrow(['remote', 'add', 'origin', bareRemote], { repoRoot: seed });
     await gitOrThrow(['push', 'origin', 'main'], { repoRoot: seed });
@@ -55,6 +60,7 @@ describe('scheduler engine: runTick', () => {
     delete process.env.GH_SHIM_STATE;
     delete process.env.GH_SHIM_MERGEABLE;
     delete process.env.GH_SHIM_HEAD_SHA;
+    delete process.env.GH_SHIM_THREADS_JSON;
     fs.rmSync(scratchRoot, { recursive: true, force: true });
   });
 
@@ -62,6 +68,10 @@ describe('scheduler engine: runTick', () => {
     delete process.env.GH_SHIM_STATE;
     delete process.env.GH_SHIM_MERGEABLE;
     delete process.env.GH_SHIM_HEAD_SHA;
+    // The shim's default thread list includes one unresolved thread;
+    // blog_arm_auto_merge now refuses to arm while any are unresolved, so
+    // tests that expect a successful arm must opt into a clean list.
+    process.env.GH_SHIM_THREADS_JSON = '[]';
   });
 
   function baseJob(overrides: Partial<ScheduledJob> = {}): ScheduledJob {
@@ -103,6 +113,16 @@ describe('scheduler engine: runTick', () => {
     const result = await runTick({ repoRoot: clone, baseBranch: 'main', stateDir, serverOptions });
     expect(result.jobsConsidered).toBe(0);
     expect(loadSchedule(stateDir).jobs[0]?.status).toBe('pending');
+  });
+
+  it('marks a job needs-attention when the PR has an unresolved review thread -- surfaced immediately, not a silent indefinite wait', async () => {
+    process.env.GH_SHIM_HEAD_SHA = 'd'.repeat(40);
+    process.env.GH_SHIM_THREADS_JSON = JSON.stringify([{ id: 'thread-1', isResolved: false, comments: { nodes: [{ path: 'a.md', line: 1, body: 'fix this', url: 'x' }] } }]);
+    saveSchedule(stateDir, { jobs: [baseJob({ headSha: 'd'.repeat(40) })] });
+    await runTick({ repoRoot: clone, baseBranch: 'main', stateDir, serverOptions });
+    const job = loadSchedule(stateDir).jobs[0];
+    expect(job?.status).toBe('needs-attention');
+    expect(job?.reason).toContain('unresolved review thread');
   });
 
   it('arms auto-merge for a due job once the SHA matches and the PR is open', async () => {
