@@ -21,15 +21,26 @@ function parseSseOrJson(body: string): JsonRpcResponse {
   return JSON.parse(dataLine ? dataLine.slice('data: '.length) : body) as JsonRpcResponse;
 }
 
-async function postRpc(baseUrl: string, body: unknown, headers: Record<string, string> = {}): Promise<{ status: number; json?: JsonRpcResponse }> {
+async function postRpc(
+  baseUrl: string,
+  body: unknown,
+  headers: Record<string, string> = {}
+): Promise<{ status: number; json?: JsonRpcResponse; sessionId?: string }> {
   const res = await fetch(`${baseUrl}/mcp`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream', ...headers },
     body: JSON.stringify(body)
   });
   const text = await res.text();
-  return { status: res.status, json: text ? parseSseOrJson(text) : undefined };
+  return { status: res.status, json: text ? parseSseOrJson(text) : undefined, sessionId: res.headers.get('mcp-session-id') ?? undefined };
 }
+
+const initBody = {
+  jsonrpc: '2.0',
+  id: 1,
+  method: 'initialize',
+  params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '0.0.0' } }
+};
 
 describe('HTTP transport', () => {
   let baseUrl: string;
@@ -69,33 +80,76 @@ describe('HTTP transport', () => {
     expect((json?.result as { serverInfo?: { name?: string } })?.serverInfo?.name).toBe('subzerodev-blog-mcp');
   });
 
-  it('GET /mcp is not allowed (stateless server)', async () => {
-    const res = await fetch(`${baseUrl}/mcp`);
-    expect(res.status).toBe(405);
+  it('GET /mcp with no Mcp-Session-Id header is a 400, not a 405', async () => {
+    const res = await fetch(`${baseUrl}/mcp`, { headers: { accept: 'text/event-stream' } });
+    expect(res.status).toBe(400);
   });
 
-  it('DELETE /mcp is not allowed (stateless server)', async () => {
+  it('DELETE /mcp with no Mcp-Session-Id header is a 400, not a 405', async () => {
     const res = await fetch(`${baseUrl}/mcp`, { method: 'DELETE' });
-    expect(res.status).toBe(405);
+    expect(res.status).toBe(400);
   });
 
-  it('a full initialize -> tools/list -> tools/call round trip works end to end', async () => {
-    const init = await postRpc(baseUrl, {
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'initialize',
-      params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '0.0.0' } }
-    });
-    expect(init.status).toBe(200);
+  it('GET /mcp with an unknown session id is a 404', async () => {
+    const res = await fetch(`${baseUrl}/mcp`, { headers: { accept: 'text/event-stream', 'mcp-session-id': 'not-a-real-session' } });
+    expect(res.status).toBe(404);
+  });
 
-    const list = await postRpc(baseUrl, { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} });
+  it('DELETE /mcp with an unknown session id is a 404', async () => {
+    const res = await fetch(`${baseUrl}/mcp`, { method: 'DELETE', headers: { 'mcp-session-id': 'not-a-real-session' } });
+    expect(res.status).toBe(404);
+  });
+
+  it('a full initialize -> tools/list -> tools/call round trip works end to end, threading the session id like a real client', async () => {
+    const init = await postRpc(baseUrl, initBody);
+    expect(init.status).toBe(200);
+    expect(init.sessionId).toBeTruthy();
+    const sessionHeader = { 'mcp-session-id': init.sessionId as string };
+
+    const list = await postRpc(baseUrl, { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }, sessionHeader);
     const toolNames = ((list.json?.result as { tools: Array<{ name: string }> })?.tools ?? []).map((t) => t.name);
     expect(toolNames).toContain('blog_validate_posts');
 
-    const call = await postRpc(baseUrl, { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'blog_validate_posts', arguments: {} } });
+    const call = await postRpc(
+      baseUrl,
+      { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'blog_validate_posts', arguments: {} } },
+      sessionHeader
+    );
     expect(call.status).toBe(200);
     const structured = (call.json?.result as { structuredContent?: { ok: boolean } })?.structuredContent;
     expect(structured?.ok).toBe(true);
+  });
+
+  it('a POST reusing an unknown session id is a 404, not silently starting a new session', async () => {
+    const res = await postRpc(baseUrl, { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }, { 'mcp-session-id': 'not-a-real-session' });
+    expect(res.status).toBe(404);
+  });
+
+  it('GET opens a live SSE stream for an initialized session', async () => {
+    const init = await postRpc(baseUrl, initBody);
+    const sessionId = init.sessionId as string;
+    expect(sessionId).toBeTruthy();
+
+    const controller = new AbortController();
+    const res = await fetch(`${baseUrl}/mcp`, {
+      headers: { accept: 'text/event-stream', 'mcp-session-id': sessionId },
+      signal: controller.signal
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('text/event-stream');
+    controller.abort();
+  });
+
+  it('DELETE terminates a session, and it is unusable afterward', async () => {
+    const init = await postRpc(baseUrl, initBody);
+    const sessionId = init.sessionId as string;
+    expect(sessionId).toBeTruthy();
+
+    const del = await fetch(`${baseUrl}/mcp`, { method: 'DELETE', headers: { 'mcp-session-id': sessionId } });
+    expect(del.status).toBe(200);
+
+    const after = await postRpc(baseUrl, { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }, { 'mcp-session-id': sessionId });
+    expect(after.status).toBe(404);
   });
 });
 

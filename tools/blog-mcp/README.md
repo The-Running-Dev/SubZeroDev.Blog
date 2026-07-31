@@ -129,9 +129,18 @@ defaults to `/workspace`.
 
 ### HTTP transport
 
-Stateless: every request gets a fresh server and transport (no session
-store, no resumable SSE streams) — this matches how the server is already
-meant to run, spawned per session by its caller.
+Session-based, per the MCP Streamable HTTP spec: `POST /mcp` with no
+`Mcp-Session-Id` header either is an `initialize` request (a new session is
+created and its id returned in the `Mcp-Session-Id` response header) or
+isn't (rejected with `400`). Every subsequent `POST`/`GET`/`DELETE` for that
+session includes the same header. `GET /mcp` opens a live SSE stream for
+server-to-client notifications; `DELETE /mcp` terminates the session. Both
+require a known `Mcp-Session-Id` (`400` if the header is missing, `404` if
+it doesn't match a live session). There is no event store, so a dropped
+`GET` stream does not replay missed messages — the client just reissues a
+fresh `GET`. A session idle for 30 minutes (no request at all) is reaped
+automatically, so a client that disappears without sending `DELETE` doesn't
+leak its server state forever.
 
 ```bash
 docker run --rm -p 8765:8765 \
@@ -157,9 +166,7 @@ runs unauthenticated — acceptable only while bound to loopback.
 | `BLOG_MCP_HTTP_TOKEN` | unset | Bearer token required on every `/mcp` request (constant-time compared). |
 | `BLOG_MCP_HTTP_ALLOWED_ORIGINS` | `http://<host>:<port>`, `http://localhost:<port>` | Comma-separated `Origin` allowlist. A request with no `Origin` header (any non-browser client) is always allowed; only a *present, disallowed* `Origin` is rejected — this is what stops a malicious page in a browser from talking to the server via DNS rebinding or a simple cross-origin fetch. |
 
-Only `POST /mcp` is implemented (stateless mode has no session to `GET` an
-SSE stream from or `DELETE`); both return `405`. `GET /healthz` returns
-`{"ok":true}` without auth, for container health checks.
+`GET /healthz` returns `{"ok":true}` without auth, for container health checks.
 
 ### Serve mode (web UI)
 
@@ -379,7 +386,7 @@ BLOG_MCP_GIT_USER_NAME=blog-bot BLOG_MCP_GIT_USER_EMAIL=bot@subzerodev.com \
 node dist/http-bin.js --port 8765          # runs the HTTP transport directly, outside Docker
 ```
 
-`test/http.test.ts` exercises the HTTP transport with real `fetch()` calls against an ephemeral-port server: health check, 404s, the stateless 405s on `GET`/`DELETE /mcp`, bearer-auth accept/reject, `Origin` allow/reject, and a full `initialize` → `tools/list` → `tools/call` round trip.
+`test/http.test.ts` exercises the HTTP transport with real `fetch()` calls against an ephemeral-port server: health check, 404s, session-based `GET`/`DELETE /mcp` (missing/unknown `Mcp-Session-Id` → `400`/`404`, a live SSE stream, session termination), bearer-auth accept/reject, `Origin` allow/reject, and a full `initialize` → `tools/list` → `tools/call` round trip that threads the session id like a real client.
 
 `test/bootstrap-repo.test.ts` exercises `ensureRepo()` against a real scratch bare git remote (not a mock): fresh clone, idempotent re-run (fast-forward), refusal on a non-empty non-git directory, refusal on a mismatched `origin`, dirty-tree boot-without-switching, and an unmerged feature branch staying parked. `test/smoke-stdio.mjs` clones this repository itself (a fast, local-filesystem clone) into a scratch `BLOG_MCP_WORKSPACE` rather than pointing at the live checkout directly, since clone-mode has no bind mount to point at.
 

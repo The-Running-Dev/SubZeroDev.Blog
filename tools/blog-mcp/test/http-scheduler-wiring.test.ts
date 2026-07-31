@@ -22,14 +22,14 @@ function parseSseOrJson(body: string): JsonRpcResponse {
   return JSON.parse(dataLine ? dataLine.slice('data: '.length) : body) as JsonRpcResponse;
 }
 
-async function postRpc(baseUrl: string, body: unknown): Promise<JsonRpcResponse> {
+async function postRpc(baseUrl: string, body: unknown, headers: Record<string, string> = {}): Promise<{ json: JsonRpcResponse; sessionId?: string }> {
   const res = await fetch(`${baseUrl}/mcp`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
+    headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream', ...headers },
     body: JSON.stringify(body)
   });
   const text = await res.text();
-  return parseSseOrJson(text);
+  return { json: parseSseOrJson(text), sessionId: res.headers.get('mcp-session-id') ?? undefined };
 }
 
 /**
@@ -103,23 +103,29 @@ describe('blog_schedule_publish over a real /mcp request (env-derived capabiliti
       method: 'initialize',
       params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '0.0.0' } }
     });
-    expect(init.error).toBeUndefined();
+    expect(init.json.error).toBeUndefined();
+    expect(init.sessionId).toBeTruthy();
+    const sessionHeader = { 'mcp-session-id': init.sessionId as string };
 
-    const list = await postRpc(baseUrl, { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} });
-    const toolNames = ((list.result as { tools: Array<{ name: string }> })?.tools ?? []).map((t) => t.name);
+    const list = await postRpc(baseUrl, { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }, sessionHeader);
+    const toolNames = ((list.json.result as { tools: Array<{ name: string }> })?.tools ?? []).map((t) => t.name);
     expect(toolNames).toContain('blog_schedule_publish');
 
     const future = new Date(Date.now() + 3_600_000).toISOString().replace(/\.\d{3}Z$/, 'Z');
-    const call = await postRpc(baseUrl, {
-      jsonrpc: '2.0',
-      id: 3,
-      method: 'tools/call',
-      params: {
-        name: 'blog_schedule_publish',
-        arguments: { pr: 42, headSha: 'c'.repeat(40), scheduledAt: future, onMissed: { mode: 'catch_up' } }
-      }
-    });
-    const structured = (call.result as { structuredContent?: { ok: boolean; summary: string } })?.structuredContent;
+    const call = await postRpc(
+      baseUrl,
+      {
+        jsonrpc: '2.0',
+        id: 3,
+        method: 'tools/call',
+        params: {
+          name: 'blog_schedule_publish',
+          arguments: { pr: 42, headSha: 'c'.repeat(40), scheduledAt: future, onMissed: { mode: 'catch_up' } }
+        }
+      },
+      sessionHeader
+    );
+    const structured = (call.json.result as { structuredContent?: { ok: boolean; summary: string } })?.structuredContent;
     expect(structured?.summary).not.toContain('no state directory');
     expect(structured?.ok).toBe(true);
     expect(fs.existsSync(path.join(stateDir, 'schedule.json'))).toBe(true);

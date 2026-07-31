@@ -44,17 +44,40 @@ function isOriginAllowed(origin: string | undefined, allowedOrigins: string[]): 
   return allowedOrigins.includes(origin);
 }
 
+interface McpSession {
+  server: ReturnType<typeof createServer>;
+  transport: StreamableHTTPServerTransport;
+  lastActivity: number;
+}
+
+/** No request (POST reusing the session, or GET) for this long reaps the session -- matches src/serve/auth.ts's UI session TTL for consistency, not a spec requirement. Guards against a crashed/disappeared client that never sends DELETE leaking its McpServer forever. */
+const SESSION_IDLE_TTL_MS = 30 * 60 * 1000;
+const SESSION_SWEEP_INTERVAL_MS = 5 * 60 * 1000;
+
+function extractSessionId(req: IncomingMessage): string | undefined {
+  const header = req.headers['mcp-session-id'];
+  return Array.isArray(header) ? header[0] : header;
+}
+
 /**
  * Builds the `/healthz` + `/mcp` request handler, self-contained (its own
  * top-level error handling, never rejects) so it can be mounted either as a
  * whole server's only handler (createHttpServer below) or as one path
  * range inside a bigger handler (src/serve.ts's `/mcp`, alongside `/api` and
- * the static UI, in a later phase). Deliberately stateless: every request
- * gets a fresh McpServer + StreamableHTTPServerTransport (sessionIdGenerator:
- * undefined), matching how this server is already meant to run -- spawned
- * per session by its caller -- rather than adding session-store lifecycle
- * management (resumable SSE streams, an EventStore) that this deployment
- * model doesn't need.
+ * the static UI).
+ *
+ * Session-based, per the MCP Streamable HTTP spec: a `POST` with no
+ * `Mcp-Session-Id` header either is an `initialize` request (a new session is
+ * created and its id returned) or isn't (StreamableHTTPServerTransport itself
+ * makes that call and responds 400) -- see
+ * node_modules/@modelcontextprotocol/sdk's webStandardStreamableHttp.js
+ * `handlePostRequest`. A `POST`/`GET`/`DELETE` with a known `Mcp-Session-Id`
+ * reuses that session's transport; `GET` opens a live SSE stream for
+ * server-to-client notifications, `DELETE` terminates the session. There is
+ * deliberately no `EventStore`: a dropped `GET` stream does not replay missed
+ * messages, the client just reissues a fresh `GET` -- full resumability is a
+ * separate feature this deployment model (a handful of long-lived clients,
+ * not thousands of flaky mobile ones) doesn't need yet.
  */
 export function createMcpRequestHandler(options: HttpServerOptions = {}): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const host = options.host ?? DEFAULT_HOST;
@@ -71,6 +94,73 @@ export function createMcpRequestHandler(options: HttpServerOptions = {}): (req: 
     process.stderr.write(
       'blog-mcp http: BLOG_MCP_HTTP_TOKEN is not set -- running without bearer auth. Safe only because the default bind is loopback-only; do not do this while bound to a non-loopback host.\n'
     );
+  }
+
+  const sessions = new Map<string, McpSession>();
+
+  const sweep = setInterval(() => {
+    const cutoff = Date.now() - SESSION_IDLE_TTL_MS;
+    for (const session of sessions.values()) {
+      // transport.close() fires the onclose handler below, which removes it
+      // from `sessions` -- deleting here too would just be redundant.
+      if (session.lastActivity < cutoff) void session.transport.close();
+    }
+  }, SESSION_SWEEP_INTERVAL_MS);
+  sweep.unref(); // never keeps the process alive on its own
+
+  async function handleNewSession(req: IncomingMessage, res: ServerResponse): Promise<void> {
+    const server = createServer(serverOptions);
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => crypto.randomUUID(),
+      onsessioninitialized: (sessionId) => {
+        sessions.set(sessionId, { server, transport, lastActivity: Date.now() });
+      }
+    });
+
+    let cleaned = false;
+    const cleanup = (): void => {
+      if (cleaned) return;
+      cleaned = true;
+      transport.close();
+      server.close();
+    };
+    transport.onclose = () => {
+      const sessionId = transport.sessionId;
+      if (sessionId) sessions.delete(sessionId);
+    };
+    // Registered before awaiting anything below: an early client disconnect
+    // can fire 'close' while connect()/handleRequest() are still in flight.
+    // Only tears down here if this request never actually established a
+    // session (disconnected mid-initialize, or turned out not to be an
+    // initialize request at all) -- a genuinely new session must survive
+    // past its own first response closing, since later POST/GET/DELETE
+    // calls reuse this same transport by session id.
+    res.once('close', () => {
+      if (!transport.sessionId) cleanup();
+    });
+
+    try {
+      await server.connect(transport);
+      await transport.handleRequest(req, res);
+    } catch (err) {
+      process.stderr.write(`blog-mcp http: request failed: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`);
+      if (!res.headersSent) {
+        rpcError(res, 500, -32603, 'Internal server error.');
+      }
+      cleanup();
+    }
+  }
+
+  async function handleExistingSession(req: IncomingMessage, res: ServerResponse, session: McpSession): Promise<void> {
+    session.lastActivity = Date.now();
+    try {
+      await session.transport.handleRequest(req, res);
+    } catch (err) {
+      process.stderr.write(`blog-mcp http: request failed: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`);
+      if (!res.headersSent) {
+        rpcError(res, 500, -32603, 'Internal server error.');
+      }
+    }
   }
 
   async function handleIncoming(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -103,37 +193,41 @@ export function createMcpRequestHandler(options: HttpServerOptions = {}): (req: 
       }
     }
 
-    if (req.method !== 'POST') {
-      rpcError(res, 405, -32000, 'Method not allowed. This is a stateless server: only POST /mcp is supported.');
+    const sessionId = extractSessionId(req);
+
+    // GET (open the SSE stream) and DELETE (terminate) both only make sense
+    // against an already-initialized session -- there is no "create a
+    // session via GET/DELETE" in the spec, unlike POST.
+    if (req.method === 'GET' || req.method === 'DELETE') {
+      if (!sessionId) {
+        rpcError(res, 400, -32000, 'Mcp-Session-Id header is required.');
+        return;
+      }
+      const session = sessions.get(sessionId);
+      if (!session) {
+        rpcError(res, 404, -32001, 'Session not found.');
+        return;
+      }
+      await handleExistingSession(req, res, session);
       return;
     }
 
-    const server = createServer(serverOptions);
-    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-
-    // Registered before awaiting anything below: an early client disconnect
-    // can fire 'close' while connect()/handleRequest() are still in flight,
-    // and a listener attached only in a later `finally` would miss it,
-    // leaking this request's server/transport.
-    let cleaned = false;
-    const cleanup = (): void => {
-      if (cleaned) return;
-      cleaned = true;
-      transport.close();
-      server.close();
-    };
-    res.once('close', cleanup);
-
-    try {
-      await server.connect(transport);
-      await transport.handleRequest(req, res);
-    } catch (err) {
-      process.stderr.write(`blog-mcp http: request failed: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`);
-      if (!res.headersSent) {
-        rpcError(res, 500, -32603, 'Internal server error.');
-      }
-      cleanup();
+    if (req.method !== 'POST') {
+      rpcError(res, 405, -32000, 'Method not allowed. Supported methods: GET, POST, DELETE.');
+      return;
     }
+
+    if (sessionId) {
+      const session = sessions.get(sessionId);
+      if (!session) {
+        rpcError(res, 404, -32001, 'Session not found.');
+        return;
+      }
+      await handleExistingSession(req, res, session);
+      return;
+    }
+
+    await handleNewSession(req, res);
   }
 
   return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
