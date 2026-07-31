@@ -89,6 +89,24 @@ export function defaultCapabilities(): Capabilities {
 }
 
 /**
+ * Forced onto an `/mcp` session authenticated with a caller's read-only
+ * bearer token instead of its primary one (see src/http.ts's `readOnlyToken`
+ * option). Lets a deployment hand a separate, capped credential to a
+ * third-party MCP client (a ChatGPT Developer Mode connector, for example)
+ * without granting it the same repo-mutating capability as the deployment's
+ * own tooling -- regardless of what BLOG_MCP_READ_ONLY/BLOG_MCP_ALLOW_REMOTE/
+ * etc. are set to for the primary token. `monitor` stays on: checking CI/
+ * deploy status is read-only and useful even for a capped credential.
+ */
+export const READONLY_CAPABILITIES: Capabilities = {
+  write: false,
+  remote: false,
+  monitor: true,
+  scheduler: false,
+  writablePathPrefixes: []
+};
+
+/**
  * Wraps a tool handler so PreconditionError/InfrastructureError become the
  * matching envelope kind, and any other thrown error is treated as
  * infrastructure (a bug, not a validation outcome) rather than silently

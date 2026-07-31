@@ -15,6 +15,8 @@ export interface ServeServerOptions {
   port?: number;
   /** Bearer token for /mcp -- same meaning as src/http.ts's. */
   mcpToken?: string;
+  /** Read-only bearer token for /mcp -- same meaning as src/http.ts's HttpServerOptions.readOnlyToken. */
+  mcpReadOnlyToken?: string;
   /** Origins allowed on /mcp. Defaults to this server's own origin. */
   mcpAllowedOrigins?: string[];
   /** Caps concurrent /mcp sessions -- same meaning as src/http.ts's HttpServerOptions.maxSessions. */
@@ -122,6 +124,7 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
     host,
     port,
     ...(options.mcpToken ? { token: options.mcpToken } : {}),
+    ...(options.mcpReadOnlyToken ? { readOnlyToken: options.mcpReadOnlyToken } : {}),
     ...(options.mcpMaxSessions !== undefined ? { maxSessions: options.mcpMaxSessions } : {}),
     allowedOrigins
   });

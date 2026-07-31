@@ -163,11 +163,29 @@ runs unauthenticated — acceptable only while bound to loopback.
 |---|---|---|
 | `BLOG_MCP_HTTP_HOST` | `127.0.0.1` | Bind address. |
 | `BLOG_MCP_HTTP_PORT` | `8765` | Bind port. |
-| `BLOG_MCP_HTTP_TOKEN` | unset | Bearer token required on every `/mcp` request (constant-time compared). |
+| `BLOG_MCP_HTTP_TOKEN` | unset | Bearer token required on every `/mcp` request (constant-time compared). A session initialized with this token gets full env-derived capabilities. |
+| `BLOG_MCP_HTTP_READONLY_TOKEN` | unset | A second, more restricted bearer token. A session initialized with *this* token instead gets write/remote/scheduler forced off (`monitor` stays on), regardless of `BLOG_MCP_READ_ONLY`/`BLOG_MCP_ALLOW_REMOTE`/etc. Both tokens are valid on every request; only the `initialize` call decides which tier a session gets, and that's locked in for the session's lifetime. See "Handing this to a third-party MCP client" below. |
 | `BLOG_MCP_HTTP_ALLOWED_ORIGINS` | `http://<host>:<port>`, `http://localhost:<port>` | Comma-separated `Origin` allowlist. A request with no `Origin` header (any non-browser client) is always allowed; only a *present, disallowed* `Origin` is rejected — this is what stops a malicious page in a browser from talking to the server via DNS rebinding or a simple cross-origin fetch. |
 | `BLOG_MCP_HTTP_MAX_SESSIONS` | `100` | Caps concurrent `/mcp` sessions. A `POST` that would create a session beyond this limit gets `503` instead of being admitted — otherwise a reachable client (more likely with no `BLOG_MCP_HTTP_TOKEN` set) could keep initializing sessions, each holding its own `McpServer`, until the 30-minute idle reap. |
 
 `GET /healthz` returns `{"ok":true}` without auth, for container health checks.
+
+#### Handing this to a third-party MCP client (e.g. a ChatGPT connector)
+
+`BLOG_MCP_HTTP_TOKEN` alone is an all-or-nothing credential: whoever holds it
+gets whatever capability tier `BLOG_MCP_READ_ONLY`/`BLOG_MCP_ALLOW_REMOTE`/etc.
+grant your own tooling — including `blog_push`, `blog_create_pr`, and
+`blog_arm_auto_merge` if remote is on. Handing that same token to a
+third-party product (ChatGPT's Developer Mode connector, for example) means
+its own per-action confirmation prompts become the *only* thing standing
+between a model and a real push/PR/merge on this repo.
+
+Set `BLOG_MCP_HTTP_READONLY_TOKEN` to a second, separately-generated secret
+and give *that* one to the third party instead. A session it initializes gets
+`write`/`remote`/`scheduler` forced off no matter what the primary token's
+capabilities are — it can list and read posts, check validation, and check
+CI/deploy status, but every mutating tool is simply unregistered for that
+session, not just refused at call time.
 
 ### Serve mode (web UI)
 
@@ -192,7 +210,8 @@ docker run --rm -p 8765:8765 \
 ```
 
 The UI reuses every `BLOG_MCP_HTTP_*` env var from HTTP transport above
-(`_HOST`, `_PORT`, `_TOKEN` for `/mcp`, `_ALLOWED_ORIGINS`), plus:
+(`_HOST`, `_PORT`, `_TOKEN`/`_READONLY_TOKEN` for `/mcp`, `_ALLOWED_ORIGINS`,
+`_MAX_SESSIONS`), plus:
 
 | Env var | Default | Effect |
 |---|---|---|

@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import http, { type IncomingMessage, type ServerResponse } from 'node:http';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { createServer, type CreateServerOptions } from './server.js';
+import { READONLY_CAPABILITIES, type Capabilities } from './tools/context.js';
 
 export interface HttpServerOptions {
   repoRoot?: string;
@@ -12,6 +13,19 @@ export interface HttpServerOptions {
   port?: number;
   /** Bearer token required on every request. If unset, the server logs a warning and allows unauthenticated access -- acceptable only because the default bind is loopback-only. */
   token?: string;
+  /**
+   * A second, more restricted bearer token. A session initialized with this
+   * token instead of `token` gets READONLY_CAPABILITIES forced onto it
+   * (write/remote/scheduler off) regardless of BLOG_MCP_READ_ONLY/
+   * BLOG_MCP_ALLOW_REMOTE/etc. -- lets you hand a separate, capped credential
+   * to a third-party MCP client (a ChatGPT Developer Mode connector, for
+   * example) without granting it the same repo-mutating capability as your
+   * own tooling's token. Both tokens are independently valid on every
+   * request; only session *creation* (the initialize POST) is where the
+   * capability tier is decided and then locked in for that session's
+   * lifetime.
+   */
+  readOnlyToken?: string;
   /** Origins allowed to talk to this server (browser-based clients send Origin; CLI/server clients typically don't). Defaults to the server's own http://<host>:<port>. */
   allowedOrigins?: string[];
   /** Caps concurrent MCP sessions (each holds its own McpServer instance). A POST that would create a session beyond this limit is rejected with 503 rather than admitted -- otherwise a reachable client (more likely if BLOG_MCP_HTTP_TOKEN is unset) could keep initializing new sessions and hold them all open until the 30-minute idle reap. */
@@ -92,6 +106,7 @@ export function createMcpRequestHandler(options: HttpServerOptions = {}): McpReq
   const host = options.host ?? DEFAULT_HOST;
   const port = options.port ?? DEFAULT_PORT;
   const token = options.token;
+  const readOnlyToken = options.readOnlyToken;
   const allowedOrigins = options.allowedOrigins ?? [`http://${host}:${port}`, `http://localhost:${port}`];
   const maxSessions = options.maxSessions ?? DEFAULT_MAX_SESSIONS;
   const serverOptions: CreateServerOptions = {
@@ -100,7 +115,7 @@ export function createMcpRequestHandler(options: HttpServerOptions = {}): McpReq
     ...(options.stateDir ? { stateDir: options.stateDir } : {})
   };
 
-  if (!token) {
+  if (!token && !readOnlyToken) {
     process.stderr.write(
       'blog-mcp http: BLOG_MCP_HTTP_TOKEN is not set -- running without bearer auth. Safe only because the default bind is loopback-only; do not do this while bound to a non-loopback host.\n'
     );
@@ -118,8 +133,8 @@ export function createMcpRequestHandler(options: HttpServerOptions = {}): McpReq
   }, SESSION_SWEEP_INTERVAL_MS);
   sweep.unref(); // never keeps the process alive on its own
 
-  async function handleNewSession(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    const server = createServer(serverOptions);
+  async function handleNewSession(req: IncomingMessage, res: ServerResponse, capabilities: Capabilities | undefined): Promise<void> {
+    const server = createServer(capabilities ? { ...serverOptions, capabilities } : serverOptions);
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => crypto.randomUUID(),
       onsessioninitialized: (sessionId) => {
@@ -199,12 +214,20 @@ export function createMcpRequestHandler(options: HttpServerOptions = {}): McpReq
       return;
     }
 
-    if (token) {
+    // Read-only checked first: if an operator ever sets both tokens to the
+    // same value by mistake, a match should resolve to the *less* privileged
+    // outcome, not silently grant full capabilities.
+    let capabilitiesOverride: Capabilities | undefined;
+    if (token || readOnlyToken) {
       const authHeader = req.headers.authorization ?? '';
-      const expected = `Bearer ${token}`;
-      if (!timingSafeEqual(authHeader, expected)) {
+      const matchesReadOnly = readOnlyToken !== undefined && timingSafeEqual(authHeader, `Bearer ${readOnlyToken}`);
+      const matchesFull = token !== undefined && timingSafeEqual(authHeader, `Bearer ${token}`);
+      if (!matchesReadOnly && !matchesFull) {
         rpcError(res, 401, -32000, 'Unauthorized.');
         return;
+      }
+      if (matchesReadOnly) {
+        capabilitiesOverride = READONLY_CAPABILITIES;
       }
     }
 
@@ -250,7 +273,7 @@ export function createMcpRequestHandler(options: HttpServerOptions = {}): McpReq
       return;
     }
 
-    await handleNewSession(req, res);
+    await handleNewSession(req, res, capabilitiesOverride);
   }
 
   const handler = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {

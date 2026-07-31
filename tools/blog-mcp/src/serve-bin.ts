@@ -18,6 +18,7 @@ async function main(): Promise<void> {
   const portArg = parseFlag(argv, '--port') ?? process.env.BLOG_MCP_HTTP_PORT;
   const port = portArg ? Number(portArg) : undefined;
   const mcpToken = process.env.BLOG_MCP_HTTP_TOKEN;
+  const mcpReadOnlyToken = process.env.BLOG_MCP_HTTP_READONLY_TOKEN;
   const allowedOriginsEnv = process.env.BLOG_MCP_HTTP_ALLOWED_ORIGINS;
   const uiPasswordHash = process.env.BLOG_MCP_UI_PASSWORD_HASH;
   const maxSessionsEnv = process.env.BLOG_MCP_HTTP_MAX_SESSIONS;
@@ -49,6 +50,7 @@ async function main(): Promise<void> {
     ...(host ? { host } : {}),
     ...(port !== undefined ? { port } : {}),
     ...(mcpToken ? { mcpToken } : {}),
+    ...(mcpReadOnlyToken ? { mcpReadOnlyToken } : {}),
     ...(allowedOriginsEnv ? { mcpAllowedOrigins: allowedOriginsEnv.split(',').map((s) => s.trim()) } : {}),
     ...(mcpMaxSessions !== undefined ? { mcpMaxSessions } : {}),
     ...(uiPasswordHash ? { uiPasswordHash } : {})

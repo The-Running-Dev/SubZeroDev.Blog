@@ -231,6 +231,49 @@ describe('HTTP transport Origin validation', () => {
   });
 });
 
+describe('HTTP transport read-only token capability tier', () => {
+  let baseUrl: string;
+  let server: ReturnType<typeof createHttpServer>;
+  const fullToken = 'full-access-token';
+  const readOnlyToken = 'capped-access-token';
+
+  beforeAll(async () => {
+    server = createHttpServer({ repoRoot: REPO_ROOT, host: '127.0.0.1', port: 0, token: fullToken, readOnlyToken });
+    await new Promise<void>((resolve) => server.once('listening', resolve));
+    const address = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(() => {
+    server.close();
+  });
+
+  async function toolNamesFor(token: string): Promise<string[]> {
+    const init = await postRpc(baseUrl, initBody, { authorization: `Bearer ${token}` });
+    expect(init.status).toBe(200);
+    const sessionHeader = { authorization: `Bearer ${token}`, 'mcp-session-id': init.sessionId as string };
+    const list = await postRpc(baseUrl, { jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }, sessionHeader);
+    return ((list.json?.result as { tools: Array<{ name: string }> })?.tools ?? []).map((t) => t.name);
+  }
+
+  it('a session initialized with the full token gets write tools registered', async () => {
+    const toolNames = await toolNamesFor(fullToken);
+    expect(toolNames).toContain('blog_create_post');
+  });
+
+  it('a session initialized with the read-only token does not get write tools, but keeps read/monitor ones', async () => {
+    const toolNames = await toolNamesFor(readOnlyToken);
+    expect(toolNames).not.toContain('blog_create_post');
+    expect(toolNames).toContain('blog_validate_posts');
+    expect(toolNames).toContain('blog_check_status');
+  });
+
+  it('an unrecognized token is still rejected with 401 when both tokens are configured', async () => {
+    const { status } = await postRpc(baseUrl, initBody, { authorization: 'Bearer neither-token' });
+    expect(status).toBe(401);
+  });
+});
+
 describe('HTTP transport session admission control and shutdown', () => {
   it('rejects a new session with 503 once maxSessions is reached, and admits one again after the existing session is deleted', async () => {
     const server = createHttpServer({ repoRoot: REPO_ROOT, host: '127.0.0.1', port: 0, maxSessions: 1 });

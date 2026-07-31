@@ -14,6 +14,7 @@ async function main(): Promise<void> {
   const portArg = parseFlag(argv, '--port') ?? process.env.BLOG_MCP_HTTP_PORT;
   const port = portArg ? Number(portArg) : undefined;
   const token = process.env.BLOG_MCP_HTTP_TOKEN;
+  const readOnlyToken = process.env.BLOG_MCP_HTTP_READONLY_TOKEN;
   const allowedOriginsEnv = process.env.BLOG_MCP_HTTP_ALLOWED_ORIGINS;
   const maxSessionsEnv = process.env.BLOG_MCP_HTTP_MAX_SESSIONS;
   const maxSessions = maxSessionsEnv ? Number(maxSessionsEnv) : undefined;
@@ -44,6 +45,7 @@ async function main(): Promise<void> {
     ...(host ? { host } : {}),
     ...(port !== undefined ? { port } : {}),
     ...(token ? { token } : {}),
+    ...(readOnlyToken ? { readOnlyToken } : {}),
     ...(allowedOriginsEnv ? { allowedOrigins: allowedOriginsEnv.split(',').map((s) => s.trim()) } : {}),
     ...(maxSessions !== undefined ? { maxSessions } : {})
   });
