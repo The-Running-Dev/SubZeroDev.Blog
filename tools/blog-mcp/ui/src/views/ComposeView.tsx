@@ -11,6 +11,7 @@ interface PostFrontMatter {
   title?: string;
   description?: string;
   tags?: string[];
+  date?: string;
 }
 
 interface LogLine {
@@ -21,6 +22,32 @@ interface LogLine {
 const NO_TAG_VOCAB_MESSAGE =
   'Could not load a tag vocabulary from /api/tags -- falling back to a free-text tags field. A typo’d tag name will only be caught at publish time.';
 
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+// Matches a leading markdown H1 ("# Heading", optionally with a blank line
+// after it) at the very start of pasted content -- used only when no `---`
+// front matter fences were found, to salvage a title (or, if the heading
+// itself reads as a date, a date) from otherwise unstructured prose.
+const LEADING_HEADING_RE = /^#[ \t]+(.+?)[ \t]*\n+([\s\S]*)$/;
+
+// Deliberately narrow (weekday?, Month Day, Year) rather than trusting
+// Date.parse on arbitrary text -- Date.parse alone accepts too much
+// ambiguous input (e.g. some bare numbers) to safely gate on by itself,
+// but it's still the one doing the actual parsing once this shape matches.
+const DATE_HEADING_RE = /^(?:[A-Za-z]+day,\s*)?[A-Za-z]+\s+\d{1,2},\s*\d{4}$/;
+
+function extractLeadingHeading(markdown: string): { heading: string; rest: string } | null {
+  const match = LEADING_HEADING_RE.exec(markdown.trimStart());
+  if (!match) return null;
+  return { heading: match[1] as string, rest: match[2] as string };
+}
+
 export default function ComposeView() {
   const { slug: prefillSlug } = useParams<{ slug?: string }>();
   const navigate = useNavigate();
@@ -30,9 +57,15 @@ export default function ComposeView() {
   const [tagsLoaded, setTagsLoaded] = useState(false);
 
   const [slug, setSlug] = useState(prefillSlug ?? '');
+  // Tracks whether the user has typed into the Slug field directly -- until
+  // then, Slug auto-follows Title (a fresh, not-yet-published post only;
+  // never once an existing one is loaded, since blog_update_post refuses
+  // slug changes without an explicit override).
+  const [slugTouched, setSlugTouched] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [body, setBody] = useState('');
+  const [date, setDate] = useState('');
   const [checkedTags, setCheckedTagsState] = useState<Set<string>>(new Set());
   const [tagsFallback, setTagsFallback] = useState('');
 
@@ -79,6 +112,15 @@ export default function ComposeView() {
       .filter(Boolean);
   }
 
+  // Keeps Slug in sync with Title for a not-yet-published post, right up
+  // until the user types into Slug themselves (setSlugTouched below) or an
+  // existing post gets loaded (blog_update_post refuses slug changes
+  // without an explicit override, so this must never touch it afterward).
+  useEffect(() => {
+    if (exists || slugTouched) return;
+    setSlug(slugify(title));
+  }, [title, exists, slugTouched]);
+
   const loadExisting = useCallback(
     async (targetSlug: string) => {
       setLog([]);
@@ -89,6 +131,7 @@ export default function ComposeView() {
         setDescription(fm.description ?? '');
         setCheckedTags(fm.tags);
         setBody(data.data?.body ?? '');
+        setDate(fm.date ?? '');
         setExists(true);
         logLine(`Loaded existing post '${targetSlug}'.`);
       } catch (err) {
@@ -137,8 +180,26 @@ export default function ComposeView() {
       });
       const { frontMatter, frontMatterPresent, body: parsedBody } = result.data ?? { frontMatter: null, frontMatterPresent: false, body: '' };
       if (!frontMatterPresent) {
-        logLine('No "---" front matter fences found -- pasted the whole input into Body as-is.');
-        setBody(rawMarkdown);
+        // No front matter at all -- salvage what we can from a leading
+        // markdown heading rather than dumping everything into Body
+        // untouched. A date-shaped heading (e.g. "Monday, May 18, 2026")
+        // becomes the post's Date and is stripped from Body (this blog
+        // never repeats the date as a heading in body text); anything else
+        // becomes the Title, left in place in Body too, matching how every
+        // existing post repeats its own title as an H1.
+        const extracted = extractLeadingHeading(rawMarkdown);
+        if (extracted && DATE_HEADING_RE.test(extracted.heading) && !Number.isNaN(Date.parse(extracted.heading))) {
+          setDate(new Date(extracted.heading).toISOString());
+          setBody(extracted.rest);
+          logLine(`No front matter found -- read "${extracted.heading}" as the post date and used the rest as Body. Title/Slug/Tags still need filling in.`);
+        } else if (extracted) {
+          setTitle(extracted.heading);
+          setBody(rawMarkdown);
+          logLine(`No front matter found -- read "${extracted.heading}" as the title (Slug auto-fills from it) and used the whole input as Body.`);
+        } else {
+          setBody(rawMarkdown);
+          logLine('No "---" front matter fences found and no leading heading to salvage a title from -- pasted the whole input into Body as-is.');
+        }
         setMode('compose');
         return;
       }
@@ -147,9 +208,13 @@ export default function ComposeView() {
         return;
       }
       const fm = frontMatter as PostFrontMatter & { slug?: string };
-      if (typeof fm.slug === 'string') setSlug(fm.slug);
+      if (typeof fm.slug === 'string') {
+        setSlug(fm.slug);
+        setSlugTouched(true);
+      }
       if (typeof fm.title === 'string') setTitle(fm.title);
       if (typeof fm.description === 'string') setDescription(fm.description);
+      if (typeof fm.date === 'string') setDate(fm.date);
       setCheckedTags(Array.isArray(fm.tags) ? fm.tags : []);
       setBody(parsedBody);
       logLine('Parsed front matter and body from the pasted markdown.');
@@ -165,6 +230,7 @@ export default function ComposeView() {
   // typing a slug from memory without opening the dropdown.
   function handleSlugChange(value: string) {
     setSlug(value);
+    setSlugTouched(true);
   }
 
   function handleSlugBlurOrChange() {
@@ -180,6 +246,17 @@ export default function ComposeView() {
       return;
     }
 
+    const trimmedDate = date.trim();
+    let isoDate: string | undefined;
+    if (trimmedDate) {
+      const parsed = Date.parse(trimmedDate);
+      if (Number.isNaN(parsed)) {
+        logLine(`Date '${trimmedDate}' doesn't parse -- fix it or clear the field to default to now.`, true);
+        return;
+      }
+      isoDate = new Date(parsed).toISOString();
+    }
+
     try {
       logLine(`Creating/switching to branch 'blog/${trimmedSlug}'...`);
       const branchResult = await post<{ branch: string }>('/api/branch', { slug: trimmedSlug, kind: 'blog', checkoutExisting: true });
@@ -191,7 +268,7 @@ export default function ComposeView() {
         logLine('Updating post...');
         const updateResult = await post<{ path: string }>(`/api/posts/${encodeURIComponent(trimmedSlug)}`, {
           body,
-          frontMatter: { title, description, tags: tagList() }
+          frontMatter: { title, description, tags: tagList(), date: isoDate }
         });
         newPath = updateResult.data?.path ?? null;
       } else {
@@ -201,7 +278,8 @@ export default function ComposeView() {
           description,
           slug: trimmedSlug,
           body,
-          tags: tagList()
+          tags: tagList(),
+          date: isoDate
         });
         newPath = createResult.data?.path ?? null;
         setExists(true);
@@ -299,7 +377,8 @@ export default function ComposeView() {
                 </button>
               </div>
               <span className="muted">
-                Typing shows matching existing slugs to pick from. Leave this blank and Publish will create a brand-new post instead.
+                Typing shows matching existing slugs to pick from. For a new post, this auto-fills from Title until you type here
+                yourself; leave it blank (and Title empty) and Publish will create a brand-new post instead.
               </span>
             </div>
 
@@ -311,6 +390,16 @@ export default function ComposeView() {
             <div className="field">
               <span className="field-label">Description</span>
               <input type="text" placeholder="Description" value={description} onChange={(event) => setDescription(event.target.value)} />
+            </div>
+
+            <div className="field">
+              <span className="field-label">Date</span>
+              <input
+                type="text"
+                placeholder="optional -- defaults to now (e.g. 2026-05-18 or May 18, 2026)"
+                value={date}
+                onChange={(event) => setDate(event.target.value)}
+              />
             </div>
 
             <div className="field">
