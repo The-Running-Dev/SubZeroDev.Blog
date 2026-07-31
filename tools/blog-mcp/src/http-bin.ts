@@ -28,11 +28,13 @@ async function main(): Promise<void> {
   );
 
   // repoOptions.repoPath is always '<workspace>/repo' -- see ensureRepoOptionsFromEnv.
-  const auditLogPath = path.join(path.dirname(repoOptions.repoPath), 'state', 'audit.log');
+  const stateDir = path.join(path.dirname(repoOptions.repoPath), 'state');
+  const auditLogPath = path.join(stateDir, 'audit.log');
 
   createHttpServer({
     repoRoot: repo.repoRoot,
     auditLogPath,
+    stateDir,
     ...(host ? { host } : {}),
     ...(port !== undefined ? { port } : {}),
     ...(token ? { token } : {}),

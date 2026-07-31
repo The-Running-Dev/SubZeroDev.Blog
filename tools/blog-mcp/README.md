@@ -207,6 +207,55 @@ suite (which drove the API directly and so never exercised the client-side
 sequencing) — see `public/app.js`'s `armButton` handler and the comment
 there.
 
+### Scheduler (cron)
+
+`BLOG_MCP_ALLOW_SCHEDULER=1` (and `BLOG_MCP_ALLOW_REMOTE=1`) starts a 60s
+tick loop inside the `serve` process (`src/scheduler/engine.ts`) alongside
+registering the `blog_schedule_*` tools. Model (i) only — **hold the
+branch/PR, merge at time T** — never "merge now, publish later via a future
+frontmatter date." That alternative was considered and rejected: it depends
+on unverified assumptions about the shared Docusaurus template's build
+behavior, and its failure mode is *silent early publication* to RSS/Atom
+subscribers, versus hold-then-merge's worst case of *published late*. See
+MILESTONES.md Milestone 8 for the full comparison.
+
+The PR already exists (opened via `blog_create_pr`, by a human or the UI's
+Compose flow) before a job is ever scheduled — nothing here creates a post
+or opens a PR on a timer. Each tick, for every due job:
+
+1. Refuses to act at all while the working tree is dirty or parked off the
+   base branch — fail-safe, not an error. (`blog_create_branch` only checks
+   *staged* changes; the scheduler requires fully clean.)
+2. Re-reads the PR's live state via `blog_pr_status` — **never a locally
+   cached "already armed" flag** — so a crash between arming and persisting
+   status self-heals on the next tick instead of getting stuck.
+3. `MERGED` → job done. `CLOSED` → terminal `needs-attention`. A merge
+   conflict → terminal `needs-attention`, **never retried**: there is no
+   rebase tool and by design never will be. Otherwise, (re-)arms auto-merge
+   with the SHA validated at schedule time; a SHA mismatch (the branch moved)
+   is also terminal `needs-attention` — `blog_arm_auto_merge`'s own message
+   says "revalidate and retry," meaning a human decision, not this loop
+   silently substituting a SHA nobody told it to trust.
+
+Every job explicitly declares its own missed-tick policy — never an
+implicit default: `{ mode: 'catch_up' }` runs it whenever next noticed, or
+`{ mode: 'skip_if_older_than', seconds }` abandons it past a staleness
+bound. `schedule.json` (`${BLOG_MCP_WORKSPACE}/state/schedule.json`) is
+written temp-file-then-rename, so a `SIGKILL` mid-write can never corrupt
+it; a missing or corrupted file is treated as empty rather than crashing
+the tick loop. A single in-process guard prevents overlapping ticks (this
+is one scheduler in one process, not a distributed lease protocol — running
+multiple `serve` containers against the same workspace volume is
+unsupported, matching the existing single-instance assumption already
+implicit in the in-process repo mutex). `SIGTERM`/`SIGINT` wait for any
+in-flight tick to finish before the process exits, so a shutdown can never
+land mid-`git`-write.
+
+The scheduler's own registration profile (`CRON_CAPABILITIES`,
+`src/serve/capabilities.ts`) has `write: false` — it only ever calls
+`blog_pr_status`/`blog_arm_auto_merge` (Tier C, registered independent of
+write-tier tools), never `blog_create_post`/`blog_stage`/`blog_add_tag`.
+
 ## Capability tiers
 
 Tiers gate tool **registration**, not just behavior — an unregistered tool
@@ -220,6 +269,7 @@ talked into existing by text embedded in a blog draft or a PR comment.
 | `BLOG_MCP_READ_ONLY=1` | off | Unregisters every write tool (Tier A writes, all of Tier B, and Tier C). Tier D (monitoring) stays registered, since it's read-only. |
 | `BLOG_MCP_ALLOW_REMOTE=1` | off | Registers Tier C (push/PR/auto-merge). Ignored if `BLOG_MCP_READ_ONLY=1` is also set. |
 | `BLOG_MCP_ALLOW_MONITOR=0` | on | Unregisters Tier D (CI/deploy monitoring). Set to disable it explicitly; it's on by default because it never writes anything. |
+| `BLOG_MCP_ALLOW_SCHEDULER=1` | off | Registers the scheduler tools (`blog_schedule_publish`/`_list_scheduled_jobs`/`_cancel_scheduled_job`). Requires `BLOG_MCP_ALLOW_REMOTE=1` too — unlike Tier C, **not** gated by `BLOG_MCP_READ_ONLY`, since these tools never touch a local-write tool. |
 
 ```bash
 docker run -i --rm -e BLOG_MCP_READ_ONLY=1 -v blog-workspace:/workspace -e BLOG_MCP_CLONE_URL -e BLOG_MCP_GIT_USER_NAME -e BLOG_MCP_GIT_USER_EMAIL subzerodev-blog-mcp
@@ -285,6 +335,12 @@ CI/deploy monitoring (read-only against GitHub; on by default):
 
 All `wait_*` tools are bounded: `timeoutSeconds` is capped at 1800 regardless of what's requested, so nothing can poll forever.
 
+Scheduler (registered only with `BLOG_MCP_ALLOW_SCHEDULER=1` **and** `BLOG_MCP_ALLOW_REMOTE=1`; see [Scheduler (cron)](#scheduler-cron)):
+
+- `blog_schedule_publish` — holds an already-open PR and arms auto-merge once `scheduledAt` arrives (hold-then-merge; there is no "create and publish on a schedule" tool). Cross-checks the PR is open, not a draft, and that `headSha` matches its actual current head *at schedule time*, same as `blog_arm_auto_merge` does again at arm time.
+- `blog_list_scheduled_jobs` — read-only, optional `status` filter.
+- `blog_cancel_scheduled_job` — only while a job is still `pending`; refuses on anything already armed, merged, or otherwise terminal.
+
 Every tool returns one envelope shape: `{ ok, kind, summary, data?, findings?, diagnostics? }`.
 `kind: 'validation'` and `kind: 'precondition'` are normal (non-`isError`) results —
 a gate that correctly reports three bad tags executed perfectly. Only
@@ -300,6 +356,7 @@ npm test        # vitest
 node test/smoke-stdio.mjs                  # exercises the built server over a real stdio subprocess
 node test/smoke-stdio.mjs --read-only      # same, asserting write and remote tools are unregistered
 node test/smoke-stdio.mjs --remote         # same, asserting Tier C tools are registered
+node test/smoke-stdio.mjs --scheduler      # same, asserting the blog_schedule_* tools are registered
 BLOG_MCP_CLONE_URL=https://github.com/The-Running-Dev/SubZeroDev.Blog.git \
 BLOG_MCP_WORKSPACE=/tmp/blog-workspace \
 BLOG_MCP_GIT_USER_NAME=blog-bot BLOG_MCP_GIT_USER_EMAIL=bot@subzerodev.com \
@@ -319,3 +376,7 @@ Remote and monitor tool tests never touch real GitHub: `test/remote.test.ts` dri
 `test/auth.test.ts` covers password hashing (round trip, wrong password, two hashes of the same password differing but both verifying, a malformed stored hash rejected rather than throwing), session creation/sliding-expiry/expiry-deletes-the-entry (via `vi.useFakeTimers()`), and the login rate limiter's window. `test/serve.test.ts` drives `createServeServer` with real `fetch()` calls end to end: the `/` redirect-to-`/login` gate, the full login → cookie → `/api` round trip, every `/api` rejection path (missing CSRF header, disallowed Origin, no session) against real post/log/branch/health data, and that the UI (and `/login`/`/api`) are cleanly disabled — 404, not silently open — when `BLOG_MCP_UI_PASSWORD_HASH` is unset. One of its assertions (`/api` allows a *missing* `Origin` header) exists specifically because manual browser verification of this phase caught a real bug: a same-origin `fetch` POST from `login.html` did not send an `Origin` header at all, so the original "Origin must be present" check locked out the login form itself.
 
 `test/serve-writes.test.ts` drives every write route end to end over real HTTP, exactly like a browser would, against a scratch bare git remote (never the live checkout): create a branch, create a post, a malformed create-post request failing validation without crashing (exercising `client.ts`'s no-`structuredContent` fallback), stage, commit, push (plus the base-branch-push refusal), open a PR and arm auto-merge via `test/fixtures-bin/gh-shim.mjs`, a SHA-mismatch refusal, and an update. Manually clicking through the Compose UI in a real browser during this phase caught a second real bug beyond what the HTTP-level tests could reach: the "Arm auto-merge" button fetched its "expected" head SHA from the same `GET /api/pr/:number` call it then validated against, making the check tautological. The fix (use the SHA the session's own `POST /api/push` actually returned) lives in `public/app.js` and has no vitest coverage since this project has no browser/DOM test runner -- the browser walkthrough itself was the regression test.
+
+`test/scheduler-store.test.ts` covers `schedule.json`'s atomic read/write: missing file, corrupted file, wrong top-level shape (all treated as empty, never thrown), no stray temp file left behind on success, and a second save fully replacing the first. `test/scheduler-engine.test.ts` drives `runTick` against a real scratch git repo and `gh-shim.mjs`: the dirty-tree and parked-off-base fail-safes, a not-yet-due job left untouched, a successful arm, `MERGED`/`CLOSED`/`CONFLICTING` all reaching terminal states correctly (the conflict case asserting it is never retried), a SHA-mismatch reaching `needs-attention` rather than substituting a new SHA, both `skip_if_older_than` and `catch_up` missed-tick policies, and a transient infrastructure failure leaving the job `pending` rather than a false terminal verdict. A separate `startScheduler` test (with an injectable `tickFn`) proves the in-flight guard actually prevents overlapping ticks and that `stop()` drains a tick already in progress rather than interrupting it. `test/tools-scheduler.test.ts` exercises `blog_schedule_publish`'s own up-front cross-checks (PR must be open, not a draft, and the supplied `headSha` must match) plus `blog_list_scheduled_jobs`'s status filter and `blog_cancel_scheduled_job`'s pending-only refusal, all via `test/helpers/fakeServer.ts`.
+
+`test/http-scheduler-wiring.test.ts` is a regression test for a real bug this phase's Docker verification caught and the unit tests above did not: `stateDir` was threaded into the scheduler *engine*'s own serverOptions (`serve-bin.ts`) but not into `createMcpRequestHandler`/`createHttpServer`/`createServeServer`'s serverOptions, so `blog_schedule_publish` failed with "no state directory configured" the moment it was called over a real `/mcp` request. The gap existed because `test/tools-scheduler.test.ts` builds a `ToolContext` by hand, with `stateDir` set directly -- it never exercises the option-threading path a real client actually goes through. This test does: `createHttpServer({ repoRoot, stateDir })` with env-derived capabilities (`BLOG_MCP_ALLOW_REMOTE=1` + `BLOG_MCP_ALLOW_SCHEDULER=1`, not an explicit override), then a real `initialize` → `tools/list` → `tools/call blog_schedule_publish` round trip over HTTP.

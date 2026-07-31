@@ -23,10 +23,17 @@ function send(child, message) {
   child.stdin.write(JSON.stringify(message) + '\n');
 }
 
+// Module-scope so the outer .finally() can always kill it, even when main()
+// throws (a timed-out waitFor(), a failed assertion) before reaching its own
+// child.kill() call -- otherwise a failure leaks an orphaned server process
+// that outlives this script.
+let child;
+
 async function main() {
   const readOnly = process.argv.includes('--read-only');
   const remote = process.argv.includes('--remote');
-  const child = spawn('node', [serverEntry], {
+  const scheduler = process.argv.includes('--scheduler');
+  child = spawn('node', [serverEntry], {
     stdio: ['pipe', 'pipe', 'pipe'],
     env: {
       ...process.env,
@@ -35,7 +42,8 @@ async function main() {
       BLOG_MCP_GIT_USER_NAME: 'blog-mcp-smoke',
       BLOG_MCP_GIT_USER_EMAIL: 'blog-mcp-smoke@example.test',
       ...(readOnly ? { BLOG_MCP_READ_ONLY: '1' } : {}),
-      ...(remote ? { BLOG_MCP_ALLOW_REMOTE: '1' } : {})
+      ...(remote || scheduler ? { BLOG_MCP_ALLOW_REMOTE: '1' } : {}),
+      ...(scheduler ? { BLOG_MCP_ALLOW_SCHEDULER: '1' } : {})
     }
   });
 
@@ -101,10 +109,17 @@ async function main() {
   console.log(`[smoke] capability gating ok (readOnly=${readOnly})`);
 
   const hasRemoteTool = toolNames.includes('blog_push');
-  const remoteExpected = remote && !readOnly;
+  // --scheduler also sets BLOG_MCP_ALLOW_REMOTE=1 (the scheduler tools
+  // require it), so remote tools are expected in that case too.
+  const remoteExpected = (remote || scheduler) && !readOnly;
   if (remoteExpected && !hasRemoteTool) throw new Error('BLOG_MCP_ALLOW_REMOTE=1 but blog_push is not registered.');
   if (!remoteExpected && hasRemoteTool) throw new Error('blog_push is registered without BLOG_MCP_ALLOW_REMOTE=1 (or despite read-only).');
   console.log(`[smoke] remote gating ok (remote=${remote}, readOnly=${readOnly})`);
+
+  const hasSchedulerTool = toolNames.includes('blog_schedule_publish');
+  if (scheduler && !hasSchedulerTool) throw new Error('BLOG_MCP_ALLOW_SCHEDULER=1 + BLOG_MCP_ALLOW_REMOTE=1 but blog_schedule_publish is not registered.');
+  if (!scheduler && hasSchedulerTool) throw new Error('blog_schedule_publish is registered without BLOG_MCP_ALLOW_SCHEDULER=1.');
+  console.log(`[smoke] scheduler gating ok (scheduler=${scheduler})`);
 
   if (!toolNames.includes('blog_validate_posts')) throw new Error('blog_validate_posts is missing from tools/list.');
 
@@ -121,8 +136,6 @@ async function main() {
     throw new Error(`blog_validate_posts reported findings against the real repo (golden anchor should be clean): ${JSON.stringify(structured, null, 2)}`);
   }
   console.log('[smoke] blog_validate_posts ok:', structured.summary);
-
-  child.kill();
   console.log('[smoke] ALL CHECKS PASSED');
 }
 
@@ -132,5 +145,6 @@ main()
     process.exitCode = 1;
   })
   .finally(() => {
+    child?.kill();
     fs.rmSync(workspace, { recursive: true, force: true });
   });

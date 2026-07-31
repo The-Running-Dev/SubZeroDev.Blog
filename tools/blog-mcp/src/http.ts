@@ -6,6 +6,8 @@ import { createServer, type CreateServerOptions } from './server.js';
 export interface HttpServerOptions {
   repoRoot?: string;
   auditLogPath?: string;
+  /** Directory for scheduler state (schedule.json). Required for blog_schedule_* tools to work when registered (BLOG_MCP_ALLOW_SCHEDULER=1). */
+  stateDir?: string;
   host?: string;
   port?: number;
   /** Bearer token required on every request. If unset, the server logs a warning and allows unauthenticated access -- acceptable only because the default bind is loopback-only. */
@@ -61,7 +63,8 @@ export function createMcpRequestHandler(options: HttpServerOptions = {}): (req: 
   const allowedOrigins = options.allowedOrigins ?? [`http://${host}:${port}`, `http://localhost:${port}`];
   const serverOptions: CreateServerOptions = {
     ...(options.repoRoot ? { repoRoot: options.repoRoot } : {}),
-    ...(options.auditLogPath ? { auditLogPath: options.auditLogPath } : {})
+    ...(options.auditLogPath ? { auditLogPath: options.auditLogPath } : {}),
+    ...(options.stateDir ? { stateDir: options.stateDir } : {})
   };
 
   if (!token) {

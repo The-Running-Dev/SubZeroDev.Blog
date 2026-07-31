@@ -208,11 +208,36 @@ checkout anywhere.
   the session's own push actually returned; this class of bug has no
   automated regression coverage, since the project has no browser/DOM test
   runner and the bug lived entirely in client-side JS.
-- Phases 6–7: planned. See the phase list in this milestone's design plan
-  for the cron scheduler that only ever holds a PR and arms GitHub's own
-  auto-merge at the scheduled time (never merges directly, never fires
-  early on unverified assumptions about build behavior), and the
-  conditional `blog_dispatch_deploy` tool.
+- Phase 6 (delivered): the cron scheduler. Model (i) only -- "hold the
+  branch/PR, merge at time T" -- three new tools (`blog_schedule_publish`,
+  `blog_list_scheduled_jobs`, `blog_cancel_scheduled_job`) gated behind
+  `BLOG_MCP_ALLOW_SCHEDULER=1` + `BLOG_MCP_ALLOW_REMOTE=1`, plus a 60s tick
+  loop (`src/scheduler/engine.ts`) running inside the `serve` process.
+  Every job explicitly declares its own missed-tick policy
+  (`catch_up`/`skip_if_older_than`) rather than an implicit default; a
+  merge conflict or a SHA that no longer matches the PR's actual head is
+  terminal `needs-attention`, never retried automatically.
+  `src/server.ts`'s registration gating was refactored so Tier C (remote)
+  no longer nests under `write` -- the scheduler's own profile
+  (`CRON_CAPABILITIES`) needs `blog_pr_status`/`blog_arm_auto_merge`
+  without any local-write tool, and env-derived `defaultCapabilities()` is
+  unchanged for every existing caller (`remote` still only true when
+  `write` is too). A real Docker container run caught a genuine wiring gap
+  no unit test reached: `stateDir` was threaded into the scheduler
+  *engine*'s own options but not into `createMcpRequestHandler`/
+  `createHttpServer`/`createServeServer`, so `blog_schedule_publish` failed
+  over a real `/mcp` call even though the tool's own logic (tested via a
+  hand-built `ToolContext`) was correct. Fixed, and
+  `test/http-scheduler-wiring.test.ts` now exercises the real
+  option-threading path so this class of gap fails a unit test next time.
+  End-to-end verified in the built image: scheduled a PR, waited for a real
+  60-second tick to fire unprompted, and watched the job move
+  `pending` → `armed` on its own -- with the parked-branch fail-safe first
+  confirmed to correctly block it until the working tree was back on the
+  base branch.
+- Phase 7 (conditional): planned. See the phase list in this milestone's
+  design plan for `blog_dispatch_deploy`, gated on the future-date/`draft`
+  experiment resolving first.
 
 Phase 1 delivered in the pull request that introduced this section; Phases 2
-through 5 in the pull requests that introduced those lines.
+through 6 in the pull requests that introduced those lines.

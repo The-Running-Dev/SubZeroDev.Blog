@@ -12,8 +12,9 @@ async function main(): Promise<void> {
   );
 
   // repoOptions.repoPath is always '<workspace>/repo' -- see ensureRepoOptionsFromEnv.
-  const auditLogPath = path.join(path.dirname(repoOptions.repoPath), 'state', 'audit.log');
-  const server = createServer({ repoRoot: repo.repoRoot, auditLogPath });
+  const stateDir = path.join(path.dirname(repoOptions.repoPath), 'state');
+  const auditLogPath = path.join(stateDir, 'audit.log');
+  const server = createServer({ repoRoot: repo.repoRoot, auditLogPath, stateDir });
   const transport = new StdioServerTransport();
 
   // Nothing but MCP framing may reach stdout in stdio mode -- every log

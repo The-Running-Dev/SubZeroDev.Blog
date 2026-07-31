@@ -9,6 +9,8 @@ import type { CreateServerOptions } from './server.js';
 export interface ServeServerOptions {
   repoRoot?: string;
   auditLogPath?: string;
+  /** Directory for scheduler state (schedule.json). Threaded into both /mcp (env-derived capabilities, which can include scheduler) and /api's serverOptions. */
+  stateDir?: string;
   host?: string;
   port?: number;
   /** Bearer token for /mcp -- same meaning as src/http.ts's. */
@@ -91,6 +93,7 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
   const serverOptions: CreateServerOptions = {
     ...(options.repoRoot ? { repoRoot: options.repoRoot } : {}),
     ...(options.auditLogPath ? { auditLogPath: options.auditLogPath } : {}),
+    ...(options.stateDir ? { stateDir: options.stateDir } : {}),
     capabilities: UI_CAPABILITIES
   };
 
@@ -103,6 +106,7 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
   const mcpHandler = createMcpRequestHandler({
     ...(options.repoRoot ? { repoRoot: options.repoRoot } : {}),
     ...(options.auditLogPath ? { auditLogPath: options.auditLogPath } : {}),
+    ...(options.stateDir ? { stateDir: options.stateDir } : {}),
     host,
     port,
     ...(options.mcpToken ? { token: options.mcpToken } : {}),

@@ -31,6 +31,8 @@ export interface ToolContext {
   auditLogPath?: string;
   /** Optional -- unset in tests that build a ToolContext by hand; every check that reads it falls back to the default (env-derived, or DEFAULT_ALLOWED_PREFIXES) when absent. */
   capabilities?: Capabilities;
+  /** Optional -- directory for scheduler state (schedule.json). Unset in tests and any caller with no workspace concept, same as auditLogPath. */
+  stateDir?: string;
 }
 
 export function isReadOnly(): boolean {
@@ -51,7 +53,7 @@ export function isMonitorEnabled(): boolean {
   return process.env.BLOG_MCP_ALLOW_MONITOR !== '0' && process.env.BLOG_MCP_ALLOW_MONITOR !== 'false';
 }
 
-/** No scheduler tools exist yet (a later phase adds them); reads the env var now so that phase doesn't also have to touch this resolver. */
+/** Gates registration of the blog_schedule_* tools (src/tools/scheduler.ts). Requires BLOG_MCP_ALLOW_REMOTE too -- see defaultCapabilities. */
 export function isSchedulerEnabled(): boolean {
   return process.env.BLOG_MCP_ALLOW_SCHEDULER === '1' || process.env.BLOG_MCP_ALLOW_SCHEDULER === 'true';
 }
@@ -59,9 +61,15 @@ export function isSchedulerEnabled(): boolean {
 /**
  * The env-derived profile used whenever a caller doesn't pass an explicit
  * `capabilities` override -- i.e. every stdio and `/mcp` HTTP server today.
- * Mirrors createServer's previous inline gating exactly: remote and
- * scheduler are only meaningful when write is also on, matching the old
- * nested `if (!isReadOnly()) { ...; if (isRemoteEnabled()) ... }` shape.
+ * `remote` mirrors createServer's previous inline gating exactly (only
+ * meaningful when write is also on, matching the old nested
+ * `if (!isReadOnly()) { ...; if (isRemoteEnabled()) ... }` shape) --
+ * unchanged from before this field existed. `scheduler` is new in Phase 6
+ * and deliberately NOT tied to write: the scheduler only ever needs
+ * blog_pr_status/blog_arm_auto_merge (Tier C, gated by `remote`), never a
+ * local-write tool, so requiring `BLOG_MCP_ALLOW_SCHEDULER=1` +
+ * `BLOG_MCP_ALLOW_REMOTE=1` is both necessary and sufficient -- exactly what
+ * the milestone plan specifies.
  */
 export function defaultCapabilities(): Capabilities {
   const write = !isReadOnly();
@@ -69,7 +77,13 @@ export function defaultCapabilities(): Capabilities {
     write,
     remote: write && isRemoteEnabled(),
     monitor: isMonitorEnabled(),
-    scheduler: write && isSchedulerEnabled(),
+    // Deliberately isRemoteEnabled() directly, not the `remote` field above:
+    // blog_schedule_publish/_list/_cancel only ever need Tier C
+    // (blog_pr_status/blog_arm_auto_merge), never a local-write tool, so
+    // gating scheduler behind `write` too would block the useful
+    // "read-only content session, but this one can still enqueue a merge"
+    // combination for no reason tied to what these tools actually touch.
+    scheduler: isRemoteEnabled() && isSchedulerEnabled(),
     writablePathPrefixes: DEFAULT_ALLOWED_PREFIXES
   };
 }

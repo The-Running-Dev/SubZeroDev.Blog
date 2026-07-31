@@ -5,13 +5,16 @@ import { registerLocalGitTools } from './tools/localGit.js';
 import { registerRemoteTools } from './tools/remote.js';
 import { registerMonitorTools } from './tools/monitor.js';
 import { registerRepoInfoTools } from './tools/repoInfo.js';
+import { registerSchedulerTools } from './tools/scheduler.js';
 import { defaultCapabilities, type Capabilities, type ToolContext } from './tools/context.js';
 
 export interface CreateServerOptions {
   repoRoot?: string;
   /** Optional path to an append-only audit log for mutating tool calls. See exec/auditLog.ts. */
   auditLogPath?: string;
-  /** Overrides the env-derived registration profile. Omit for stdio/`/mcp` HTTP -- both keep using defaultCapabilities(), unchanged. A later phase's UI/scheduler session passes its own narrower profile explicitly. */
+  /** Optional directory for scheduler state (schedule.json). See src/scheduler/store.ts. */
+  stateDir?: string;
+  /** Overrides the env-derived registration profile. Omit for stdio/`/mcp` HTTP -- both keep using defaultCapabilities(), unchanged. The serve-mode UI and cron scheduler each pass their own profile explicitly (src/serve/capabilities.ts). */
   capabilities?: Capabilities;
 }
 
@@ -39,7 +42,8 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
     repoRoot,
     config,
     capabilities,
-    ...(options.auditLogPath ? { auditLogPath: options.auditLogPath } : {})
+    ...(options.auditLogPath ? { auditLogPath: options.auditLogPath } : {}),
+    ...(options.stateDir ? { stateDir: options.stateDir } : {})
   };
 
   registerAuthoringTools(ctx);
@@ -47,13 +51,23 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
   if (capabilities.write) {
     registerAuthoringWriteTools(ctx);
     registerLocalGitTools(ctx);
-    if (capabilities.remote) {
-      registerRemoteTools(ctx);
-    }
+  }
+  // Independent of capabilities.write: the cron scheduler profile needs
+  // Tier C (blog_pr_status/blog_arm_auto_merge) without any local-write
+  // tool. For env-derived defaultCapabilities(), `remote` is still only
+  // ever true when `write` is too (preserving BLOG_MCP_ALLOW_REMOTE's
+  // documented "ignored if BLOG_MCP_READ_ONLY is set" behavior) -- this
+  // nesting only changes outcomes for an explicit capabilities override
+  // that sets write:false, remote:true, which no existing caller does.
+  if (capabilities.remote) {
+    registerRemoteTools(ctx);
   }
   if (capabilities.monitor) {
     // Read-only against GitHub, so available independent of capabilities.write.
     registerMonitorTools(ctx);
+  }
+  if (capabilities.scheduler) {
+    registerSchedulerTools(ctx);
   }
 
   return server;
