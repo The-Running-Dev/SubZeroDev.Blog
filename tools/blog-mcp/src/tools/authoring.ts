@@ -419,14 +419,44 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
         }
       }
 
-      const currentFm = match.frontMatter as unknown as PostFrontMatter;
+      const currentFm = match.frontMatter;
+      const mergedTitle = args.frontMatter?.title ?? currentFm.title;
+      const mergedDescription = args.frontMatter?.description ?? currentFm.description;
+      const mergedSlug = newSlug ?? currentFm.slug;
+      const mergedAuthors = args.frontMatter?.authors ?? currentFm.authors;
+      const mergedDate = args.frontMatter?.date ?? currentFm.date;
+      const mergedTags = args.frontMatter?.tags ?? currentFm.tags;
+
+      // The existing file on disk isn't guaranteed to satisfy REQUIRED_FIELDS
+      // (validate.ts) -- it may predate validation or have been hand-edited.
+      // Catch that here, before assemblePost, which would otherwise crash on
+      // e.g. `undefined.map()` when serializing a missing authors/tags list.
+      const missingFields: string[] = [];
+      if (typeof mergedTitle !== 'string') missingFields.push('title');
+      if (typeof mergedDescription !== 'string') missingFields.push('description');
+      if (typeof mergedSlug !== 'string') missingFields.push('slug');
+      if (!Array.isArray(mergedAuthors) || !mergedAuthors.every((a) => typeof a === 'string')) missingFields.push('authors');
+      if (typeof mergedDate !== 'string') missingFields.push('date');
+      if (!Array.isArray(mergedTags) || !mergedTags.every((t) => typeof t === 'string')) missingFields.push('tags');
+
+      if (missingFields.length > 0) {
+        return validationFailure(`Not updated: ${match.relativePath}`, [
+          {
+            path: match.relativePath,
+            severity: 'error',
+            rule: 'FrontMatterFields',
+            message: `Existing file is missing required front matter field(s) not supplied in this call: ${missingFields.join(', ')}. Pass them explicitly in frontMatter to fix the file.`
+          }
+        ]);
+      }
+
       const fm: PostFrontMatter = {
-        title: args.frontMatter?.title ?? currentFm.title,
-        description: args.frontMatter?.description ?? currentFm.description,
-        slug: newSlug ?? currentFm.slug,
-        authors: args.frontMatter?.authors ?? currentFm.authors,
-        date: args.frontMatter?.date ?? currentFm.date,
-        tags: args.frontMatter?.tags ?? currentFm.tags
+        title: mergedTitle as string,
+        description: mergedDescription as string,
+        slug: mergedSlug as string,
+        authors: mergedAuthors as string[],
+        date: mergedDate as string,
+        tags: mergedTags as string[]
       };
       const body = args.body ?? match.body;
       const content = assemblePost(fm, body);

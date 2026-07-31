@@ -24,15 +24,17 @@ it *can* run unmodified is `build/Test-Documentation.ps1` (the link/anchor/
 terminology gate), which is pure PowerShell with no Docker or network
 dependency.
 
-The repository is never baked into the image, and it is never bind-mounted
-either: on every start, the entrypoint clones (or reconciles an existing
-clone of) `BLOG_MCP_CLONE_URL` into a volume at `BLOG_MCP_WORKSPACE` before
-the server or transport starts. The container is fully self-contained — the
-only inputs are environment variables and, optionally, a named volume to
-persist the clone across restarts. This is what makes headless operation
-possible: an authoring client with no local checkout at all (a phone, a
-scheduled job, a remote automation service) can still drive the full
-publishing pipeline. See [Repo acquisition](#repo-acquisition).
+The repository is never baked into the image, and the checkout itself is
+never bind-mounted either: on every start, the entrypoint clones (or
+reconciles an existing clone of) `BLOG_MCP_CLONE_URL` into a volume at
+`BLOG_MCP_WORKSPACE` before the server or transport starts. The container is
+otherwise self-contained — its only inputs are environment variables and,
+optionally, a named volume to persist the clone across restarts. This is what
+makes headless operation possible: an authoring client with no local checkout
+at all (a phone, a scheduled job, a remote automation service) can still
+drive the full publishing pipeline. See [Repo acquisition](#repo-acquisition).
+The one deliberate exception is the directory watcher's *input* directory
+(never the checkout) — see [Watcher (directory)](#watcher-directory).
 
 ## Running
 
@@ -326,6 +328,78 @@ The scheduler's own registration profile (`CRON_CAPABILITIES`,
 `src/serve/capabilities.ts`) has `write: false` — it only ever calls
 `blog_pr_status`/`blog_arm_auto_merge` (Tier C, registered independent of
 write-tier tools), never `blog_create_post`/`blog_stage`/`blog_add_tag`.
+
+### Watcher (directory)
+
+`BLOG_MCP_ALLOW_WATCHER=1` (and `BLOG_MCP_ALLOW_REMOTE=1`, and
+`BLOG_MCP_WATCH_DIR` pointed at a real path) starts a poll loop inside the
+`serve` **and** `http` processes (`src/watcher/engine.ts`) that publishes
+`.md` files dropped into a directory — the one deliberate exception to this
+container never being bind-mounted (see [Why a container with no Docker
+inside it](#why-a-container-with-no-docker-inside-it)): `docker-compose.yml`
+bind-mounts `BLOG_MCP_WATCH_HOST_DIR` (default `./watch`) to
+`BLOG_MCP_WATCH_DIR` (default `/watch`) so there's a real host path to drop
+files into.
+
+Polling (default every 15s, `BLOG_MCP_WATCH_INTERVAL_MS`), not
+`fs.watch`/inotify — bind mounts under Docker Desktop
+(osxfs/gRPC-FUSE/virtiofs) and Windows WSL2 mounts are notoriously
+unreliable for native change-notification events across the VM boundary.
+
+A dropped file must already have **complete front matter** — title,
+description, slug, at least one tag — the same fields `blog_create_post`
+requires. Unlike Compose's "Paste raw markdown" tab, there's no human here to
+catch a bad heading-detection guess, so an incomplete file is rejected
+outright, never best-effort patched up. For each `*.md` file found directly
+in the watch directory (subdirectories are left alone):
+
+1. Claims the file immediately (`processing/`) before any git/gh action, so
+   no future tick can pick it up twice — this is also the crash marker: a
+   file still in `processing/` when the watcher starts means a prior run
+   died mid-file, and it's moved straight to `failed/` with an explanation
+   rather than silently reprocessed (it may already have an open PR).
+2. Parses it via `blog_parse_markdown` (the same parser the UI's Markdown
+   tab uses) and rejects anything with missing/empty required fields.
+3. Checks whether a post with that slug already exists (`blog_list_posts`)
+   to decide `blog_create_post` vs. `blog_update_post`.
+4. Runs the same branch → write → stage → commit → push → open-PR sequence
+   the web UI's Compose form drives, one `tools/call` at a time — the repo
+   mutex and audit log apply exactly as they would to a human's action.
+5. If `BLOG_MCP_WATCH_AUTO_MERGE` isn't explicitly disabled (on by default,
+   matching Compose's own default), arms auto-merge using the SHA this run
+   itself just pushed — never re-fetched from the PR, for the same reason
+   `blog_arm_auto_merge` takes an explicit `headSha` at all.
+6. Moves the file to `processed/` (success) or `failed/` plus a sibling
+   `.error.txt` explaining why (anything short of full success) — nothing
+   dropped is ever deleted, only moved.
+
+Only requires the working tree to be clean before a tick runs (not also
+parked on the base branch, unlike the scheduler's stricter check) —
+`blog_create_branch` always branches fresh from `origin/<base branch>`
+regardless of what's currently checked out, so being left on a previous
+file's feature branch between ticks is harmless. Files are processed one at a
+time; there is only one working tree.
+
+The watcher's own registration profile (`WATCHER_CAPABILITIES`,
+`src/serve/capabilities.ts`) has `write: true` (needed for
+`blog_create_post`/`blog_update_post`/`blog_stage`/`blog_commit`, on top of
+the same push/PR/arm-merge tools the scheduler uses), with
+`writablePathPrefixes` narrowed the same way `CRON_CAPABILITIES` is —
+dropping `.github/workflows/`, `.config/`, `tools/`, `build/` — as defense in
+depth for an unattended actor.
+
+A bind-mounted host directory arrives with the *host's* uid/gid, not
+auto-`chown`'d the way the named `blog-workspace` volume is (see
+[Repo acquisition](#repo-acquisition)) — run `chown 1000:1000 ./watch` (or
+equivalent) on the host directory so the container's non-root `node` user can
+write into `processing/`/`processed/`/`failed/`.
+
+| Env var | Default | Effect |
+|---|---|---|
+| `BLOG_MCP_ALLOW_WATCHER` | off | Must be `1`/`true` (with `BLOG_MCP_ALLOW_REMOTE=1` too) to start the watcher |
+| `BLOG_MCP_WATCH_DIR` | unset | Container-side path to watch; the watcher never starts without this set |
+| `BLOG_MCP_WATCH_INTERVAL_MS` | `15000` | Poll interval, in milliseconds |
+| `BLOG_MCP_WATCH_AUTO_MERGE` | on | Set to `0`/`false` to leave every watcher-opened PR for manual review instead |
 
 ## Capability tiers
 
