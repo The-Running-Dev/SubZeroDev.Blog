@@ -270,10 +270,18 @@ export default function ComposeView() {
               onChange={(event) => handleSlugChange(event.target.value)}
               onBlur={handleSlugBlurOrChange}
             />
-            <button type="button" onClick={() => slug.trim() && void loadExisting(slug.trim())}>
+            <button
+              type="button"
+              disabled={!slug.trim()}
+              onClick={() => slug.trim() && void loadExisting(slug.trim())}
+              title={slug.trim() ? `Load '${slug.trim()}' into the fields below` : 'Type or pick an existing slug first'}
+            >
               Load existing
             </button>
           </div>
+          <span className="muted">
+            Typing shows matching existing slugs to pick from. Leave this blank and Publish will create a brand-new post instead.
+          </span>
         </div>
 
         <div className="field">
