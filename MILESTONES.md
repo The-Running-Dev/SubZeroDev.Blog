@@ -235,9 +235,22 @@ checkout anywhere.
   `pending` → `armed` on its own -- with the parked-branch fail-safe first
   confirmed to correctly block it until the working tree was back on the
   base branch.
-- Phase 7 (conditional): planned. See the phase list in this milestone's
-  design plan for `blog_dispatch_deploy`, gated on the future-date/`draft`
-  experiment resolving first.
+- Future-date experiment (run): the cheap throwaway-PR experiment Phase 7
+  was gated on. A post dated `2036-07-31`
+  ([The-Running-Dev/SubZeroDev.Blog#38](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/38),
+  closed without merging) confirmed the future-dated post fully builds into
+  production, gets a real page, **and appears in both `rss.xml` and
+  `atom.xml`**. "This template hides future-dated posts" was folklore, not
+  fact, for this setup -- model (ii) ("merge now, publish later via a
+  future date") is now confirmed rejected, not just assumed. This leaves
+  `blog_dispatch_deploy`'s only remaining justification as its unrelated
+  second use case, recovering a failed deploy -- a smaller, separate
+  feature to decide on independently rather than something this experiment
+  argues for building.
+- Phase 7 (conditional, undecided): not started. `blog_dispatch_deploy`
+  would fire `workflow_dispatch` on `Docs Deploy` to recover a failed
+  deploy -- the only remaining use case now that the future-date scheduling
+  question above is settled against it.
 
 Phase 1 delivered in the pull request that introduced this section; Phases 2
 through 6 in the pull requests that introduced those lines.
