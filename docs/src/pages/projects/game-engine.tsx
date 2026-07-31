@@ -9,7 +9,6 @@ export default function GameEngine(): React.JSX.Element {
       title="Game Engine"
       entries={[
         {
-          label: 'Project note',
           title: 'Lucifer Chronicles: The Game I Apparently Started Writing Without Realizing It',
           description:
             'How building a game engine revealed the first chapter of an ongoing story collection.',
@@ -20,7 +19,8 @@ export default function GameEngine(): React.JSX.Element {
           title: 'Lucifer Chronicles',
           description:
             'Continue with the stories, arguments, and failed negotiations surrounding the project.',
-          href: '/series/lucifer-chronicles/'
+          href: '/series/lucifer-chronicles/',
+          variant: 'related'
         }
       ]}
     />

@@ -359,6 +359,25 @@ nav[aria-label='Blog recent posts navigation'] [aria-current='page'] {
   color: var(--ifm-font-color-secondary);
 }
 
+.content-hub__entry--related {
+  border-left: 3px solid var(--sz-accent);
+  background: var(--sz-accent-soft);
+}
+
+.content-hub__badge {
+  display: inline-block;
+  margin-bottom: 0.7rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--sz-border-strong);
+  border-radius: 999px;
+  background: var(--sz-accent-soft);
+  color: var(--sz-accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .content-hub__link {
   color: var(--sz-accent);
   font-weight: 700;
@@ -384,6 +403,16 @@ nav[aria-label='Blog recent posts navigation'] [aria-current='page'] {
 a[class*='tagRegular'],
 .blog-post-page [class*='tag_'] a {
   border-radius: 999px;
+}
+
+/*
+ * The blog layout's row is only sidebar (col--3) + content (col--7), with no
+ * third column -- the remaining 2/12 just sits empty on the right, so
+ * content reads narrower than its actual left margin implies. Give that
+ * space back to the content column so the right margin matches the left.
+ */
+.row:has(> .col--3 nav[aria-label='Blog recent posts navigation']) > main.col--7 {
+  --ifm-col-width: calc(9 / 12 * 100%);
 }
 
 a:focus-visible,

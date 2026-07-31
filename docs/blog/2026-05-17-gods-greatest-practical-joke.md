@@ -8,6 +8,7 @@ date: 2026-05-17T21:00:00Z
 tags:
   - philosophy
   - lucifer
+  - stories
 ---
 
 # God's Greatest Practical Joke

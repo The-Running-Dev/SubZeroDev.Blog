@@ -7,6 +7,7 @@ interface ContentHubEntry {
   href: string;
   label?: string;
   title: string;
+  variant?: 'related';
 }
 
 interface ContentHubProps {
@@ -32,8 +33,19 @@ export default function ContentHub({
         </header>
         <section aria-label={`${title} reading list`} className="content-hub__list">
           {entries.map((entry) => (
-            <article className="content-hub__entry" key={entry.href}>
-              {entry.label ? <p>{entry.label}</p> : null}
+            <article
+              className={
+                entry.variant === 'related'
+                  ? 'content-hub__entry content-hub__entry--related'
+                  : 'content-hub__entry'
+              }
+              key={entry.href}
+            >
+              {entry.label ? (
+                <p className={entry.variant === 'related' ? 'content-hub__badge' : undefined}>
+                  {entry.label}
+                </p>
+              ) : null}
               <h2>
                 <Link to={entry.href}>{entry.title}</Link>
               </h2>
