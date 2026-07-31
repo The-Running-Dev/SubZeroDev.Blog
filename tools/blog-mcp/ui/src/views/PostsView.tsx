@@ -73,7 +73,13 @@ export default function PostsView() {
         rows={posts.map((p) => [
           p.date,
           p.canonicalUrl ? (
-            <a key="title" href={p.canonicalUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              key="title"
+              href={p.canonicalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Computed canonical URL -- not a confirmation this post is deployed"
+            >
               {p.title}
             </a>
           ) : (
