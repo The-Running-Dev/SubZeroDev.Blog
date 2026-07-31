@@ -44,6 +44,19 @@ Build once:
 docker build -t subzerodev-blog-mcp tools/blog-mcp
 ```
 
+Or skip the local build entirely and pull the image CI publishes on every
+push to `main` (`.github/workflows/blog-mcp-image.yml`), tagged both
+`latest` and `sha-<commit>` (the latter for pinning to an exact build rather
+than trusting a floating tag):
+
+```bash
+docker pull ghcr.io/the-running-dev/subzerodev-blog-mcp:latest
+```
+
+Substitute `ghcr.io/the-running-dev/subzerodev-blog-mcp:latest` for
+`subzerodev-blog-mcp` in any `docker run`/`docker-compose.yml` reference
+below to run the published image instead of one built locally.
+
 Run with only env vars and a named volume — no bind mount anywhere
 (stdio transport, the default):
 

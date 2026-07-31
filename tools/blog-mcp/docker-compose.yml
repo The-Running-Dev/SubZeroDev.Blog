@@ -39,6 +39,15 @@
 # running `docker compose up -d`.
 
 x-blog-mcp-common: &blog-mcp-common
+  # `docker compose up -d --build` (the documented command) always builds
+  # locally, ignoring the published image entirely -- unchanged by CI now
+  # publishing ghcr.io/the-running-dev/subzerodev-blog-mcp on every push to
+  # main (see .github/workflows/blog-mcp-image.yml). Deliberately not
+  # rewiring `image:` to that registry path here: that would make a plain
+  # `docker compose up --build` tag the freshly-built local image under the
+  # *registry* name, which is surprising. To run the published image instead
+  # of building, use `docker run`/`docker pull` directly -- see
+  # tools/blog-mcp/README.md's "Running" section.
   build:
     context: .
   image: subzerodev-blog-mcp
