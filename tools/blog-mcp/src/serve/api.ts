@@ -131,6 +131,10 @@ export async function handleApiRequest(
       return callTool(serverOptions, 'blog_create_post', args);
     }
 
+    if (pathname === '/api/tags') {
+      return callTool(serverOptions, 'blog_add_tag', args);
+    }
+
     const updatePostMatch = /^\/api\/posts\/([^/]+)$/.exec(pathname);
     if (updatePostMatch) {
       const slug = safeDecodeSlug(updatePostMatch[1] as string);

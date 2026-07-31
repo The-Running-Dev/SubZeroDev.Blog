@@ -64,15 +64,38 @@ export async function ghJson<T>(args: string[], options: GhOptions): Promise<T> 
   }
 }
 
+interface GraphQlEnvelope<T> {
+  data?: T;
+  errors?: Array<{ message: string }>;
+}
+
 /**
  * Runs a GitHub GraphQL query via `gh api graphql`. `fields` become `-F
  * key=value` arguments (typed, so a numeric PR number is not silently
  * stringified in a way GraphQL's Int type rejects).
+ *
+ * `gh api graphql` prints the raw HTTP response body -- always wrapped in a
+ * top-level `data` key (confirmed against the real API, not assumed: `gh api
+ * graphql -f query='query { viewer { login } }'` returns
+ * `{"data":{"viewer":{"login":"..."}}}`, never the bare query shape).
+ * Unwrapped here so every caller works with the actual query result
+ * directly, and a top-level `errors` array (a GraphQL query can fail with
+ * HTTP 200 and `data: null`) is surfaced as a thrown error instead of a
+ * silent `Cannot read properties of undefined` deeper in the caller.
  */
 export async function ghGraphQl<T>(query: string, fields: Record<string, string | number>, options: GhOptions): Promise<T> {
   const args = ['api', 'graphql', '-f', `query=${query}`];
   for (const [key, value] of Object.entries(fields)) {
     args.push(typeof value === 'number' ? '-F' : '-f', `${key}=${value}`);
   }
-  return ghJson<T>(args, options);
+  const envelope = await ghJson<GraphQlEnvelope<T>>(args, options);
+  if (envelope.errors && envelope.errors.length > 0) {
+    throw new InfrastructureError(`gh api graphql returned error(s): ${envelope.errors.map((e) => e.message).join('; ')}`, {
+      command: ['gh', ...args]
+    });
+  }
+  if (envelope.data === undefined) {
+    throw new InfrastructureError('gh api graphql returned no data.', { command: ['gh', ...args] });
+  }
+  return envelope.data;
 }

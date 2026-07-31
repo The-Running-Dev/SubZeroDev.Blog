@@ -187,6 +187,29 @@ describe('serve mode write routes', () => {
     expect(envelope.ok).toBe(false);
   });
 
+  it('POST /api/tags adds a new controlled tag (blog_add_tag)', async () => {
+    const { status, envelope } = await post<{ key: string; permalink: string }>('/api/tags', {
+      key: 'write-path-tag',
+      label: 'Write Path Tag',
+      description: 'A fixture tag proving the /api/tags write route end to end.'
+    });
+    expect(status).toBe(200);
+    expect(envelope.ok).toBe(true);
+    expect(envelope.data?.key).toBe('write-path-tag');
+    expect(envelope.data?.permalink).toBe('/write-path-tag');
+  });
+
+  it('POST /api/tags refuses a duplicate key, not a crash', async () => {
+    const { status, envelope } = await post('/api/tags', {
+      key: 'write-path-tag',
+      label: 'Duplicate',
+      description: 'Should be refused.'
+    });
+    expect(status).toBe(200);
+    expect(envelope.ok).toBe(false);
+    expect(envelope.kind).toBe('precondition');
+  });
+
   it('POST /api/stage stages the new post', async () => {
     const { status, envelope } = await post<{ paths: string[] }>('/api/stage', { paths: [postPath] });
     expect(status).toBe(200);

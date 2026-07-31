@@ -409,44 +409,94 @@ input[type="radio"] {
   font-weight: 600;
 }
 
+.pending-tags {
+  margin-top: 0.4rem;
+}
+
+/* Dashed border signals "not a real tag yet" -- distinct from the solid
+   pill checkboxes above, which are all already-declared tags.yml entries. */
+.pending-tag-chip {
+  font: inherit;
+  color: var(--accent);
+  border-style: dashed;
+  border-color: var(--accent);
+}
+
+.pending-tag-chip:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+
+.pending-tag-chip:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
 .tag-chip input {
   margin: 0;
 }
 
-/* Pinned to the bottom of the viewport, edge-to-edge -- not just full-width
-   of main's 1400px column -- so status stays visible while scrolling a long
-   form instead of scrolling away below the fold. */
+/* A stack of individually dismissible toast cards pinned to the top-right
+   of the viewport -- not the document flow, so it never needs the form to
+   reserve space beneath it (the previous full-width bottom bar did). Not
+   auto-dismissing: a publish is a multi-step trail (branch -> write ->
+   stage -> commit -> push -> PR -> auto-merge) and an error toast can carry
+   several validation findings underneath it -- fading either away on a
+   timer would undo the point of surfacing them at all. */
 .compose-log {
   list-style: none;
   margin: 0;
-  padding: 0.75rem clamp(1.5rem, 4vw, 3rem);
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.5rem;
   font-size: 0.9rem;
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  max-height: 40vh;
+  top: 1rem;
+  right: 1rem;
+  width: min(360px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
   overflow-y: auto;
-  background: var(--bg);
-  border-top: 1px solid var(--border);
-  box-shadow: var(--shadow-raised);
   z-index: 10;
-}
-
-.compose-log:empty {
-  display: none;
+  pointer-events: none;
 }
 
 .compose-log li {
-  padding: 0.4rem 0.65rem;
-  border-radius: 0.4rem;
-  background: var(--accent-soft);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.5rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-raised);
+  pointer-events: auto;
 }
 
 .compose-log li.error {
+  border-color: rgb(192 57 43 / 40%);
   background: rgb(192 57 43 / 12%);
+}
+
+.toast-text {
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.toast-dismiss {
+  flex: none;
+  border: none;
+  background: none;
+  padding: 0;
+  width: 1.2rem;
+  height: 1.2rem;
+  line-height: 1;
+  font-size: 1rem;
+  color: inherit;
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.toast-dismiss:hover {
+  opacity: 1;
 }
