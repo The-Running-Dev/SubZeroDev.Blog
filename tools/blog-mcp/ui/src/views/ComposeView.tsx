@@ -334,6 +334,17 @@ export default function ComposeView() {
       return;
     }
 
+    // Catches the case where Slug was never touched directly (it auto-fills
+    // from Title, see the effect above) so handleSlugBlurOrChange's
+    // existing-post check never ran -- without this, Publish would branch,
+    // write, stage, and commit before blog_create_post's own existsSync
+    // check finally rejected it, wasting the whole pipeline on a post that
+    // was always going to fail.
+    if (!exists && existingSlugs.includes(trimmedSlug)) {
+      logLine(`A post with slug '${trimmedSlug}' already exists -- click "Load existing" to edit it instead of creating a new one.`, true);
+      return;
+    }
+
     const trimmedDate = date.trim();
     let isoDate: string | undefined;
     if (trimmedDate) {
