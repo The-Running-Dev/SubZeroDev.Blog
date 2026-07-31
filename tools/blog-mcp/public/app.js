@@ -207,31 +207,51 @@
     // One checkbox per tag declared in docs/blog/tags.yml -- picking from a
     // known vocabulary instead of free-typing avoids the "Unknown tag key"
     // validation error a typo'd tag name would otherwise only surface at
-    // publish time.
+    // publish time. But blog_create_post requires at least one tag, and
+    // /api/tags is fetched best-effort above -- if it failed, or the
+    // vocabulary is genuinely empty, checkboxes alone would leave no way to
+    // enter a tag at all, silently turning Publish into an always-rejects
+    // button. Fall back to the old free-text field in that case instead.
     const tagCheckboxes = existingTags.map((tag) => {
       const checkbox = el('input', { type: 'checkbox', id: `tag-${tag.key}`, value: tag.key }, []);
       const chip = el('label', { className: 'tag-chip', for: `tag-${tag.key}` }, [checkbox, tag.label || tag.key]);
       return { key: tag.key, checkbox, chip };
     });
-    const tagChecklist = el(
-      'div',
-      { className: 'tag-checklist' },
-      tagCheckboxes.length
-        ? tagCheckboxes.map((t) => t.chip)
-        : [el('span', { className: 'muted' }, ['No tags declared in docs/blog/tags.yml yet.'])]
-    );
+    const tagFallbackInput = el('input', { type: 'text', placeholder: 'tags (comma-separated)' }, []);
+    const tagsField = tagCheckboxes.length ? el('div', { className: 'tag-checklist' }, tagCheckboxes.map((t) => t.chip)) : tagFallbackInput;
+    if (!tagCheckboxes.length) {
+      logNoTagVocabulary();
+    }
 
     function logLine(text, isError) {
       statusLog.appendChild(el('li', isError ? { className: 'error' } : null, [text]));
     }
 
+    function logNoTagVocabulary() {
+      statusLog.appendChild(
+        el('li', { className: 'error' }, [
+          'Could not load a tag vocabulary from /api/tags -- falling back to a free-text tags field. A typo’d tag name will only be caught at publish time.'
+        ])
+      );
+    }
+
     function tagList() {
-      return tagCheckboxes.filter((t) => t.checkbox.checked).map((t) => t.key);
+      if (tagCheckboxes.length) {
+        return tagCheckboxes.filter((t) => t.checkbox.checked).map((t) => t.key);
+      }
+      return tagFallbackInput.value
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
     }
 
     function setCheckedTags(tags) {
-      const wanted = new Set(tags || []);
-      for (const t of tagCheckboxes) t.checkbox.checked = wanted.has(t.key);
+      if (tagCheckboxes.length) {
+        const wanted = new Set(tags || []);
+        for (const t of tagCheckboxes) t.checkbox.checked = wanted.has(t.key);
+      } else {
+        tagFallbackInput.value = (tags || []).join(', ');
+      }
     }
 
     async function loadExisting(slug) {
@@ -250,6 +270,7 @@
         state.exists = false;
         logLine(`No existing post found for '${slug}' -- Publish will create a new one. (${err.message})`);
       }
+      if (!tagCheckboxes.length) logNoTagVocabulary();
     }
 
     loadButton.addEventListener('click', () => {
@@ -359,7 +380,7 @@
         ]),
         el('div', { className: 'field' }, [el('span', { className: 'field-label' }, ['Title']), titleInput]),
         el('div', { className: 'field' }, [el('span', { className: 'field-label' }, ['Description']), descInput]),
-        el('div', { className: 'field' }, [el('span', { className: 'field-label' }, ['Tags']), tagChecklist]),
+        el('div', { className: 'field' }, [el('span', { className: 'field-label' }, ['Tags']), tagsField]),
         el('div', { className: 'field' }, [el('span', { className: 'field-label' }, ['Body']), bodyInput]),
         el('div', { className: 'compose-actions' }, [publishButton, armButton])
       ]),
