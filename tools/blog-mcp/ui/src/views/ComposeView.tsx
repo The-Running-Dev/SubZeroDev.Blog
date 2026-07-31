@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { api, post } from '../lib/api';
+import { api, post, ApiError } from '../lib/api';
 import { isoToDatetimeLocal } from '../lib/formatDate';
 
 interface Tag {
@@ -90,9 +90,44 @@ export default function ComposeView() {
   // double-invoke in dev, tagsLoaded flipping, etc.).
   const prefilledRef = useRef(false);
 
+  // .compose-log is `position: fixed` to the bottom of the viewport (a
+  // status "toast"), so it no longer pushes the form's own layout down --
+  // without reserving matching space beneath the form, a tall toast (long
+  // messages, several findings, multiple log lines) can cover the Publish
+  // button and other bottom controls. Re-measured with useLayoutEffect
+  // (synchronous, right after the DOM commits each new log line) rather
+  // than a fixed padding guess or a ResizeObserver -- the latter schedules
+  // its callback on the browser's own resize-observation step, which is one
+  // more async hop than necessary when `log` is already the one React state
+  // that drives the toast's height.
+  const logRef = useRef<HTMLUListElement>(null);
+  const [logHeight, setLogHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    setLogHeight(logRef.current?.offsetHeight ?? 0);
+  }, [log]);
+
   const logLine = useCallback((text: string, isError = false) => {
     setLog((prev) => [...prev, { text, isError }]);
   }, []);
+
+  // Surfaces the specific validation rule(s) that failed, not just the
+  // generic top-level summary ("FAILED: Not written: ...") -- without this,
+  // a rejected publish (e.g. an empty Tags field) looks identical to every
+  // other failure in the log, with no way to tell what to actually fix.
+  const logError = useCallback(
+    (err: unknown) => {
+      const message = err instanceof Error ? err.message : String(err);
+      logLine(message, true);
+      if (err instanceof ApiError && err.findings) {
+        for (const f of err.findings) {
+          if (f.severity !== 'error') continue;
+          logLine(`  - [${f.rule}] ${f.message}`, true);
+        }
+      }
+    },
+    [logLine]
+  );
 
   const setCheckedTags = useCallback(
     (tags: string[] | undefined) => {
@@ -196,7 +231,9 @@ export default function ComposeView() {
         } else if (extracted) {
           setTitle(extracted.heading);
           setBody(rawMarkdown);
-          logLine(`No front matter found -- read "${extracted.heading}" as the title (Slug auto-fills from it) and used the whole input as Body.`);
+          logLine(
+            `No front matter found -- read "${extracted.heading}" as the title (Slug auto-fills from it) and used the whole input as Body. Description and Tags still need filling in before Publish.`
+          );
         } else {
           setBody(rawMarkdown);
           logLine('No "---" front matter fences found and no leading heading to salvage a title from -- pasted the whole input into Body as-is.');
@@ -221,7 +258,7 @@ export default function ComposeView() {
       logLine('Parsed front matter and body from the pasted markdown.');
       setMode('compose');
     } catch (err) {
-      logLine(err instanceof Error ? err.message : String(err), true);
+      logError(err);
     }
   }
 
@@ -319,7 +356,7 @@ export default function ComposeView() {
         logLine(`Auto-merge armed: ${armResult.summary ?? ''}`);
       }
     } catch (err) {
-      logLine(err instanceof Error ? err.message : String(err), true);
+      logError(err);
     }
   }
 
@@ -348,7 +385,7 @@ export default function ComposeView() {
         &quot;Auto-Merge&quot; checked, that PR is also armed to merge automatically once its required checks pass -- uncheck it to
         leave the PR open for a manual review/merge instead. Nothing merges before the PR is actually opened.
       </p>
-      <div className="compose-form">
+      <div className="compose-form" style={log.length > 0 ? { paddingBottom: logHeight } : undefined}>
         <datalist id="existing-slugs">
           {existingSlugs.map((s) => (
             <option key={s} value={s} />
@@ -480,7 +517,7 @@ export default function ComposeView() {
         </div>
       </div>
 
-      <ul className="compose-log">
+      <ul className="compose-log" ref={logRef}>
         {log.map((line, i) => (
           <li key={i} className={line.isError ? 'error' : undefined}>
             {line.text}

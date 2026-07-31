@@ -331,6 +331,10 @@ input[type="radio"] {
   flex-direction: column;
   gap: 0.85rem;
   max-width: 680px;
+  /* padding-bottom is set inline (ComposeView.tsx) to .compose-log's actual
+     measured height via ResizeObserver -- a fixed guess here would either
+     waste space when the toast is empty/short or still get covered by a
+     tall one (several findings, multiple log lines). */
 }
 
 .field {
@@ -409,14 +413,32 @@ input[type="radio"] {
   margin: 0;
 }
 
+/* Pinned to the bottom of the viewport, edge-to-edge -- not just full-width
+   of main's 1400px column -- so status stays visible while scrolling a long
+   form instead of scrolling away below the fold. */
 .compose-log {
   list-style: none;
-  margin: 1rem 0 0;
-  padding: 0;
+  margin: 0;
+  padding: 0.75rem clamp(1.5rem, 4vw, 3rem);
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
   font-size: 0.9rem;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  max-height: 40vh;
+  overflow-y: auto;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  box-shadow: var(--shadow-raised);
+  z-index: 10;
+}
+
+.compose-log:empty {
+  display: none;
 }
 
 .compose-log li {
