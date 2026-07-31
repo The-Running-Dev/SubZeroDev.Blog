@@ -1,0 +1,264 @@
+import path from 'node:path';
+import type { AddressInfo } from 'node:net';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it, beforeAll, afterAll } from 'vitest';
+import { createServeServer } from '../src/serve.js';
+import { hashPassword, resetAuthStateForTests } from '../src/serve/auth.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
+const PASSWORD = 'correct horse battery staple';
+// A fixed, non-port-dependent origin -- port:0 (ephemeral) means the real
+// bound port isn't known until after listening, so an Origin check that
+// defaults to "this server's own host:port" can't be satisfied by a value
+// computed before the port is assigned. Passing this explicitly sidesteps
+// that entirely, independent of whatever port the OS hands out.
+const TEST_ORIGIN = 'http://blog-mcp.test';
+
+function sessionCookieFrom(res: Response): string {
+  const setCookie = res.headers.get('set-cookie');
+  if (!setCookie) throw new Error('Response had no Set-Cookie header.');
+  return setCookie.split(';')[0] as string;
+}
+
+describe('serve mode', () => {
+  let baseUrl: string;
+  let server: ReturnType<typeof createServeServer>;
+
+  beforeAll(async () => {
+    resetAuthStateForTests();
+    server = createServeServer({
+      repoRoot: REPO_ROOT,
+      host: '127.0.0.1',
+      port: 0,
+      uiPasswordHash: hashPassword(PASSWORD),
+      mcpAllowedOrigins: [TEST_ORIGIN]
+    });
+    await new Promise<void>((resolve) => server.once('listening', resolve));
+    const address = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(() => {
+    server.close();
+  });
+
+  it('GET /healthz works without auth, same as plain HTTP mode', async () => {
+    const res = await fetch(`${baseUrl}/healthz`);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+  });
+
+  it('GET / redirects to /login when not authenticated', async () => {
+    const res = await fetch(`${baseUrl}/`, { redirect: 'manual' });
+    expect(res.status).toBe(302);
+    expect(res.headers.get('location')).toBe('/login');
+  });
+
+  it('GET /login, /app.js, /style.css are servable without auth (the login page must be reachable)', async () => {
+    const login = await fetch(`${baseUrl}/login`);
+    expect(login.status).toBe(200);
+    expect(login.headers.get('content-type')).toContain('text/html');
+
+    const appJs = await fetch(`${baseUrl}/app.js`);
+    expect(appJs.status).toBe(200);
+
+    const css = await fetch(`${baseUrl}/style.css`);
+    expect(css.status).toBe(200);
+  });
+
+  it('unknown static paths 404', async () => {
+    const res = await fetch(`${baseUrl}/does-not-exist.html`);
+    expect(res.status).toBe(404);
+  });
+
+  it('POST /login with the wrong password is rejected and sets no cookie', async () => {
+    const res = await fetch(`${baseUrl}/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: TEST_ORIGIN },
+      body: JSON.stringify({ password: 'wrong' })
+    });
+    expect(res.status).toBe(401);
+    expect(res.headers.get('set-cookie')).toBeNull();
+  });
+
+  it('POST /login from a disallowed Origin is rejected before the password is even checked', async () => {
+    const res = await fetch(`${baseUrl}/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: 'https://evil.example' },
+      body: JSON.stringify({ password: PASSWORD })
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it('POST /login with no Origin header at all succeeds -- a real browser does not reliably send one on a same-origin POST', async () => {
+    resetAuthStateForTests();
+    const res = await fetch(`${baseUrl}/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password: PASSWORD })
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('set-cookie')).not.toBeNull();
+  });
+
+  it('5 failed logins trigger rate limiting on the 6th attempt, even with the correct password', async () => {
+    resetAuthStateForTests(); // clean baseline -- an earlier test in this file already recorded one failure
+    for (let i = 0; i < 5; i++) {
+      const res = await fetch(`${baseUrl}/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', origin: TEST_ORIGIN },
+        body: JSON.stringify({ password: 'wrong' })
+      });
+      expect(res.status).toBe(401);
+    }
+    const res = await fetch(`${baseUrl}/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: TEST_ORIGIN },
+      body: JSON.stringify({ password: PASSWORD })
+    });
+    expect(res.status).toBe(429);
+  });
+
+  describe('authenticated session', () => {
+    let cookie: string;
+
+    beforeAll(async () => {
+      // The sibling rate-limiting test deliberately leaves 5 failed attempts
+      // on the shared (module-level) limiter; beforeEach only runs between
+      // `it`s at this level, not before a nested describe's own beforeAll.
+      resetAuthStateForTests();
+      const res = await fetch(`${baseUrl}/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', origin: TEST_ORIGIN },
+        body: JSON.stringify({ password: PASSWORD })
+      });
+      expect(res.status).toBe(200);
+      cookie = sessionCookieFrom(res);
+    });
+
+    it('GET / now succeeds and serves the shell with a CSP header', async () => {
+      const res = await fetch(`${baseUrl}/`, { headers: { cookie } });
+      expect(res.status).toBe(200);
+      expect(res.headers.get('content-security-policy')).toContain("default-src 'self'");
+    });
+
+    it('/api allows a request with no Origin header at all -- verified against a real browser, a same-origin request does not reliably send one', async () => {
+      const res = await fetch(`${baseUrl}/api/posts`, { headers: { cookie, 'x-blog-mcp-csrf': '1' } });
+      expect(res.status).toBe(200);
+    });
+
+    it('/api rejects a request from a disallowed Origin', async () => {
+      const res = await fetch(`${baseUrl}/api/posts`, {
+        headers: { cookie, origin: 'https://evil.example', 'x-blog-mcp-csrf': '1' }
+      });
+      expect(res.status).toBe(403);
+    });
+
+    it('/api rejects a request missing the CSRF header even with a valid cookie and Origin', async () => {
+      const res = await fetch(`${baseUrl}/api/posts`, { headers: { cookie, origin: TEST_ORIGIN } });
+      expect(res.status).toBe(403);
+    });
+
+    it('/api rejects a request with the CSRF header and Origin but no session cookie', async () => {
+      const res = await fetch(`${baseUrl}/api/posts`, { headers: { origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      expect(res.status).toBe(401);
+    });
+
+    it('GET /api/posts succeeds with cookie + Origin + CSRF header, and lists real posts', async () => {
+      const res = await fetch(`${baseUrl}/api/posts`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { ok: boolean; data: { posts: Array<{ slug: string }> } };
+      expect(body.ok).toBe(true);
+      expect(body.data.posts.length).toBeGreaterThan(0);
+    });
+
+    it('GET /api/posts/:slug returns one specific post', async () => {
+      const list = await fetch(`${baseUrl}/api/posts`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      const listBody = (await list.json()) as { data: { posts: Array<{ slug: string }> } };
+      const slug = listBody.data.posts[0]?.slug as string;
+
+      const res = await fetch(`${baseUrl}/api/posts/${encodeURIComponent(slug)}`, {
+        headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' }
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { data: { path: string } };
+      expect(body.data.path).toContain('docs/blog/');
+    });
+
+    it('GET /api/repo/health reports read-only repo state', async () => {
+      const res = await fetch(`${baseUrl}/api/repo/health`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { data: { branch: string; baseBranch: string } };
+      expect(typeof body.data.branch).toBe('string');
+      expect(typeof body.data.baseBranch).toBe('string');
+    });
+
+    it('GET /api/log returns commit records', async () => {
+      const res = await fetch(`${baseUrl}/api/log?limit=5`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { data: { commits: unknown[] } };
+      expect(body.data.commits.length).toBeGreaterThan(0);
+    });
+
+    it('GET /api/branches returns the current branch', async () => {
+      const res = await fetch(`${baseUrl}/api/branches`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { data: { current: string } };
+      expect(typeof body.data.current).toBe('string');
+    });
+
+    it('GET /api/deploy without mergeCommitSha is a 400, not a crash', async () => {
+      const res = await fetch(`${baseUrl}/api/deploy`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      expect(res.status).toBe(400);
+    });
+
+    it('POST /api/posts (a write method) is not implemented in this phase -- falls through to 404, never silently succeeds', async () => {
+      const res = await fetch(`${baseUrl}/api/posts`, { method: 'POST', headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      expect(res.status).toBe(404);
+    });
+
+    it('POST /logout clears the cookie and the session no longer authenticates', async () => {
+      const logoutRes = await fetch(`${baseUrl}/logout`, { method: 'POST', headers: { cookie } });
+      expect(logoutRes.status).toBe(200);
+
+      const res = await fetch(`${baseUrl}/api/posts`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      expect(res.status).toBe(401);
+    });
+  });
+});
+
+describe('serve mode with the UI disabled (no BLOG_MCP_UI_PASSWORD_HASH)', () => {
+  let baseUrl: string;
+  let server: ReturnType<typeof createServeServer>;
+
+  beforeAll(async () => {
+    server = createServeServer({ repoRoot: REPO_ROOT, host: '127.0.0.1', port: 0 });
+    await new Promise<void>((resolve) => server.once('listening', resolve));
+    const address = server.address() as AddressInfo;
+    baseUrl = `http://127.0.0.1:${address.port}`;
+  });
+
+  afterAll(() => {
+    server.close();
+  });
+
+  it('/healthz and /mcp still work', async () => {
+    const health = await fetch(`${baseUrl}/healthz`);
+    expect(health.status).toBe(200);
+  });
+
+  it('/login is disabled (404), not silently accepting any password', async () => {
+    const res = await fetch(`${baseUrl}/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: TEST_ORIGIN },
+      body: JSON.stringify({ password: 'anything' })
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it('/api is disabled (404) rather than silently open', async () => {
+    const res = await fetch(`${baseUrl}/api/posts`, { headers: { origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+    expect(res.status).toBe(404);
+  });
+});

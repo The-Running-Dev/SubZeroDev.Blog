@@ -165,11 +165,35 @@ checkout anywhere.
   scheduler, a later phase) can be denied `.github/workflows/`, `.config/`,
   `tools/`, and `build/` while every other consumer keeps the full default
   allowlist.
-- Phases 4–7: planned. See the phase list in this milestone's design plan for
-  the `serve` mode with an in-process MCP-client-driven web UI and a cron
-  scheduler that only ever holds a PR and arms GitHub's own auto-merge at the
-  scheduled time (never merges directly, never fires early on unverified
-  assumptions about build behavior).
+- Phase 4 (delivered): `serve` mode -- a third transport (`src/serve.ts` /
+  `src/serve-bin.ts`) exposing `/mcp` and `/healthz` (unchanged from HTTP
+  transport), a read-only `/api/*`, and a small static UI at `/`
+  (`tools/blog-mcp/public/`: plain HTML + `fetch`, no framework, no bundler,
+  no CDN assets). Every `/api` route is an explicit `tools/call` over an
+  in-process MCP client (`InMemoryTransport`, `src/serve/client.ts`) rather
+  than a generic call-any-tool-by-name proxy, so the UI is provably
+  incapable of anything an MCP client's tool list wouldn't allow. Auth: a
+  256-bit session id in an `HttpOnly`/`SameSite=Strict` cookie, tracked
+  server-side with a 30-minute sliding expiry, a rate-limited login, and a
+  required `X-Blog-Mcp-Csrf` header on `/api` -- deliberately a separate
+  secret (`BLOG_MCP_UI_PASSWORD_HASH`) from `BLOG_MCP_HTTP_TOKEN`, since one
+  is a machine bearer token and the other a password typed into a browser.
+  Manual browser verification of this phase caught a real bug the design
+  review's Origin-based CSRF plan had missed: a same-origin `fetch` POST
+  from the login page did not reliably send an `Origin` header at all, so
+  requiring one outright would have locked out the login form itself; the
+  fix mirrors `/mcp`'s existing policy (missing Origin allowed, only a
+  *present, disallowed* one rejected) and leans on `SameSite=Strict` plus
+  the custom CSRF header as the actual defenses. Verified end to end against
+  the built Docker image with no bind mount: real clone, login, session
+  cookie, and `/api` calls returning real post/log/health data over `curl`.
+  Read-only by design -- Phase 5 adds write routes without touching this
+  phase's capabilities or auth plumbing.
+- Phases 5–7: planned. See the phase list in this milestone's design plan
+  for UI writes, the cron scheduler that only ever holds a PR and arms
+  GitHub's own auto-merge at the scheduled time (never merges directly,
+  never fires early on unverified assumptions about build behavior), and the
+  conditional `blog_dispatch_deploy` tool.
 
-Phase 1 delivered in the pull request that introduced this section; Phase 2
-and Phase 3 in the pull requests that introduced those lines.
+Phase 1 delivered in the pull request that introduced this section; Phases 2
+through 4 in the pull requests that introduced those lines.

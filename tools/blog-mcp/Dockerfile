@@ -47,6 +47,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY package.json ./
+COPY public ./public
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
@@ -60,10 +61,10 @@ USER node
 ENV HOME=/home/node
 ENV BLOG_MCP_WORKSPACE=/workspace
 
-# Documentation only -- EXPOSE does not publish the port by itself. HTTP
-# mode binds 127.0.0.1 by default, which `-p` cannot forward into; pass
-# `-e BLOG_MCP_HTTP_HOST=0.0.0.0` explicitly when running `... http` with a
-# published port.
+# Documentation only -- EXPOSE does not publish the port by itself. Both
+# http and serve modes bind 127.0.0.1 by default, which `-p` cannot forward
+# into; pass `-e BLOG_MCP_HTTP_HOST=0.0.0.0` explicitly when running either
+# with a published port.
 EXPOSE 8765
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]

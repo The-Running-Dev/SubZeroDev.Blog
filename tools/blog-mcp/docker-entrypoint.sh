@@ -29,8 +29,11 @@ case "$MODE" in
   http)
     exec node /app/dist/http-bin.js
     ;;
+  serve)
+    exec node /app/dist/serve-bin.js
+    ;;
   *)
-    echo "blog-mcp: unknown transport '$MODE' (expected 'stdio' or 'http')." >&2
+    echo "blog-mcp: unknown transport '$MODE' (expected 'stdio', 'http', or 'serve')." >&2
     exit 1
     ;;
 esac

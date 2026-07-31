@@ -145,6 +145,55 @@ Only `POST /mcp` is implemented (stateless mode has no session to `GET` an
 SSE stream from or `DELETE`); both return `405`. `GET /healthz` returns
 `{"ok":true}` without auth, for container health checks.
 
+### Serve mode (web UI)
+
+`serve` is a third transport (`src/serve.ts` / `src/serve-bin.ts`), one Node
+process, no supervisor: `/mcp` and `/healthz` (identical to HTTP transport
+above), a read-only `/api/*` (list posts, show a post, git log, branches,
+repo health, PR/check/deploy status), and a small static UI at `/` — plain
+HTML + `fetch`, no framework, no bundler, no CDN assets (`tools/blog-mcp/public/`).
+Writes (create/update a post, branch → commit → push → PR → arm auto-merge)
+are a later phase; this one is read-only end to end, proving the plumbing
+and the auth surface at zero write risk.
+
+```bash
+docker run --rm -p 8765:8765 \
+  -v blog-workspace:/workspace \
+  -e BLOG_MCP_CLONE_URL=https://github.com/The-Running-Dev/SubZeroDev.Blog.git \
+  -e BLOG_MCP_GIT_USER_NAME=blog-bot -e BLOG_MCP_GIT_USER_EMAIL=bot@subzerodev.com \
+  -e BLOG_MCP_HTTP_HOST=0.0.0.0 -e GH_TOKEN -e BLOG_MCP_UI_PASSWORD_HASH \
+  subzerodev-blog-mcp serve
+```
+
+The UI reuses every `BLOG_MCP_HTTP_*` env var from HTTP transport above
+(`_HOST`, `_PORT`, `_TOKEN` for `/mcp`, `_ALLOWED_ORIGINS`), plus:
+
+| Env var | Default | Effect |
+|---|---|---|
+| `BLOG_MCP_UI_PASSWORD_HASH` | unset | `scrypt:<saltHex>:<hashHex>` (see `src/serve/auth.ts`'s `hashPassword`). **Unset disables `/login`, the UI, and `/api` entirely** (404) — `/mcp` and `/healthz` keep working. Generate one after building: `node -e "console.log(require('./dist/serve/auth.js').hashPassword(process.argv[1]))" '<password>'`. Deliberately a separate secret from `BLOG_MCP_HTTP_TOKEN` — one is a machine bearer token, the other a password a human types into a browser; conflating them means the same value sits in shell history/`ps` *and* a browser's autofill store. |
+
+Auth model: a 256-bit random session id in an `HttpOnly`, `SameSite=Strict`
+cookie, tracked server-side (an in-memory map, so a restart invalidates every
+session), 30-minute sliding expiry, and a rate-limited login (5 failed
+attempts / 15 minutes). `/api` additionally requires a custom
+`X-Blog-Mcp-Csrf` header on every request — a cross-site form/image/script
+tag cannot set a custom header, so the classic CSRF vectors are blocked
+independent of `SameSite`. **A missing `Origin` header is allowed, same as
+`/mcp`'s `Origin` check** — verified against a real browser: a same-origin
+`fetch` POST does not reliably send one, so requiring it outright would lock
+out the login form itself. `Content-Security-Policy: default-src 'self'` is
+set on every response the static UI serves; post bodies and any
+author-controlled text are rendered via `textContent`, never `innerHTML`.
+
+The UI session's registration profile is always the full one — write +
+remote + monitor (`src/serve/capabilities.ts`) — independent of
+`BLOG_MCP_READ_ONLY`/`BLOG_MCP_ALLOW_REMOTE`; what actually keeps this phase
+read-only is that `src/serve/api.ts`'s route table only implements `GET`
+routes. Every route is an explicit `tools/call` over an in-process MCP
+client (`InMemoryTransport`, `src/serve/client.ts`) — never a generic
+"call any tool by name" proxy, which would silently re-expose whatever
+write tools are registered.
+
 ## Capability tiers
 
 Tiers gate tool **registration**, not just behavior — an unregistered tool
@@ -253,3 +302,5 @@ Remote and monitor tool tests never touch real GitHub: `test/remote.test.ts` dri
 `test/repoInfo.test.ts` exercises `blog_log`/`blog_branches`/`blog_repo_health` and `blog_sync_base`'s `ffOnly` fast-forward against a scratch bare remote, and asserts the audit log picks up a mutating call (`blog_sync_base`) while never logging a read-only one (`blog_log`). `test/repoLock.test.ts` proves the mutex actually serializes overlapping calls (not just "happens to run in order") and that one rejected call never wedges the queue for calls behind it. `test/auditLog.test.ts` covers the no-op-when-unset path, secret scrubbing, and that a write failure never throws.
 
 `test/capabilities.test.ts` calls `createServer({ capabilities })` directly (introspecting the real `McpServer`'s registered tool names, not a fake) and proves the override wins over env in both directions — write+remote registered despite `BLOG_MCP_READ_ONLY=1`, and vice versa — plus that omitting `capabilities` reproduces the exact env-derived tool set from before this option existed. A second block proves `writablePathPrefixes` isn't just plumbing: `blog_stage` actually refuses a path that's inside the module's `DEFAULT_ALLOWED_PREFIXES` but outside a narrower override.
+
+`test/auth.test.ts` covers password hashing (round trip, wrong password, two hashes of the same password differing but both verifying, a malformed stored hash rejected rather than throwing), session creation/sliding-expiry/expiry-deletes-the-entry (via `vi.useFakeTimers()`), and the login rate limiter's window. `test/serve.test.ts` drives `createServeServer` with real `fetch()` calls end to end: the `/` redirect-to-`/login` gate, the full login → cookie → `/api` round trip, every `/api` rejection path (missing CSRF header, disallowed Origin, no session) against real post/log/branch/health data, and that the UI (and `/login`/`/api`) are cleanly disabled — 404, not silently open — when `BLOG_MCP_UI_PASSWORD_HASH` is unset. One of its assertions (`/api` allows a *missing* `Origin` header) exists specifically because manual browser verification of this phase caught a real bug: a same-origin `fetch` POST from `login.html` did not send an `Origin` header at all, so the original "Origin must be present" check locked out the login form itself.
