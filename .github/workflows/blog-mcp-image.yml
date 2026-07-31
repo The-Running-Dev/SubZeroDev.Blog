@@ -1,0 +1,134 @@
+name: blog-mcp Image
+
+# Builds and publishes the blog-mcp MCP server's Docker image
+# (tools/blog-mcp/Dockerfile) to ghcr.io. A brand-new capability: nothing in
+# this repo currently runs blog-mcp's own test suite, and nothing publishes
+# this image anywhere -- every user has had to build it themselves from
+# source. This is intentionally its own file, never a job added to
+# docs-ci.yml/docs-deploy.yml -- see AGENTS.md's "installer-owned build and
+# delivery files" section; those two carry load-bearing markers and a
+# documented single consumer-inserted step, nothing else.
+#
+# Path-filtered on purpose (unlike the docs required checks, which
+# deliberately avoid path filters so a required check that never runs can't
+# permanently block a PR) -- this workflow is not a required status check,
+# so filtering to actual blog-mcp changes is correct here.
+
+"on":
+    push:
+        branches:
+            - main
+        paths:
+            - "tools/blog-mcp/**"
+            - ".github/workflows/blog-mcp-image.yml"
+    pull_request:
+        paths:
+            - "tools/blog-mcp/**"
+            - ".github/workflows/blog-mcp-image.yml"
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    test:
+        name: Test blog-mcp
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: tools/blog-mcp
+        steps:
+            # fetch-depth: 0 (full history), not the actions/checkout default
+            # shallow fetch-depth: 1 -- blog_log defaults to `git log
+            # origin/<base>`, not HEAD (a long-lived container's checkout may
+            # be parked on a stale branch, so history should reflect what's
+            # actually published). A shallow, single-ref checkout never
+            # creates an origin/main tracking ref at all, which made
+            # test/serve.test.ts's "GET /api/log" test fail here the first
+            # time this suite ever ran in real CI -- every local dev clone
+            # already has full history, so nothing surfaced this before.
+            - name: Check out repository
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v5
+              with:
+                  node-version: "22"
+                  cache: npm
+                  cache-dependency-path: |
+                      tools/blog-mcp/package-lock.json
+                      tools/blog-mcp/ui/package-lock.json
+
+            - name: Install server dependencies
+              run: npm ci
+
+            - name: Install admin UI dependencies
+              run: npm ci
+              working-directory: tools/blog-mcp/ui
+
+            - name: Build server (tsc)
+              run: npm run build
+
+            # npm test's own pretest hook builds the UI (npm run build:ui) --
+            # see tools/blog-mcp/package.json.
+            - name: Run test suite
+              run: npm test
+
+    build-and-push:
+        name: Build and publish image
+        needs: test
+        runs-on: ubuntu-latest
+        # packages: write only on this job, not at workflow level -- the
+        # test job (and every pull_request run of this job, which never
+        # pushes) has no use for a write-capable token, so it shouldn't get
+        # one just because publishing needs it somewhere in the workflow.
+        permissions:
+            contents: read
+            packages: write
+        steps:
+            - name: Check out repository
+              uses: actions/checkout@v7
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            # Skipped on pull_request runs only -- a PR only needs to prove
+            # the image still builds, never to push, so it never needs (or
+            # gets) a credential. workflow_dispatch DOES log in: it's the
+            # manual "publish now" escape hatch (e.g. republishing without a
+            # tools/blog-mcp/** change to trigger it otherwise), so it must
+            # actually push too -- see the push: condition below, which
+            # matches this one exactly rather than only covering `push`.
+            - name: Log in to ghcr.io
+              if: github.event_name != 'pull_request'
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            # Hardcoded lowercase, matching how this repo already references
+            # ghcr.io/the-running-dev/docs-template elsewhere -- GHCR image
+            # paths must be lowercase, and github.repository_owner preserves
+            # the org's actual display case ("The-Running-Dev"), which would
+            # break the push if used directly here.
+            - name: Compute image tags
+              id: meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: ghcr.io/the-running-dev/subzerodev-blog-mcp
+                  tags: |
+                      type=raw,value=latest,enable={{is_default_branch}}
+                      type=sha,prefix=sha-,format=short
+
+            - name: Build (and push except on pull_request)
+              uses: docker/build-push-action@v6
+              with:
+                  context: tools/blog-mcp
+                  push: ${{ github.event_name != 'pull_request' }}
+                  tags: ${{ steps.meta.outputs.tags }}
+                  labels: ${{ steps.meta.outputs.labels }}
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
