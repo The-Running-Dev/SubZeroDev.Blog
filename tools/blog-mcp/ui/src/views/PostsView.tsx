@@ -11,6 +11,16 @@ interface Post {
   canonicalUrl?: string;
 }
 
+/** Renders a front-matter date (an ISO string, UTC) in the viewer's own local time/timezone as "YYYY.MM.DD @ h:mm AM/PM TZ". */
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const datePart = `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
+  const timePart = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(d);
+  return `${datePart} @ ${timePart}`;
+}
+
 export default function PostsView() {
   const [posts, setPosts] = useState<Post[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -68,10 +78,15 @@ export default function PostsView() {
   return (
     <>
       <h2>Posts</h2>
+      <p className="muted">
+        &quot;Edit&quot; jumps into Compose with that post loaded. &quot;Delete&quot; opens a PR that removes the post -- it does not
+        merge or take the post down by itself; that still needs a separate, explicit &quot;Arm auto-merge&quot; click (or a manual
+        merge) on the PR it opens.
+      </p>
       <Table
         headers={['Date', 'Title', 'Slug', 'Tags', 'Actions']}
         rows={posts.map((p) => [
-          p.date,
+          formatDate(p.date),
           p.canonicalUrl ? (
             <a
               key="title"

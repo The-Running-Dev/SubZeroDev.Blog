@@ -248,8 +248,9 @@ export default function ComposeView() {
     <>
       <h2>Compose</h2>
       <p className="muted">
-        Create a new post or load an existing one by slug, then publish: branch → write → stage → commit → push → open PR. Arming
-        auto-merge is a separate, explicit step.
+        Create a new post or load an existing one by slug, then publish: branch → write → stage → commit → push → open PR. Opening
+        the PR does not merge anything by itself -- click &quot;Arm auto-merge&quot; afterward to tell GitHub to merge that PR
+        automatically once its required checks pass. Nothing merges before then.
       </p>
       <div className="compose-form">
         <datalist id="existing-slugs">
@@ -351,7 +352,13 @@ export default function ComposeView() {
           <button type="button" className="primary" onClick={() => void handlePublish()}>
             Create/update &amp; open PR
           </button>
-          <button type="button" className="primary" disabled={!pr} onClick={() => void handleArm()}>
+          <button
+            type="button"
+            className="primary"
+            disabled={!pr}
+            onClick={() => void handleArm()}
+            title="Tells GitHub to merge this PR automatically once its required checks pass -- does not merge it immediately"
+          >
             Arm auto-merge
           </button>
           {pr && (

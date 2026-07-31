@@ -23,6 +23,11 @@
   --shadow-raised: 0 18px 44px rgb(22 42 64 / 16%);
   --danger: #c0392b;
   --row-alt: rgb(52 89 122 / 5%);
+  /* Text color for content sitting on a solid var(--accent) background
+     (button.primary) -- white reads fine against the darker light-mode
+     accent, but needs to flip in dark mode, where --accent is a light
+     cyan and white-on-light-cyan is nearly unreadable. */
+  --accent-contrast: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -41,6 +46,7 @@
     --shadow-raised: 0 20px 50px rgb(0 0 0 / 38%);
     --danger: #ff8a75;
     --row-alt: rgb(124 221 255 / 5%);
+    --accent-contrast: #04141f;
   }
 }
 
@@ -139,13 +145,25 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
+/* Content links (the Posts table's title link to canonicalUrl) --
+   without this, browsers fall back to their default link/visited colors,
+   which read as barely-visible dark blue/purple against the dark theme's
+   navy panel background. nav a below overrides these for nav specifically. */
+a {
+  color: var(--accent);
+}
+
+a:visited {
+  color: var(--accent-strong);
+}
+
 /* Primary action buttons (the ones that actually do the mutating work) get
    the accent treatment; everything else (nav, "Load existing") stays plain
    so the two don't compete for attention. */
 button.primary {
   border-color: var(--border-strong);
   background: var(--accent);
-  color: #fff;
+  color: var(--accent-contrast);
   font-weight: 600;
 }
 
