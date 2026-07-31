@@ -203,11 +203,13 @@ session, not just refused at call time.
 `serve` is a third transport (`src/serve.ts` / `src/serve-bin.ts`), one Node
 process, no supervisor: `/mcp` and `/healthz` (identical to HTTP transport
 above), `/api/*` (read: list posts, show a post, list tags, git log,
-branches, repo health, PR/check/deploy status; write: create/update a post,
-parse a pasted markdown file into its fields, create a branch, stage,
-commit, push, open a PR, arm auto-merge), and a small static UI at `/` —
-plain HTML + `fetch`, no framework, no bundler, no CDN assets
-(`tools/blog-mcp/public/`). The UI's "Compose" view drives the full publish
+branches, repo health, PR/check/deploy status; write: create/update/delete a
+post, parse a pasted markdown file into its fields, create a branch, stage,
+commit, push, open a PR, arm auto-merge), and an admin UI at `/` — React +
+Vite + TypeScript (`tools/blog-mcp/ui/`, see its own README), served as a
+static build via a scoped, traversal-safe file server
+(`src/serve/static.ts`), same CSP as before (`default-src 'self'` — no CDN
+assets, no inline scripts). The UI's "Compose" view drives the full publish
 sequence (branch → write → stage → commit → push → open PR) as one guided
 flow, then arming auto-merge is a separate, explicit button — never
 automatic on PR creation. The slug field autocompletes from existing posts
@@ -222,8 +224,9 @@ links each title to its computed canonical URL -- where the post lives once
 published, not a confirmation that it's actually deployed there; that
 confirmation is `blog_verify_published_url`'s job, gated on a specific
 `mergeCommitSha`, and isn't something an index listing can cheaply do for
-every row -- and has a per-row "Edit" button that jumps straight into
-Compose with that post loaded.
+every row -- and has per-row "Edit" (jumps into Compose with that post
+loaded) and "Delete" (confirms, then drives the same guided branch → delete
+→ stage → commit → push → PR pipeline) buttons.
 
 ```bash
 docker run --rm -p 8765:8765 \
@@ -272,8 +275,8 @@ catch the branch having moved (a concurrent push) between publish and
 arming. This was a real bug caught by manually clicking through the UI in a
 real browser during this phase's development, not by the automated test
 suite (which drove the API directly and so never exercised the client-side
-sequencing) — see `public/app.js`'s `armButton` handler and the comment
-there.
+sequencing) — see `ui/src/views/ComposeView.tsx`'s `handleArm` and the
+comment there.
 
 ### Scheduler (cron)
 
@@ -444,7 +447,9 @@ Remote and monitor tool tests never touch real GitHub: `test/remote.test.ts` dri
 
 `test/auth.test.ts` covers password hashing (round trip, wrong password, two hashes of the same password differing but both verifying, a malformed stored hash rejected rather than throwing), session creation/sliding-expiry/expiry-deletes-the-entry (via `vi.useFakeTimers()`), and the login rate limiter's window. `test/serve.test.ts` drives `createServeServer` with real `fetch()` calls end to end: the `/` redirect-to-`/login` gate, the full login → cookie → `/api` round trip, every `/api` rejection path (missing CSRF header, disallowed Origin, no session) against real post/log/branch/health data, and that the UI (and `/login`/`/api`) are cleanly disabled — 404, not silently open — when `BLOG_MCP_UI_PASSWORD_HASH` is unset. One of its assertions (`/api` allows a *missing* `Origin` header) exists specifically because manual browser verification of this phase caught a real bug: a same-origin `fetch` POST from `login.html` did not send an `Origin` header at all, so the original "Origin must be present" check locked out the login form itself.
 
-`test/serve-writes.test.ts` drives every write route end to end over real HTTP, exactly like a browser would, against a scratch bare git remote (never the live checkout): create a branch, create a post, a malformed create-post request failing validation without crashing (exercising `client.ts`'s no-`structuredContent` fallback), stage, commit, push (plus the base-branch-push refusal), open a PR and arm auto-merge via `test/fixtures-bin/gh-shim.mjs`, a SHA-mismatch refusal, and an update. Manually clicking through the Compose UI in a real browser during this phase caught a second real bug beyond what the HTTP-level tests could reach: the "Arm auto-merge" button fetched its "expected" head SHA from the same `GET /api/pr/:number` call it then validated against, making the check tautological. The fix (use the SHA the session's own `POST /api/push` actually returned) lives in `public/app.js` and has no vitest coverage since this project has no browser/DOM test runner -- the browser walkthrough itself was the regression test.
+`test/serve-writes.test.ts` drives every write route end to end over real HTTP, exactly like a browser would, against a scratch bare git remote (never the live checkout): create a branch, create a post, a malformed create-post request failing validation without crashing (exercising `client.ts`'s no-`structuredContent` fallback), stage, commit, push (plus the base-branch-push refusal), open a PR and arm auto-merge via `test/fixtures-bin/gh-shim.mjs`, a SHA-mismatch refusal, an update, a raw-markdown parse (with and without front matter fences), and a delete (confirming the file is gone from the working tree *and* staged). Manually clicking through the Compose UI in a real browser during this phase caught a second real bug beyond what the HTTP-level tests could reach: the "Arm auto-merge" button fetched its "expected" head SHA from the same `GET /api/pr/:number` call it then validated against, making the check tautological. The fix (use the SHA the session's own `POST /api/push` actually returned) lives in `ui/src/views/ComposeView.tsx` and has no vitest coverage since this project has no browser/DOM test runner -- the browser walkthrough itself was the regression test, same as the admin UI's React rewrite (Milestone 9): every view, the full publish pipeline, and the delete pipeline were driven end to end against a real scratch repo in a real browser before that milestone was called done.
+
+`test/serve-static.test.ts` covers `src/serve/static.ts`'s Vite-build file server directly (no HTTP server needed, it's a pure function): a real hashed asset, the SPA fallback to `index.html` for client-route paths including `/login`, and -- the load-bearing case -- literal and percent-encoded `../` traversal attempts rejected outright rather than falling back to the SPA shell, plus a malformed percent-encoding and a NUL byte handled without crashing.
 
 `test/scheduler-store.test.ts` covers `schedule.json`'s atomic read/write: missing file, corrupted file, wrong top-level shape (all treated as empty, never thrown), no stray temp file left behind on success, and a second save fully replacing the first. `test/scheduler-engine.test.ts` drives `runTick` against a real scratch git repo and `gh-shim.mjs`: the dirty-tree and parked-off-base fail-safes, a not-yet-due job left untouched, a successful arm, `MERGED`/`CLOSED`/`CONFLICTING` all reaching terminal states correctly (the conflict case asserting it is never retried), a SHA-mismatch reaching `needs-attention` rather than substituting a new SHA, both `skip_if_older_than` and `catch_up` missed-tick policies, and a transient infrastructure failure leaving the job `pending` rather than a false terminal verdict. A separate `startScheduler` test (with an injectable `tickFn`) proves the in-flight guard actually prevents overlapping ticks and that `stop()` drains a tick already in progress rather than interrupting it. `test/tools-scheduler.test.ts` exercises `blog_schedule_publish`'s own up-front cross-checks (PR must be open, not a draft, and the supplied `headSha` must match) plus `blog_list_scheduled_jobs`'s status filter and `blog_cancel_scheduled_job`'s pending-only refusal, all via `test/helpers/fakeServer.ts`.
 

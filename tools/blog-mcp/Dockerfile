@@ -20,6 +20,19 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
+# ---- ui-build: React admin UI (Vite) ----------------------------------------
+# Entirely separate build pipeline from the server's own tsc above -- see
+# tools/blog-mcp/ui/README.md. src/serve/static.ts serves this build's
+# output directory directly (a scoped, traversal-safe file server, not a
+# fixed route->file allowlist), so the relative path here (ui/dist) must
+# match what that module expects.
+FROM ${NODE_IMAGE} AS ui-build
+WORKDIR /app/ui
+COPY ui/package.json ui/package-lock.json ./
+RUN npm ci
+COPY ui/ ./
+RUN npm run build
+
 # ---- deps: production-only node_modules ------------------------------------
 FROM ${NODE_IMAGE} AS deps
 WORKDIR /app
@@ -46,8 +59,8 @@ RUN apt-get update \
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
+COPY --from=ui-build /app/ui/dist ./ui/dist
 COPY package.json ./
-COPY public ./public
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
