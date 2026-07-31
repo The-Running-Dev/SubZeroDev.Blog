@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -74,5 +75,27 @@ describe('serve/static: resolveStaticFile', () => {
     const file = resolveStaticFile('/assets');
     expect(file).toBeDefined();
     expect(file?.contentType).toContain('text/html');
+  });
+
+  it('rejects a symlink inside dist that resolves outside it, rather than serving the real target', () => {
+    const outside = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'blog-mcp-static-escape-'));
+    const secretFile = path.join(outside, 'secret.txt');
+    fs.writeFileSync(secretFile, 'outside dist');
+    const linkPath = path.join(DIST_DIR, '__test-symlink-escape.txt');
+    try {
+      fs.symlinkSync(secretFile, linkPath, 'file');
+    } catch {
+      // Creating a symlink requires elevated privileges or Developer Mode on
+      // Windows -- skip rather than fail the suite in that environment; CI
+      // runs on Linux, where this reliably exercises the real protection.
+      fs.rmSync(outside, { recursive: true, force: true });
+      return;
+    }
+    try {
+      expect(resolveStaticFile('/__test-symlink-escape.txt')).toBeUndefined();
+    } finally {
+      fs.rmSync(linkPath, { force: true });
+      fs.rmSync(outside, { recursive: true, force: true });
+    }
   });
 });

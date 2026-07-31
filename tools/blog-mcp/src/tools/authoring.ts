@@ -475,12 +475,21 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
       const check = checkAllowedPath(repoRoot, match.relativePath, ctx.capabilities?.writablePathPrefixes);
       if (!check.ok) return precondition(check.reason ?? `'${match.relativePath}' is not an allowed path.`);
 
-      // -f: deleting the post is the whole point, so any uncommitted local
-      // edits to that same file are moot -- without -f, `git rm` refuses to
-      // touch a file with modifications not yet committed, which would
-      // otherwise make a delete request fail based on unrelated state the
-      // caller never asked about.
-      await gitOrThrow(['rm', '-f', '--', match.relativePath], { repoRoot });
+      // listPostFiles/loadPost enumerate the working tree, not the git
+      // index, so a post created (blog_create_post) but never staged is a
+      // legitimate match here -- `git rm` operates on the index and fails
+      // with "pathspec did not match" for a file git has never heard of.
+      // `git ls-files` (also index-based) tells us which removal path
+      // applies: tracked -> `git rm -f` (deletes + stages in one step; -f
+      // because any uncommitted edit to that same file is moot, the whole
+      // point is deleting it); untracked -> a plain unlink, since there's
+      // nothing in the index to stage a removal of.
+      const lsFiles = await gitOrThrow(['ls-files', '--', match.relativePath], { repoRoot });
+      if (lsFiles.stdout.trim().length > 0) {
+        await gitOrThrow(['rm', '-f', '--', match.relativePath], { repoRoot });
+      } else {
+        await fs.promises.unlink(path.join(repoRoot, match.relativePath));
+      }
       return ok(`Deleted ${match.relativePath}`, { path: match.relativePath });
     })
   );

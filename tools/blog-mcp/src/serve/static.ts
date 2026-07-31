@@ -62,6 +62,43 @@ function readIndexHtml(): ResolvedStaticFile {
   return { body: fs.readFileSync(INDEX_HTML), contentType: MIME_TYPES['.html'] as string, cacheControl: 'no-cache' };
 }
 
+// Cached lazily (not at module load, when a fresh checkout may not have run
+// `npm run build:ui` yet) and only once it succeeds -- DIST_DIR doesn't move
+// for the life of the process once the build output exists.
+let distDirRealCache: string | undefined;
+function distDirReal(): string | undefined {
+  if (distDirRealCache === undefined) {
+    try {
+      distDirRealCache = fs.realpathSync(DIST_DIR);
+    } catch {
+      return undefined;
+    }
+  }
+  return distDirRealCache;
+}
+
+/**
+ * `resolveWithinDist` only checks *lexical* containment of the requested
+ * path. If something inside ui/dist/ is a symlink pointing outside it (not
+ * something Vite's own build produces, but defense-in-depth against a
+ * tampered or unexpected build output), the lexical check alone would still
+ * pass and the target file would get read. This resolves both sides through
+ * the filesystem (following symlinks) and checks containment again on the
+ * real paths.
+ */
+function isWithinRealDist(resolved: string): boolean {
+  const realDist = distDirReal();
+  if (realDist === undefined) return false;
+  let real: string;
+  try {
+    real = fs.realpathSync(resolved);
+  } catch {
+    return false;
+  }
+  const realDistWithSep = realDist.endsWith(path.sep) ? realDist : `${realDist}${path.sep}`;
+  return real === realDist || real.startsWith(realDistWithSep);
+}
+
 /**
  * Serves the React admin UI's Vite build. Three outcomes:
  * - a real file strictly inside ui/dist/ -> served as-is, long-lived cache
@@ -82,6 +119,7 @@ export function resolveStaticFile(pathname: string): ResolvedStaticFile | undefi
 
   if (fs.existsSync(resolved) && fs.statSync(resolved).isFile()) {
     if (resolved === INDEX_HTML) return readIndexHtml();
+    if (!isWithinRealDist(resolved)) return undefined;
     return { body: fs.readFileSync(resolved), contentType: mimeFor(resolved), cacheControl: 'immutable' };
   }
 
