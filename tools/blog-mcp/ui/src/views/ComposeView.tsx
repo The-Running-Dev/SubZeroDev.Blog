@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api, post } from '../lib/api';
+import { isoToDatetimeLocal } from '../lib/formatDate';
 
 interface Tag {
   key: string;
@@ -131,7 +132,7 @@ export default function ComposeView() {
         setDescription(fm.description ?? '');
         setCheckedTags(fm.tags);
         setBody(data.data?.body ?? '');
-        setDate(fm.date ?? '');
+        setDate(fm.date ? isoToDatetimeLocal(fm.date) : '');
         setExists(true);
         logLine(`Loaded existing post '${targetSlug}'.`);
       } catch (err) {
@@ -189,7 +190,7 @@ export default function ComposeView() {
         // existing post repeats its own title as an H1.
         const extracted = extractLeadingHeading(rawMarkdown);
         if (extracted && DATE_HEADING_RE.test(extracted.heading) && !Number.isNaN(Date.parse(extracted.heading))) {
-          setDate(new Date(extracted.heading).toISOString());
+          setDate(isoToDatetimeLocal(new Date(extracted.heading).toISOString()));
           setBody(extracted.rest);
           logLine(`No front matter found -- read "${extracted.heading}" as the post date and used the rest as Body. Title/Slug/Tags still need filling in.`);
         } else if (extracted) {
@@ -214,7 +215,7 @@ export default function ComposeView() {
       }
       if (typeof fm.title === 'string') setTitle(fm.title);
       if (typeof fm.description === 'string') setDescription(fm.description);
-      if (typeof fm.date === 'string') setDate(fm.date);
+      if (typeof fm.date === 'string') setDate(isoToDatetimeLocal(fm.date));
       setCheckedTags(Array.isArray(fm.tags) ? fm.tags : []);
       setBody(parsedBody);
       logLine('Parsed front matter and body from the pasted markdown.');
@@ -394,12 +395,8 @@ export default function ComposeView() {
 
             <div className="field">
               <span className="field-label">Date</span>
-              <input
-                type="text"
-                placeholder="optional -- defaults to now (e.g. 2026-05-18 or May 18, 2026)"
-                value={date}
-                onChange={(event) => setDate(event.target.value)}
-              />
+              <input type="datetime-local" value={date} onChange={(event) => setDate(event.target.value)} />
+              <span className="muted">Optional -- leave blank to default to now.</span>
             </div>
 
             <div className="field">

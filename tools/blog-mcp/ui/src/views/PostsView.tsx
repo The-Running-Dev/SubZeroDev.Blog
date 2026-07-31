@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, post } from '../lib/api';
 import Table from '../lib/Table';
+import { formatDate } from '../lib/formatDate';
 
 interface Post {
   slug: string;
@@ -9,16 +10,6 @@ interface Post {
   date: string;
   tags: string[];
   canonicalUrl?: string;
-}
-
-/** Renders a front-matter date (an ISO string, UTC) in the viewer's own local time/timezone as "YYYY.MM.DD @ h:mm AM/PM TZ". */
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const datePart = `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`;
-  const timePart = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(d);
-  return `${datePart} @ ${timePart}`;
 }
 
 export default function PostsView() {

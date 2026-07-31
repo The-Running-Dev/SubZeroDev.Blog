@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import Table from '../lib/Table';
+import { formatDate } from '../lib/formatDate';
 
 interface Commit {
   sha: string;
@@ -30,8 +31,8 @@ export default function LogView() {
     <>
       <h2>Log ({ref})</h2>
       <Table
-        headers={['SHA', 'Author', 'Date', 'Subject']}
-        rows={commits.map((c) => [c.sha.slice(0, 10), c.authorName, c.authorDate, c.subject])}
+        headers={['SHA', 'Author', 'Date', 'Message']}
+        rows={commits.map((c) => [c.sha.slice(0, 10), c.authorName, formatDate(c.authorDate), c.subject])}
       />
     </>
   );
