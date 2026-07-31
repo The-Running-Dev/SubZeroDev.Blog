@@ -169,6 +169,26 @@ export function registerAuthoringTools(ctx: ToolContext): void {
   );
 
   server.registerTool(
+    'blog_parse_markdown',
+    {
+      title: 'Parse a raw markdown post',
+      description:
+        'Splits a full post file (front matter fences + body) into its front matter fields and body, without touching the filesystem or the repo. Read-only, purely computational -- lets a caller paste a whole file and derive title/description/slug/tags/etc. from it, e.g. for prefilling a form.',
+      inputSchema: {
+        content: z.string()
+      }
+    },
+    wrapTool(async (args: { content: string }) => {
+      const { frontMatter, frontMatterPresent, body } = parseMarkdown(args.content);
+      return ok(frontMatterPresent ? 'Parsed front matter and body.' : 'No front matter fences found; returning the whole input as body.', {
+        frontMatter,
+        frontMatterPresent,
+        body
+      });
+    })
+  );
+
+  server.registerTool(
     'blog_validate_posts',
     {
       title: 'Validate post front matter',

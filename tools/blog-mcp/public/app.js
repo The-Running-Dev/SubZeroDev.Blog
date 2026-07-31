@@ -45,12 +45,15 @@
     return node;
   }
 
+  // A cell may be a plain value (stringified) or an already-built DOM node
+  // (a link, a button) -- el()'s own child-append logic already handles
+  // both, so this just needs to stop forcing everything through String().
   function table(headers, rows) {
     const thead = el('thead', null, [el('tr', null, headers.map((h) => el('th', null, [h])))]);
     const tbody = el(
       'tbody',
       null,
-      rows.map((row) => el('tr', null, row.map((cell) => el('td', null, [String(cell)]))))
+      rows.map((row) => el('tr', null, row.map((cell) => el('td', null, [cell instanceof Node ? cell : String(cell)]))))
     );
     return el('div', { className: 'table-wrap' }, [el('table', null, [thead, tbody])]);
   }
@@ -98,8 +101,23 @@
     content.replaceChildren(
       el('h2', null, ['Posts']),
       table(
-        ['Date', 'Title', 'Slug', 'Tags'],
-        posts.map((p) => [p.date, p.title, p.slug, (p.tags || []).join(', ')])
+        ['Date', 'Title', 'Slug', 'Tags', 'Actions'],
+        posts.map((p) => {
+          // canonicalUrl is a computed target (config.canonicalUrl + slug),
+          // not a confirmation that this post is actually live -- verifying
+          // that requires a mergeCommitSha and a deploy-status poll
+          // (blog_verify_published_url), which isn't available for an
+          // arbitrary index listing. The title attribute says as much so the
+          // link doesn't read as a live-deployment guarantee.
+          const titleLink = p.canonicalUrl
+            ? el('a', { href: p.canonicalUrl, target: '_blank', rel: 'noopener noreferrer', title: 'Computed canonical URL -- not a confirmation this post is deployed' }, [p.title])
+            : p.title;
+          const editButton = el('button', { type: 'button' }, ['Edit']);
+          editButton.addEventListener('click', () => {
+            Promise.resolve(views.compose(p.slug)).catch(renderError);
+          });
+          return [p.date, titleLink, p.slug, (p.tags || []).join(', '), editButton];
+        })
       )
     );
   }
@@ -170,7 +188,7 @@
     );
   }
 
-  async function viewCompose() {
+  async function viewCompose(prefillSlug) {
     const state = { exists: false, branch: null, path: null, pr: null };
 
     // Best-effort: a failure here just means no autocomplete/checkboxes,
@@ -203,6 +221,58 @@
     const publishButton = el('button', { type: 'button', className: 'primary' }, ['Create/update & open PR']);
     const armButton = el('button', { type: 'button', className: 'primary', disabled: 'disabled' }, ['Arm auto-merge']);
     const statusLog = el('ul', { className: 'compose-log' }, []);
+
+    // Paste a whole markdown file (front matter fences + body) and derive
+    // every field from it in one step, instead of copying each piece by
+    // hand. Parsing happens server-side (POST /api/parse-markdown ->
+    // blog_parse_markdown -> the same domain/frontmatter.ts parser every
+    // other tool uses), not with a hand-rolled client-side YAML parser that
+    // could silently disagree with what publish actually does.
+    const rawMarkdownToggle = el('button', { type: 'button' }, ['Paste raw markdown instead']);
+    const rawMarkdownInput = el('textarea', { rows: '10', placeholder: '--- \ntitle: "..."\ndescription: "..."\nslug: ...\n...\n---\n\nBody...' }, []);
+    const rawMarkdownParseButton = el('button', { type: 'button' }, ['Parse into fields']);
+    const rawMarkdownPanel = el('div', { className: 'field raw-markdown-panel', hidden: 'hidden' }, [
+      el('span', { className: 'field-label' }, ['Raw markdown']),
+      rawMarkdownInput,
+      rawMarkdownParseButton
+    ]);
+
+    rawMarkdownToggle.addEventListener('click', () => {
+      const nowHidden = rawMarkdownPanel.hasAttribute('hidden');
+      if (nowHidden) rawMarkdownPanel.removeAttribute('hidden');
+      else rawMarkdownPanel.setAttribute('hidden', 'hidden');
+      rawMarkdownToggle.textContent = nowHidden ? 'Hide raw markdown paste' : 'Paste raw markdown instead';
+    });
+
+    rawMarkdownParseButton.addEventListener('click', async () => {
+      statusLog.replaceChildren();
+      const content = rawMarkdownInput.value;
+      if (!content.trim()) {
+        logLine('Paste some markdown first.', true);
+        return;
+      }
+      try {
+        const result = await post('/api/parse-markdown', { content });
+        const { frontMatter, frontMatterPresent, body } = result.data;
+        if (!frontMatterPresent) {
+          logLine('No "---" front matter fences found -- pasted the whole input into Body as-is.');
+          bodyInput.value = content;
+          return;
+        }
+        if (!frontMatter) {
+          logLine('Front matter fences were present but the YAML inside failed to parse -- fix it and try again.', true);
+          return;
+        }
+        if (typeof frontMatter.slug === 'string') slugInput.value = frontMatter.slug;
+        if (typeof frontMatter.title === 'string') titleInput.value = frontMatter.title;
+        if (typeof frontMatter.description === 'string') descInput.value = frontMatter.description;
+        setCheckedTags(Array.isArray(frontMatter.tags) ? frontMatter.tags : []);
+        bodyInput.value = body;
+        logLine('Parsed front matter and body from the pasted markdown.');
+      } catch (err) {
+        logLine(err.message, true);
+      }
+    });
 
     // One checkbox per tag declared in docs/blog/tags.yml -- picking from a
     // known vocabulary instead of free-typing avoids the "Unknown tag key"
@@ -382,10 +452,19 @@
         el('div', { className: 'field' }, [el('span', { className: 'field-label' }, ['Description']), descInput]),
         el('div', { className: 'field' }, [el('span', { className: 'field-label' }, ['Tags']), tagsField]),
         el('div', { className: 'field' }, [el('span', { className: 'field-label' }, ['Body']), bodyInput]),
+        rawMarkdownToggle,
+        rawMarkdownPanel,
         el('div', { className: 'compose-actions' }, [publishButton, armButton])
       ]),
       statusLog
     );
+
+    // Jumped here from the Posts table's Edit button -- load it the same
+    // way typing the slug and pressing "Load existing" would.
+    if (prefillSlug) {
+      slugInput.value = prefillSlug;
+      await loadExisting(prefillSlug);
+    }
   }
 
   const views = { posts: viewPosts, log: viewLog, branches: viewBranches, health: viewHealth, pr: viewPr, compose: viewCompose };

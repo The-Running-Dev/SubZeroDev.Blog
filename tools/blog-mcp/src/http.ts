@@ -60,6 +60,35 @@ function isOriginAllowed(origin: string | undefined, allowedOrigins: string[]): 
   return allowedOrigins.includes(origin);
 }
 
+/**
+ * Default Origin allowlist when the caller doesn't pass one explicitly.
+ * Deliberately NOT `http://${host}:${port}` alone: `host` is frequently
+ * `0.0.0.0` (docker-compose.yml fixes it there, since Docker's port
+ * publishing cannot forward into a container's loopback interface) or
+ * `::`, and no browser ever sends `Origin: http://0.0.0.0:<port>` -- that's
+ * a bind address, not a URL a client navigates to. Always include
+ * `127.0.0.1`, `localhost`, and `[::1]` (the ways a browser actually reaches
+ * a published port over IPv4 or IPv6) in addition to whatever `host`
+ * literally is, so the default doesn't silently reject every real browser
+ * request the moment the server binds to a wildcard address.
+ *
+ * `host` itself also needs bracketing when it's an IPv6 literal (`::`,
+ * `::1`, ...) -- a bare colon-containing host in a URL's authority is
+ * invalid/ambiguous, and no browser will ever present a matching Origin
+ * without the brackets.
+ */
+export function defaultAllowedOrigins(host: string, port: number): string[] {
+  const formattedHost = host.includes(':') ? `[${host}]` : host;
+  return [
+    ...new Set([
+      `http://${formattedHost}:${port}`,
+      `http://127.0.0.1:${port}`,
+      `http://localhost:${port}`,
+      `http://[::1]:${port}`
+    ])
+  ];
+}
+
 interface McpSession {
   server: ReturnType<typeof createServer>;
   transport: StreamableHTTPServerTransport;
@@ -107,7 +136,7 @@ export function createMcpRequestHandler(options: HttpServerOptions = {}): McpReq
   const port = options.port ?? DEFAULT_PORT;
   const token = options.token;
   const readOnlyToken = options.readOnlyToken;
-  const allowedOrigins = options.allowedOrigins ?? [`http://${host}:${port}`, `http://localhost:${port}`];
+  const allowedOrigins = options.allowedOrigins ?? defaultAllowedOrigins(host, port);
   const maxSessions = options.maxSessions ?? DEFAULT_MAX_SESSIONS;
   const serverOptions: CreateServerOptions = {
     ...(options.repoRoot ? { repoRoot: options.repoRoot } : {}),

@@ -202,14 +202,28 @@ session, not just refused at call time.
 
 `serve` is a third transport (`src/serve.ts` / `src/serve-bin.ts`), one Node
 process, no supervisor: `/mcp` and `/healthz` (identical to HTTP transport
-above), `/api/*` (read: list posts, show a post, git log, branches, repo
-health, PR/check/deploy status; write: create/update a post, create a
-branch, stage, commit, push, open a PR, arm auto-merge), and a small static
-UI at `/` — plain HTML + `fetch`, no framework, no bundler, no CDN assets
+above), `/api/*` (read: list posts, show a post, list tags, git log,
+branches, repo health, PR/check/deploy status; write: create/update a post,
+parse a pasted markdown file into its fields, create a branch, stage,
+commit, push, open a PR, arm auto-merge), and a small static UI at `/` —
+plain HTML + `fetch`, no framework, no bundler, no CDN assets
 (`tools/blog-mcp/public/`). The UI's "Compose" view drives the full publish
 sequence (branch → write → stage → commit → push → open PR) as one guided
 flow, then arming auto-merge is a separate, explicit button — never
-automatic on PR creation.
+automatic on PR creation. The slug field autocompletes from existing posts
+and auto-loads one the moment it's picked; tags are checkboxes drawn from
+`docs/blog/tags.yml` (falling back to free text if that vocabulary can't be
+loaded, so a fetch outage never leaves the form unable to publish at all);
+and a "Paste raw markdown instead" toggle accepts a whole post file
+(front matter fences + body) and derives every field from it in one step,
+parsed server-side by the same parser every other tool uses
+(`blog_parse_markdown`), not a hand-rolled client-side one. The Posts view
+links each title to its computed canonical URL -- where the post lives once
+published, not a confirmation that it's actually deployed there; that
+confirmation is `blog_verify_published_url`'s job, gated on a specific
+`mergeCommitSha`, and isn't something an index listing can cheaply do for
+every row -- and has a per-row "Edit" button that jumps straight into
+Compose with that post loaded.
 
 ```bash
 docker run --rm -p 8765:8765 \
