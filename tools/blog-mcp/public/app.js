@@ -103,8 +103,14 @@
       table(
         ['Date', 'Title', 'Slug', 'Tags', 'Actions'],
         posts.map((p) => {
+          // canonicalUrl is a computed target (config.canonicalUrl + slug),
+          // not a confirmation that this post is actually live -- verifying
+          // that requires a mergeCommitSha and a deploy-status poll
+          // (blog_verify_published_url), which isn't available for an
+          // arbitrary index listing. The title attribute says as much so the
+          // link doesn't read as a live-deployment guarantee.
           const titleLink = p.canonicalUrl
-            ? el('a', { href: p.canonicalUrl, target: '_blank', rel: 'noopener noreferrer' }, [p.title])
+            ? el('a', { href: p.canonicalUrl, target: '_blank', rel: 'noopener noreferrer', title: 'Computed canonical URL -- not a confirmation this post is deployed' }, [p.title])
             : p.title;
           const editButton = el('button', { type: 'button' }, ['Edit']);
           editButton.addEventListener('click', () => {

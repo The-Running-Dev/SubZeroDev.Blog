@@ -218,8 +218,12 @@ and a "Paste raw markdown instead" toggle accepts a whole post file
 (front matter fences + body) and derives every field from it in one step,
 parsed server-side by the same parser every other tool uses
 (`blog_parse_markdown`), not a hand-rolled client-side one. The Posts view
-links each title to its live published URL and has a per-row "Edit" button
-that jumps straight into Compose with that post loaded.
+links each title to its computed canonical URL -- where the post lives once
+published, not a confirmation that it's actually deployed there; that
+confirmation is `blog_verify_published_url`'s job, gated on a specific
+`mergeCommitSha`, and isn't something an index listing can cheaply do for
+every row -- and has a per-row "Edit" button that jumps straight into
+Compose with that post loaded.
 
 ```bash
 docker run --rm -p 8765:8765 \

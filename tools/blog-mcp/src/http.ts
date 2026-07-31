@@ -67,13 +67,26 @@ function isOriginAllowed(origin: string | undefined, allowedOrigins: string[]): 
  * publishing cannot forward into a container's loopback interface) or
  * `::`, and no browser ever sends `Origin: http://0.0.0.0:<port>` -- that's
  * a bind address, not a URL a client navigates to. Always include
- * `127.0.0.1` and `localhost` (the two ways a browser actually reaches a
- * published port) in addition to whatever `host` literally is, so the
- * default doesn't silently reject every real browser request the moment
- * the server binds to a wildcard address.
+ * `127.0.0.1`, `localhost`, and `[::1]` (the ways a browser actually reaches
+ * a published port over IPv4 or IPv6) in addition to whatever `host`
+ * literally is, so the default doesn't silently reject every real browser
+ * request the moment the server binds to a wildcard address.
+ *
+ * `host` itself also needs bracketing when it's an IPv6 literal (`::`,
+ * `::1`, ...) -- a bare colon-containing host in a URL's authority is
+ * invalid/ambiguous, and no browser will ever present a matching Origin
+ * without the brackets.
  */
 export function defaultAllowedOrigins(host: string, port: number): string[] {
-  return [...new Set([`http://${host}:${port}`, `http://127.0.0.1:${port}`, `http://localhost:${port}`])];
+  const formattedHost = host.includes(':') ? `[${host}]` : host;
+  return [
+    ...new Set([
+      `http://${formattedHost}:${port}`,
+      `http://127.0.0.1:${port}`,
+      `http://localhost:${port}`,
+      `http://[::1]:${port}`
+    ])
+  ];
 }
 
 interface McpSession {

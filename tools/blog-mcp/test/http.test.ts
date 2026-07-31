@@ -2,7 +2,7 @@ import path from 'node:path';
 import type { AddressInfo } from 'node:net';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { createHttpServer } from '../src/http.js';
+import { createHttpServer, defaultAllowedOrigins } from '../src/http.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
@@ -231,46 +231,40 @@ describe('HTTP transport Origin validation', () => {
   });
 });
 
-describe('HTTP transport default Origin allowlist when bound to a wildcard address', () => {
-  // A fixed, known port rather than the usual port:0 -- the default
-  // allowlist is computed from the *configured* port at construction time
-  // (matching how a real deployment's BLOG_MCP_HTTP_PORT is always a
-  // concrete value, never OS-assigned), so testing it needs the port known
-  // ahead of listen(), not read back afterward.
+describe('defaultAllowedOrigins()', () => {
+  // Exercises the pure function directly rather than binding a real
+  // createHttpServer() to a fixed port: a hard-coded port here would make
+  // the suite fail abruptly (process.exit(1) from the server's own 'error'
+  // handler) if that port happened to be occupied on the test machine/CI
+  // runner, for no benefit -- the allowlist is a pure computation over
+  // (host, port), so it doesn't need a live socket to verify.
   const PORT = 18765;
-  let baseUrl: string;
-  let server: ReturnType<typeof createHttpServer>;
 
-  beforeAll(async () => {
+  it('still allows 127.0.0.1 and localhost by default when bound to the IPv4 wildcard', () => {
     // docker-compose.yml fixes BLOG_MCP_HTTP_HOST to 0.0.0.0 (required for
     // Docker's published port to reach the container at all) -- no browser
     // ever sends Origin: http://0.0.0.0:<port>, so the default allowlist
     // must not be derived from `host` alone or every real browser request
     // gets rejected the moment the server binds to a wildcard address.
-    server = createHttpServer({ repoRoot: REPO_ROOT, host: '0.0.0.0', port: PORT });
-    await new Promise<void>((resolve) => server.once('listening', resolve));
-    baseUrl = `http://127.0.0.1:${PORT}`;
+    const origins = defaultAllowedOrigins('0.0.0.0', PORT);
+    expect(origins).toContain(`http://127.0.0.1:${PORT}`);
+    expect(origins).toContain(`http://localhost:${PORT}`);
   });
 
-  afterAll(() => {
-    server.close();
+  it('brackets an IPv6 host literal instead of embedding it unbracketed', () => {
+    const origins = defaultAllowedOrigins('::', PORT);
+    expect(origins).toContain(`http://[::]:${PORT}`);
+    expect(origins.some((o) => o.includes('::') && !o.includes('[::'))).toBe(false);
   });
 
-  const initBody = {
-    jsonrpc: '2.0',
-    id: 1,
-    method: 'initialize',
-    params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '0.0.0' } }
-  };
-
-  it('still allows Origin: http://127.0.0.1:<port> by default when bound to 0.0.0.0', async () => {
-    const { status } = await postRpc(baseUrl, initBody, { origin: baseUrl });
-    expect(status).toBe(200);
+  it('always includes the bracketed IPv6 loopback Origin regardless of bind host', () => {
+    const origins = defaultAllowedOrigins('0.0.0.0', PORT);
+    expect(origins).toContain(`http://[::1]:${PORT}`);
   });
 
-  it('still allows Origin: http://localhost:<port> by default when bound to 0.0.0.0', async () => {
-    const { status } = await postRpc(baseUrl, initBody, { origin: `http://localhost:${PORT}` });
-    expect(status).toBe(200);
+  it('does not duplicate entries when host is already 127.0.0.1, localhost, or ::1', () => {
+    expect(new Set(defaultAllowedOrigins('127.0.0.1', PORT)).size).toBe(3);
+    expect(new Set(defaultAllowedOrigins('::1', PORT)).size).toBe(3);
   });
 });
 
