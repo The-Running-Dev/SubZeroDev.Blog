@@ -1,0 +1,395 @@
+/*
+ * Ported as-is from tools/blog-mcp/public/style.css (the vanilla UI this
+ * replaces) -- palette/shadow/panel language lifted from
+ * docs/src/css/custom.css (the actual blog's Docusaurus theme) so this UI
+ * reads as the same product rather than a bare admin tool bolted on the
+ * side. The only addition versus the vanilla version is `nav a` styling:
+ * react-router-dom's NavLink renders an `<a>`, not a `<button>`, for
+ * navigation, so it needs its own rule to match the button look plus an
+ * `.active` state for the current route.
+ */
+:root {
+  --fg: #1a1a1a;
+  --bg: #f6f8fb;
+  --muted: #5c6c80;
+  --border: rgb(52 89 122 / 18%);
+  --border-strong: rgb(8 118 201 / 38%);
+  --accent: #0876c9;
+  --accent-strong: #5a38c7;
+  --accent-soft: rgb(8 118 201 / 12%);
+  --panel: rgb(255 255 255 / 88%);
+  --code-bg: #f6f9fc;
+  --shadow: 0 12px 30px rgb(22 42 64 / 10%);
+  --shadow-raised: 0 18px 44px rgb(22 42 64 / 16%);
+  --danger: #c0392b;
+  --row-alt: rgb(52 89 122 / 5%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #e5edf8;
+    --bg: #080d17;
+    --muted: #a9b7ca;
+    --border: rgb(152 213 255 / 16%);
+    --border-strong: rgb(124 221 255 / 42%);
+    --accent: #7cddff;
+    --accent-strong: #a996ff;
+    --accent-soft: rgb(124 221 255 / 13%);
+    --panel: rgb(19 31 51 / 88%);
+    --code-bg: #0d1524;
+    --shadow: 0 12px 30px rgb(0 0 0 / 24%);
+    --shadow-raised: 0 20px 50px rgb(0 0 0 / 38%);
+    --danger: #ff8a75;
+    --row-alt: rgb(124 221 255 / 5%);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 12% -10%, var(--accent-soft), transparent 32rem),
+    radial-gradient(circle at 100% 0%, rgb(169 150 255 / 8%), transparent 28rem),
+    var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  backdrop-filter: blur(14px);
+  flex-wrap: wrap;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+nav {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+nav a {
+  font: inherit;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.85rem;
+  text-decoration: none;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+nav a:hover {
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+}
+
+nav a.active {
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+  font-weight: 600;
+}
+
+button {
+  font: inherit;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.85rem;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button:focus-visible,
+input:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Primary action buttons (the ones that actually do the mutating work) get
+   the accent treatment; everything else (nav, "Load existing") stays plain
+   so the two don't compete for attention. */
+button.primary {
+  border-color: var(--border-strong);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+button.primary:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+#logout {
+  margin-left: auto;
+}
+
+main {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+main h2 {
+  margin-top: 0;
+  font-size: 1.4rem;
+  letter-spacing: -0.02em;
+}
+
+.panel {
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.table-wrap {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.95rem;
+}
+
+th, td {
+  padding: 0.65rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  background: var(--accent-soft);
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+tbody tr:nth-child(even) {
+  background: var(--row-alt);
+}
+
+tbody tr:hover {
+  background: var(--accent-soft);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  padding: 0.85rem;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.login {
+  max-width: 340px;
+  margin: 4rem auto;
+  padding: 2rem;
+  border: 1px solid var(--border);
+  border-radius: 1.1rem;
+  background: var(--panel);
+  box-shadow: var(--shadow-raised);
+}
+
+.login h1 {
+  margin-top: 0;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+}
+
+.login form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.login button {
+  margin-top: 0.25rem;
+}
+
+input:not([type="checkbox"]):not([type="radio"]) {
+  font: inherit;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus {
+  border-color: var(--border-strong);
+}
+
+/*
+ * Checkboxes/radios must never inherit the generic input rule above: padding,
+ * an explicit border-radius, and a background color on a native checkbox
+ * breaks its rendering in most browsers -- the box goes oversized/blank and
+ * the tick either never appears or the click no longer lands on the visible
+ * square. accent-color is enough to theme it without touching layout.
+ */
+input[type="checkbox"],
+input[type="radio"] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.error {
+  color: var(--danger);
+}
+
+.compose-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  max-width: 680px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.field-label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.slug-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.slug-row input {
+  flex: 1;
+}
+
+.compose-form textarea {
+  font: inherit;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg);
+  color: var(--fg);
+  resize: vertical;
+}
+
+.compose-form textarea:focus {
+  border-color: var(--border-strong);
+}
+
+.compose-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* One checkbox + label per known tag, rendered as a rounded pill -- matches
+   the tag-pill shape docs/src/css/custom.css uses on the real blog. */
+.tag-checklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.tag-chip:has(input:checked) {
+  border-color: var(--border-strong);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.tag-chip input {
+  margin: 0;
+}
+
+.compose-log {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.compose-log li {
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.4rem;
+  background: var(--accent-soft);
+}
+
+.compose-log li.error {
+  background: rgb(192 57 43 / 12%);
+}
