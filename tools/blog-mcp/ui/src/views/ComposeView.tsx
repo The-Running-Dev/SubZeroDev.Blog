@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api, post, ApiError } from '../lib/api';
 import { isoToDatetimeLocal } from '../lib/formatDate';
@@ -89,6 +89,23 @@ export default function ComposeView() {
   // component re-renders for an unrelated reason (React Strict Mode's
   // double-invoke in dev, tagsLoaded flipping, etc.).
   const prefilledRef = useRef(false);
+
+  // .compose-log is `position: fixed` to the bottom of the viewport (a
+  // status "toast"), so it no longer pushes the form's own layout down --
+  // without reserving matching space beneath the form, a tall toast (long
+  // messages, several findings, multiple log lines) can cover the Publish
+  // button and other bottom controls. Re-measured with useLayoutEffect
+  // (synchronous, right after the DOM commits each new log line) rather
+  // than a fixed padding guess or a ResizeObserver -- the latter schedules
+  // its callback on the browser's own resize-observation step, which is one
+  // more async hop than necessary when `log` is already the one React state
+  // that drives the toast's height.
+  const logRef = useRef<HTMLUListElement>(null);
+  const [logHeight, setLogHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    setLogHeight(logRef.current?.offsetHeight ?? 0);
+  }, [log]);
 
   const logLine = useCallback((text: string, isError = false) => {
     setLog((prev) => [...prev, { text, isError }]);
@@ -368,7 +385,7 @@ export default function ComposeView() {
         &quot;Auto-Merge&quot; checked, that PR is also armed to merge automatically once its required checks pass -- uncheck it to
         leave the PR open for a manual review/merge instead. Nothing merges before the PR is actually opened.
       </p>
-      <div className="compose-form">
+      <div className="compose-form" style={log.length > 0 ? { paddingBottom: logHeight } : undefined}>
         <datalist id="existing-slugs">
           {existingSlugs.map((s) => (
             <option key={s} value={s} />
@@ -500,7 +517,7 @@ export default function ComposeView() {
         </div>
       </div>
 
-      <ul className="compose-log">
+      <ul className="compose-log" ref={logRef}>
         {log.map((line, i) => (
           <li key={i} className={line.isError ? 'error' : undefined}>
             {line.text}

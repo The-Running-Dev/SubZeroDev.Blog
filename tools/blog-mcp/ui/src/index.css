@@ -331,9 +331,10 @@ input[type="radio"] {
   flex-direction: column;
   gap: 0.85rem;
   max-width: 680px;
-  /* Room for .compose-log's fixed bottom toast bar so it never covers the
-     last field/button once status messages start appearing. */
-  padding-bottom: 3rem;
+  /* padding-bottom is set inline (ComposeView.tsx) to .compose-log's actual
+     measured height via ResizeObserver -- a fixed guess here would either
+     waste space when the toast is empty/short or still get covered by a
+     tall one (several findings, multiple log lines). */
 }
 
 .field {
