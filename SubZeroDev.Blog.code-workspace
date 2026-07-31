@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"name": "SubZeroDev.Workspace",
+			"path": "."
+		}
+	],
+	"settings": {
+		"git.ignoreLimitWarning": true,
+		"terminal.explorerKind": "external",
+		"claudeCodeChat.permissions.yoloMode": true
+	}
+}
