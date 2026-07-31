@@ -117,6 +117,44 @@ describe('serve mode write routes', () => {
   let postPath: string;
   const branchName = 'blog/write-path-fixture';
 
+  it('POST /api/parse-markdown splits front matter and body from a pasted file, read-only', async () => {
+    const raw = [
+      '---',
+      'title: "Pasted"',
+      'description: "desc"',
+      'slug: pasted-slug',
+      'authors:',
+      '  - subzerodev',
+      'date: 2026-01-01T00:00:00Z',
+      'tags:',
+      '  - test',
+      '---',
+      '',
+      'Body text.'
+    ].join('\n');
+    const { status, envelope } = await post<{
+      frontMatter: { title?: string; slug?: string; tags?: string[] } | null;
+      frontMatterPresent: boolean;
+      body: string;
+    }>('/api/parse-markdown', { content: raw });
+    expect(status).toBe(200);
+    expect(envelope.ok).toBe(true);
+    expect(envelope.data?.frontMatterPresent).toBe(true);
+    expect(envelope.data?.frontMatter?.title).toBe('Pasted');
+    expect(envelope.data?.frontMatter?.slug).toBe('pasted-slug');
+    expect(envelope.data?.frontMatter?.tags).toEqual(['test']);
+    expect(envelope.data?.body.trim()).toBe('Body text.');
+  });
+
+  it('POST /api/parse-markdown with no front matter fences returns the whole input as body', async () => {
+    const { status, envelope } = await post<{ frontMatterPresent: boolean; body: string }>('/api/parse-markdown', {
+      content: 'Just a body, no fences.'
+    });
+    expect(status).toBe(200);
+    expect(envelope.data?.frontMatterPresent).toBe(false);
+    expect(envelope.data?.body).toBe('Just a body, no fences.');
+  });
+
   it('POST /api/branch creates and switches to a new branch from origin/main', async () => {
     const { status, envelope } = await post<{ branch: string; created: boolean }>('/api/branch', { name: branchName });
     expect(status).toBe(200);

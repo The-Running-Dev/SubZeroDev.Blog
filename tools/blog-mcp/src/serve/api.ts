@@ -123,6 +123,10 @@ export async function handleApiRequest(
   if (method === 'POST') {
     const args = asRecord(body);
 
+    if (pathname === '/api/parse-markdown') {
+      return callTool(serverOptions, 'blog_parse_markdown', args);
+    }
+
     if (pathname === '/api/posts') {
       return callTool(serverOptions, 'blog_create_post', args);
     }

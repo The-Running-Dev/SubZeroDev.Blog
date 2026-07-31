@@ -231,6 +231,49 @@ describe('HTTP transport Origin validation', () => {
   });
 });
 
+describe('HTTP transport default Origin allowlist when bound to a wildcard address', () => {
+  // A fixed, known port rather than the usual port:0 -- the default
+  // allowlist is computed from the *configured* port at construction time
+  // (matching how a real deployment's BLOG_MCP_HTTP_PORT is always a
+  // concrete value, never OS-assigned), so testing it needs the port known
+  // ahead of listen(), not read back afterward.
+  const PORT = 18765;
+  let baseUrl: string;
+  let server: ReturnType<typeof createHttpServer>;
+
+  beforeAll(async () => {
+    // docker-compose.yml fixes BLOG_MCP_HTTP_HOST to 0.0.0.0 (required for
+    // Docker's published port to reach the container at all) -- no browser
+    // ever sends Origin: http://0.0.0.0:<port>, so the default allowlist
+    // must not be derived from `host` alone or every real browser request
+    // gets rejected the moment the server binds to a wildcard address.
+    server = createHttpServer({ repoRoot: REPO_ROOT, host: '0.0.0.0', port: PORT });
+    await new Promise<void>((resolve) => server.once('listening', resolve));
+    baseUrl = `http://127.0.0.1:${PORT}`;
+  });
+
+  afterAll(() => {
+    server.close();
+  });
+
+  const initBody = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'initialize',
+    params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '0.0.0' } }
+  };
+
+  it('still allows Origin: http://127.0.0.1:<port> by default when bound to 0.0.0.0', async () => {
+    const { status } = await postRpc(baseUrl, initBody, { origin: baseUrl });
+    expect(status).toBe(200);
+  });
+
+  it('still allows Origin: http://localhost:<port> by default when bound to 0.0.0.0', async () => {
+    const { status } = await postRpc(baseUrl, initBody, { origin: `http://localhost:${PORT}` });
+    expect(status).toBe(200);
+  });
+});
+
 describe('HTTP transport read-only token capability tier', () => {
   let baseUrl: string;
   let server: ReturnType<typeof createHttpServer>;

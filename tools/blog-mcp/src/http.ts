@@ -60,6 +60,22 @@ function isOriginAllowed(origin: string | undefined, allowedOrigins: string[]): 
   return allowedOrigins.includes(origin);
 }
 
+/**
+ * Default Origin allowlist when the caller doesn't pass one explicitly.
+ * Deliberately NOT `http://${host}:${port}` alone: `host` is frequently
+ * `0.0.0.0` (docker-compose.yml fixes it there, since Docker's port
+ * publishing cannot forward into a container's loopback interface) or
+ * `::`, and no browser ever sends `Origin: http://0.0.0.0:<port>` -- that's
+ * a bind address, not a URL a client navigates to. Always include
+ * `127.0.0.1` and `localhost` (the two ways a browser actually reaches a
+ * published port) in addition to whatever `host` literally is, so the
+ * default doesn't silently reject every real browser request the moment
+ * the server binds to a wildcard address.
+ */
+export function defaultAllowedOrigins(host: string, port: number): string[] {
+  return [...new Set([`http://${host}:${port}`, `http://127.0.0.1:${port}`, `http://localhost:${port}`])];
+}
+
 interface McpSession {
   server: ReturnType<typeof createServer>;
   transport: StreamableHTTPServerTransport;
@@ -107,7 +123,7 @@ export function createMcpRequestHandler(options: HttpServerOptions = {}): McpReq
   const port = options.port ?? DEFAULT_PORT;
   const token = options.token;
   const readOnlyToken = options.readOnlyToken;
-  const allowedOrigins = options.allowedOrigins ?? [`http://${host}:${port}`, `http://localhost:${port}`];
+  const allowedOrigins = options.allowedOrigins ?? defaultAllowedOrigins(host, port);
   const maxSessions = options.maxSessions ?? DEFAULT_MAX_SESSIONS;
   const serverOptions: CreateServerOptions = {
     ...(options.repoRoot ? { repoRoot: options.repoRoot } : {}),

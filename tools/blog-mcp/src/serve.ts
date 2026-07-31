@@ -1,5 +1,5 @@
 import http, { type IncomingMessage, type ServerResponse } from 'node:http';
-import { createMcpRequestHandler } from './http.js';
+import { createMcpRequestHandler, defaultAllowedOrigins } from './http.js';
 import { handleApiRequest } from './serve/api.js';
 import { resolveStaticFile } from './serve/static.js';
 import { UI_CAPABILITIES } from './serve/capabilities.js';
@@ -102,7 +102,7 @@ function isAllowedApiOrigin(origin: string | undefined, allowedOrigins: string[]
 export function createServeServer(options: ServeServerOptions = {}): http.Server {
   const host = options.host ?? DEFAULT_HOST;
   const port = options.port ?? DEFAULT_PORT;
-  const allowedOrigins = options.mcpAllowedOrigins ?? [`http://${host}:${port}`, `http://localhost:${port}`];
+  const allowedOrigins = options.mcpAllowedOrigins ?? defaultAllowedOrigins(host, port);
   const uiPasswordHash = options.uiPasswordHash;
   const serverOptions: CreateServerOptions = {
     ...(options.repoRoot ? { repoRoot: options.repoRoot } : {}),
