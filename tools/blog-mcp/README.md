@@ -129,9 +129,18 @@ defaults to `/workspace`.
 
 ### HTTP transport
 
-Stateless: every request gets a fresh server and transport (no session
-store, no resumable SSE streams) — this matches how the server is already
-meant to run, spawned per session by its caller.
+Session-based, per the MCP Streamable HTTP spec: `POST /mcp` with no
+`Mcp-Session-Id` header either is an `initialize` request (a new session is
+created and its id returned in the `Mcp-Session-Id` response header) or
+isn't (rejected with `400`). Every subsequent `POST`/`GET`/`DELETE` for that
+session includes the same header. `GET /mcp` opens a live SSE stream for
+server-to-client notifications; `DELETE /mcp` terminates the session. Both
+require a known `Mcp-Session-Id` (`400` if the header is missing, `404` if
+it doesn't match a live session). There is no event store, so a dropped
+`GET` stream does not replay missed messages — the client just reissues a
+fresh `GET`. A session idle for 30 minutes (no request at all) is reaped
+automatically, so a client that disappears without sending `DELETE` doesn't
+leak its server state forever.
 
 ```bash
 docker run --rm -p 8765:8765 \
@@ -154,12 +163,29 @@ runs unauthenticated — acceptable only while bound to loopback.
 |---|---|---|
 | `BLOG_MCP_HTTP_HOST` | `127.0.0.1` | Bind address. |
 | `BLOG_MCP_HTTP_PORT` | `8765` | Bind port. |
-| `BLOG_MCP_HTTP_TOKEN` | unset | Bearer token required on every `/mcp` request (constant-time compared). |
+| `BLOG_MCP_HTTP_TOKEN` | unset | Bearer token required on every `/mcp` request (constant-time compared). A session initialized with this token gets full env-derived capabilities. |
+| `BLOG_MCP_HTTP_READONLY_TOKEN` | unset | A second, more restricted bearer token. A session initialized with *this* token instead gets write/remote/scheduler forced off (`monitor` stays on), regardless of `BLOG_MCP_READ_ONLY`/`BLOG_MCP_ALLOW_REMOTE`/etc. Both tokens are valid on every request; only the `initialize` call decides which tier a session gets, and that's locked in for the session's lifetime. See "Handing this to a third-party MCP client" below. |
 | `BLOG_MCP_HTTP_ALLOWED_ORIGINS` | `http://<host>:<port>`, `http://localhost:<port>` | Comma-separated `Origin` allowlist. A request with no `Origin` header (any non-browser client) is always allowed; only a *present, disallowed* `Origin` is rejected — this is what stops a malicious page in a browser from talking to the server via DNS rebinding or a simple cross-origin fetch. |
+| `BLOG_MCP_HTTP_MAX_SESSIONS` | `100` | Caps concurrent `/mcp` sessions. A `POST` that would create a session beyond this limit gets `503` instead of being admitted — otherwise a reachable client (more likely with no `BLOG_MCP_HTTP_TOKEN` set) could keep initializing sessions, each holding its own `McpServer`, until the 30-minute idle reap. |
 
-Only `POST /mcp` is implemented (stateless mode has no session to `GET` an
-SSE stream from or `DELETE`); both return `405`. `GET /healthz` returns
-`{"ok":true}` without auth, for container health checks.
+`GET /healthz` returns `{"ok":true}` without auth, for container health checks.
+
+#### Handing this to a third-party MCP client (e.g. a ChatGPT connector)
+
+`BLOG_MCP_HTTP_TOKEN` alone is an all-or-nothing credential: whoever holds it
+gets whatever capability tier `BLOG_MCP_READ_ONLY`/`BLOG_MCP_ALLOW_REMOTE`/etc.
+grant your own tooling — including `blog_push`, `blog_create_pr`, and
+`blog_arm_auto_merge` if remote is on. Handing that same token to a
+third-party product (ChatGPT's Developer Mode connector, for example) means
+its own per-action confirmation prompts become the *only* thing standing
+between a model and a real push/PR/merge on this repo.
+
+Set `BLOG_MCP_HTTP_READONLY_TOKEN` to a second, separately-generated secret
+and give *that* one to the third party instead. A session it initializes gets
+`write`/`remote`/`scheduler` forced off no matter what the primary token's
+capabilities are — it can list and read posts, check validation, and check
+CI/deploy status, but every mutating tool is simply unregistered for that
+session, not just refused at call time.
 
 ### Serve mode (web UI)
 
@@ -184,7 +210,8 @@ docker run --rm -p 8765:8765 \
 ```
 
 The UI reuses every `BLOG_MCP_HTTP_*` env var from HTTP transport above
-(`_HOST`, `_PORT`, `_TOKEN` for `/mcp`, `_ALLOWED_ORIGINS`), plus:
+(`_HOST`, `_PORT`, `_TOKEN`/`_READONLY_TOKEN` for `/mcp`, `_ALLOWED_ORIGINS`,
+`_MAX_SESSIONS`), plus:
 
 | Env var | Default | Effect |
 |---|---|---|
@@ -379,7 +406,7 @@ BLOG_MCP_GIT_USER_NAME=blog-bot BLOG_MCP_GIT_USER_EMAIL=bot@subzerodev.com \
 node dist/http-bin.js --port 8765          # runs the HTTP transport directly, outside Docker
 ```
 
-`test/http.test.ts` exercises the HTTP transport with real `fetch()` calls against an ephemeral-port server: health check, 404s, the stateless 405s on `GET`/`DELETE /mcp`, bearer-auth accept/reject, `Origin` allow/reject, and a full `initialize` → `tools/list` → `tools/call` round trip.
+`test/http.test.ts` exercises the HTTP transport with real `fetch()` calls against an ephemeral-port server: health check, 404s, session-based `GET`/`DELETE /mcp` (missing/unknown `Mcp-Session-Id` → `400`/`404`, a live SSE stream, session termination), bearer-auth accept/reject, `Origin` allow/reject, and a full `initialize` → `tools/list` → `tools/call` round trip that threads the session id like a real client.
 
 `test/bootstrap-repo.test.ts` exercises `ensureRepo()` against a real scratch bare git remote (not a mock): fresh clone, idempotent re-run (fast-forward), refusal on a non-empty non-git directory, refusal on a mismatched `origin`, dirty-tree boot-without-switching, and an unmerged feature branch staying parked. `test/smoke-stdio.mjs` clones this repository itself (a fast, local-filesystem clone) into a scratch `BLOG_MCP_WORKSPACE` rather than pointing at the live checkout directly, since clone-mode has no bind mount to point at.
 

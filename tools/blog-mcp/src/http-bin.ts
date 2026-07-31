@@ -14,10 +14,17 @@ async function main(): Promise<void> {
   const portArg = parseFlag(argv, '--port') ?? process.env.BLOG_MCP_HTTP_PORT;
   const port = portArg ? Number(portArg) : undefined;
   const token = process.env.BLOG_MCP_HTTP_TOKEN;
+  const readOnlyToken = process.env.BLOG_MCP_HTTP_READONLY_TOKEN;
   const allowedOriginsEnv = process.env.BLOG_MCP_HTTP_ALLOWED_ORIGINS;
+  const maxSessionsEnv = process.env.BLOG_MCP_HTTP_MAX_SESSIONS;
+  const maxSessions = maxSessionsEnv ? Number(maxSessionsEnv) : undefined;
 
   if (portArg && (!Number.isInteger(port) || port === undefined || port <= 0)) {
     process.stderr.write(`blog-mcp http: invalid port '${portArg}'\n`);
+    process.exit(1);
+  }
+  if (maxSessionsEnv && (!Number.isInteger(maxSessions) || maxSessions === undefined || maxSessions <= 0)) {
+    process.stderr.write(`blog-mcp http: invalid BLOG_MCP_HTTP_MAX_SESSIONS '${maxSessionsEnv}'\n`);
     process.exit(1);
   }
 
@@ -38,7 +45,9 @@ async function main(): Promise<void> {
     ...(host ? { host } : {}),
     ...(port !== undefined ? { port } : {}),
     ...(token ? { token } : {}),
-    ...(allowedOriginsEnv ? { allowedOrigins: allowedOriginsEnv.split(',').map((s) => s.trim()) } : {})
+    ...(readOnlyToken ? { readOnlyToken } : {}),
+    ...(allowedOriginsEnv ? { allowedOrigins: allowedOriginsEnv.split(',').map((s) => s.trim()) } : {}),
+    ...(maxSessions !== undefined ? { maxSessions } : {})
   });
 }
 
