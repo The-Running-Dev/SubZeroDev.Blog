@@ -3,7 +3,7 @@ import { createMcpRequestHandler, defaultAllowedOrigins } from './http.js';
 import { handleApiRequest } from './serve/api.js';
 import { resolveStaticFile } from './serve/static.js';
 import { UI_CAPABILITIES } from './serve/capabilities.js';
-import { verifyPassword, isLoginRateLimited, recordFailedLogin, clearLoginAttempts, createSession, touchSession, destroySession } from './serve/auth.js';
+import { verifyPassword, isLoginRateLimited, recordFailedLogin, clearLoginAttempts, createSession, touchSession, sessionTtlSeconds, destroySession } from './serve/auth.js';
 import type { CreateServerOptions } from './server.js';
 
 export interface ServeServerOptions {
@@ -27,7 +27,7 @@ export interface ServeServerOptions {
 
 const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_PORT = 8765;
-const SESSION_TTL_SECONDS = 30 * 60; // must match auth.ts's SESSION_TTL_MS -- the cookie's Max-Age is cosmetic (the server-side map is what actually enforces expiry), but a shorter cookie TTL would log a user out client-side before the server session actually expires
+const SESSION_TTL_SECONDS = 30 * 60; // fallback only, for the narrow case of a session id that's already gone by the time we need its TTL (e.g. cookie-clear on logout) -- the real Max-Age for a live session always comes from auth.ts's sessionTtlSeconds(), since "remember me" sessions use a much longer TTL. The cookie's Max-Age is cosmetic either way (the server-side map is what actually enforces expiry), but a shorter cookie TTL would log a user out client-side before the server session actually expires
 const SESSION_COOKIE = 'blog_mcp_session';
 const CSRF_HEADER = 'x-blog-mcp-csrf';
 const MAX_LOGIN_BODY_BYTES = 4096;
@@ -149,9 +149,12 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
     }
 
     let password: unknown;
+    let remember: unknown;
     try {
       const body = await readBoundedBody(req, MAX_LOGIN_BODY_BYTES);
-      password = (JSON.parse(body || '{}') as { password?: unknown }).password;
+      const parsed = JSON.parse(body || '{}') as { password?: unknown; remember?: unknown };
+      password = parsed.password;
+      remember = parsed.remember;
     } catch {
       sendJson(res, 400, { error: 'Invalid request body.' });
       return;
@@ -164,8 +167,8 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
     }
 
     clearLoginAttempts();
-    const sessionId = createSession();
-    sendJson(res, 200, { ok: true }, { 'set-cookie': sessionCookieHeader(sessionId, SESSION_TTL_SECONDS) });
+    const sessionId = createSession(remember === true);
+    sendJson(res, 200, { ok: true }, { 'set-cookie': sessionCookieHeader(sessionId, sessionTtlSeconds(sessionId) ?? SESSION_TTL_SECONDS) });
   }
 
   function handleLogout(req: IncomingMessage, res: ServerResponse): void {
@@ -195,10 +198,10 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
     }
     // Slides the cookie's own Max-Age to match the server-side expiry that
     // touchSession() just extended -- without this, the browser would
-    // silently drop the cookie 30 minutes after login regardless of
-    // continued activity, even though the server still considers the
-    // session valid.
-    const refreshedCookie = sessionCookieHeader(sessionId, SESSION_TTL_SECONDS);
+    // silently drop the cookie before this session's own TTL (30 minutes, or
+    // 30 days if "remember me" was checked) regardless of continued
+    // activity, even though the server still considers the session valid.
+    const refreshedCookie = sessionCookieHeader(sessionId, sessionTtlSeconds(sessionId) ?? SESSION_TTL_SECONDS);
 
     let parsedBody: unknown;
     if (req.method === 'POST') {
@@ -271,8 +274,9 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
           }
           // Same sliding-expiry refresh as handleApi -- otherwise a user who
           // only ever reloads '/' (never hitting /api) would still get
-          // logged out client-side after 30 minutes despite staying active.
-          res.setHeader('set-cookie', sessionCookieHeader(sessionId, SESSION_TTL_SECONDS));
+          // logged out client-side after this session's TTL despite staying
+          // active.
+          res.setHeader('set-cookie', sessionCookieHeader(sessionId, sessionTtlSeconds(sessionId) ?? SESSION_TTL_SECONDS));
         }
         if (handleStatic(req, res, url.pathname)) {
           return;

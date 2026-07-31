@@ -351,6 +351,16 @@ input[type="radio"] {
   text-transform: uppercase;
 }
 
+.field-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.field-checkbox label {
+  font-size: 0.9rem;
+}
+
 .slug-row {
   display: flex;
   gap: 0.5rem;

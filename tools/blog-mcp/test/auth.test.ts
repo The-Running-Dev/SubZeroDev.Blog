@@ -4,6 +4,7 @@ import {
   verifyPassword,
   createSession,
   touchSession,
+  sessionTtlSeconds,
   destroySession,
   isLoginRateLimited,
   recordFailedLogin,
@@ -82,6 +83,35 @@ describe('sessions', () => {
       expect(touchSession(id)).toBe(true); // slides expiry forward
       vi.advanceTimersByTime(20 * 60 * 1000); // 40 min since creation, but only 20 since last touch
       expect(touchSession(id)).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('sessionTtlSeconds reports the default TTL for a normal session and undefined for an unknown one', () => {
+    const id = createSession();
+    expect(sessionTtlSeconds(id)).toBe(30 * 60);
+    expect(sessionTtlSeconds('0'.repeat(64))).toBeUndefined();
+  });
+
+  it('a "remember me" session outlives the default TTL', () => {
+    vi.useFakeTimers();
+    try {
+      const id = createSession(true);
+      expect(sessionTtlSeconds(id)).toBe(30 * 24 * 60 * 60);
+      vi.advanceTimersByTime(31 * 60 * 1000); // past the default 30-minute TTL
+      expect(touchSession(id)).toBe(true); // still valid -- this session's own TTL is 30 days
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a "remember me" session still expires, just on its own much longer TTL', () => {
+    vi.useFakeTimers();
+    try {
+      const id = createSession(true);
+      vi.advanceTimersByTime(31 * 24 * 60 * 60 * 1000); // past the 30-day TTL
+      expect(touchSession(id)).toBe(false);
     } finally {
       vi.useRealTimers();
     }
