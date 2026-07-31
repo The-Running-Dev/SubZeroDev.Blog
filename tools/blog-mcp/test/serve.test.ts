@@ -55,21 +55,29 @@ describe('serve mode', () => {
     expect(res.headers.get('location')).toBe('/login');
   });
 
-  it('GET /login, /app.js, /style.css are servable without auth (the login page must be reachable)', async () => {
+  it('GET /login is servable without auth (the login route must be reachable) and serves the SPA shell', async () => {
     const login = await fetch(`${baseUrl}/login`);
     expect(login.status).toBe(200);
     expect(login.headers.get('content-type')).toContain('text/html');
-
-    const appJs = await fetch(`${baseUrl}/app.js`);
-    expect(appJs.status).toBe(200);
-
-    const css = await fetch(`${baseUrl}/style.css`);
-    expect(css.status).toBe(200);
+    expect(login.headers.get('cache-control')).toBe('no-cache');
   });
 
-  it('unknown static paths 404', async () => {
-    const res = await fetch(`${baseUrl}/does-not-exist.html`);
-    expect(res.status).toBe(404);
+  it('the SPA shell references a real, servable, long-cached JS asset', async () => {
+    const shell = await fetch(`${baseUrl}/login`);
+    const html = await shell.text();
+    const scriptSrc = /<script[^>]+src="([^"]+\.js)"/.exec(html)?.[1];
+    expect(scriptSrc).toBeTruthy();
+
+    const asset = await fetch(`${baseUrl}${scriptSrc}`);
+    expect(asset.status).toBe(200);
+    expect(asset.headers.get('content-type')).toContain('text/javascript');
+    expect(asset.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
+  });
+
+  it('unknown client-route paths fall back to the SPA shell, not a 404 (React Router resolves the route)', async () => {
+    const res = await fetch(`${baseUrl}/does-not-exist-as-a-file`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('text/html');
   });
 
   it('POST /login with the wrong password is rejected and sets no cookie', async () => {

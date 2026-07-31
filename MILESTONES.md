@@ -118,7 +118,7 @@ Phases 1–5 delivered in pull request
 
 See `tools/blog-mcp/README.md` for the current tool catalogue.
 
-## Milestone 8: blog-mcp becomes a self-contained publishing service — in progress
+## Milestone 8: blog-mcp becomes a self-contained publishing service — complete
 
 `tools/blog-mcp/` required a bind-mounted host checkout, which ruled out
 headless operation: a client with no local repo at all (a phone, a scheduled
@@ -254,3 +254,76 @@ checkout anywhere.
 
 Phase 1 delivered in the pull request that introduced this section; Phases 2
 through 6 in the pull requests that introduced those lines.
+
+## Milestone 9: blog-mcp admin UI — React + Vite rewrite, with post deletion — complete
+
+Milestone 8's `serve`-mode admin UI (`public/`) was plain HTML + vanilla JS
+(`app.js`, hand-rolled `el()`/`table()` DOM helpers, no framework, no
+bundler). That was a deliberate call at the time -- the UI renders
+author-controlled text (PR review comments, post bodies) under a strict
+`script-src 'self'` CSP, and staying framework-free kept that guarantee
+simple to audit. As the UI grew (tag-checkbox chips, slug/tag autocomplete,
+raw-markdown paste), several real bugs were found and fixed by hand --
+symptoms of building interactive UI without component/state abstractions.
+The security property doesn't require staying framework-free, only that
+whatever ships stays self-contained (no CDN, no inline eval) and never
+renders untrusted text as markup -- a React + Vite production build
+satisfies both, so the whole UI was rewritten, and a per-row **Delete**
+capability (which didn't exist at all before this milestone) was added
+directly into the new UI rather than built twice.
+
+- Phase 1 (delivered): scaffolded `tools/blog-mcp/ui/` -- React 19 + Vite 8 +
+  TypeScript + `react-router-dom`, a completely separate build pipeline from
+  the server's own `tsc`. Routing skeleton (`/posts`, `/compose`,
+  `/compose/:slug`, `/log`, `/branches`, `/health`, `/pr`, `/login`) with
+  placeholder views and the Docusaurus-palette CSS ported from
+  `public/style.css`. `/login` became a route within the SPA rather than a
+  separate static HTML entry -- the JS bundle carries no secrets, and every
+  protected action still goes through an authenticated `/api` call, so there
+  was no security reason to keep it split out.
+- Phase 2 (delivered): `blog_delete_post`, mirroring `blog_create_post`/
+  `blog_update_post`'s shape and reusing the *same* publish pipeline every
+  write already goes through (branch → delete → stage → commit → push →
+  open PR → arm-auto-merge) -- no new merge path, `blog_arm_auto_merge`
+  stays the only one. Removes the file via `git rm -f` (not a bare
+  `fs.unlinkSync`): the `-f` is deliberate, since deleting the post is the
+  whole point, so any uncommitted local edits to that same file are moot --
+  caught by the test suite, where an earlier fixture leaves the post dirty
+  via a direct `fs.writeFileSync` and `git rm` (no `-f`) refused to touch it.
+- Phase 3 (delivered): rewrote `src/serve/static.ts` from a fixed
+  route→file allowlist (the vanilla UI's four files) to a narrowly-scoped,
+  traversal-safe file server over `ui/dist/` -- every request path is
+  decoded, then resolved against the dist root and checked for containment
+  on the *resolved* absolute path (never the raw string, the classic `../`
+  bypass), a real file gets long-lived immutable caching (safe because
+  Vite's hashed filenames change on every rebuild), an in-bounds path that
+  isn't a real file falls back to `index.html` so React Router resolves it
+  client-side (including on a hard refresh), and a path resolving *outside*
+  the dist root is rejected outright, not silently served the SPA shell.
+- Phase 4 (delivered): ported every view to real React logic 1:1 (not
+  redesigned again) -- slug/tag autocomplete, the tag-vocabulary-unavailable
+  free-text fallback, raw-markdown-paste, and the full publish pipeline all
+  carried over as hooks instead of closures over DOM nodes.
+- Phase 5 (delivered): the Posts view's per-row Delete -- confirms first
+  (deleting a *published, live* post is more consequential than
+  create/update, which this UI already gates behind a separate
+  arm-auto-merge step), then drives the same guided pipeline Phase 2's tool
+  plugs into, landing on a PR-status view that reads the PR number from a
+  `?pr=` query param and looks it up automatically.
+- Phase 6 (delivered): a new `ui-build` Dockerfile stage; the runtime stage
+  copies `ui/dist` in instead of `public/`. Verified end to end against a
+  real scratch bare-remote repo (never the live checkout) in a real browser,
+  mirroring `test/serve-writes.test.ts`'s own pattern: logged in, edited an
+  existing post, created a new one via raw-markdown-paste and published it
+  through the full pipeline, attempted arm-auto-merge (correctly reported a
+  SHA mismatch against the fixture's static head, proving the check itself
+  still works), deleted a post through the full pipeline and confirmed via
+  `git status` that the right file was removed and pushed on its own
+  branch -- then the same walkthrough again against the real built Docker
+  image before `public/` was deleted. A manual `curl` traversal attempt
+  (literal and percent-encoded `../`) against the real container confirmed
+  the percent-encoded case is rejected with 404, while a literal `../` in
+  the URL is already collapsed by the HTTP layer's own URL-parsing before
+  the server ever sees it (confirmed safe by inspecting the response body:
+  the SPA shell, never leaked file content) -- both paths verified, neither
+  is a real vulnerability.

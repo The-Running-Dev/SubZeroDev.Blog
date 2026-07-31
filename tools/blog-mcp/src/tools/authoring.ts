@@ -12,7 +12,7 @@ import { loadTags, appendTagEntry, tagsYmlPath } from '../domain/tags.js';
 import { insertHubEntry, assertStillParses, type HubEntry } from '../domain/hubs.js';
 import { listPostFiles, loadPost, validateAllPosts, validateHubs, type HubValidationContext } from '../domain/validate.js';
 import { checkAllowedPath } from '../domain/paths.js';
-import { currentBranch, status, remoteUrl } from '../exec/git.js';
+import { currentBranch, status, remoteUrl, gitOrThrow } from '../exec/git.js';
 import { isReadOnly, isRemoteEnabled, wrapTool, wrapMutatingTool, type ToolContext } from './context.js';
 
 async function toolVersions(repoRoot: string): Promise<Record<string, string>> {
@@ -452,6 +452,45 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
 
       fs.writeFileSync(match.absolutePath, content, 'utf8');
       return ok(`Updated ${match.relativePath}`, { path: match.relativePath }, findings);
+    })
+  );
+
+  server.registerTool(
+    'blog_delete_post',
+    {
+      title: 'Delete a blog post',
+      description:
+        'Removes an existing post via `git rm` (deletes the file and stages the removal in one step). Does not touch history, branches, or open a PR -- reuses the same branch/commit/push/PR pipeline every other write does to actually publish the deletion.',
+      inputSchema: {
+        slug: z.string()
+      }
+    },
+    wrapMutatingTool(ctx, 'blog_delete_post', async (args: { slug: string }) => {
+      const files = listPostFiles(repoRoot, config.blogDir);
+      const match = files.map((f) => loadPost(repoRoot, f)).find((p) => p.frontMatter?.slug === args.slug);
+      if (!match || match.frontMatter === null) {
+        return precondition(`No post found for slug '${args.slug}'.`);
+      }
+
+      const check = checkAllowedPath(repoRoot, match.relativePath, ctx.capabilities?.writablePathPrefixes);
+      if (!check.ok) return precondition(check.reason ?? `'${match.relativePath}' is not an allowed path.`);
+
+      // listPostFiles/loadPost enumerate the working tree, not the git
+      // index, so a post created (blog_create_post) but never staged is a
+      // legitimate match here -- `git rm` operates on the index and fails
+      // with "pathspec did not match" for a file git has never heard of.
+      // `git ls-files` (also index-based) tells us which removal path
+      // applies: tracked -> `git rm -f` (deletes + stages in one step; -f
+      // because any uncommitted edit to that same file is moot, the whole
+      // point is deleting it); untracked -> a plain unlink, since there's
+      // nothing in the index to stage a removal of.
+      const lsFiles = await gitOrThrow(['ls-files', '--', match.relativePath], { repoRoot });
+      if (lsFiles.stdout.trim().length > 0) {
+        await gitOrThrow(['rm', '-f', '--', match.relativePath], { repoRoot });
+      } else {
+        await fs.promises.unlink(path.join(repoRoot, match.relativePath));
+      }
+      return ok(`Deleted ${match.relativePath}`, { path: match.relativePath });
     })
   );
 

@@ -285,4 +285,57 @@ describe('serve mode write routes', () => {
     expect(envelope.ok).toBe(true);
     expect(envelope.data?.path).toBe(postPath);
   });
+
+  it('POST /api/posts/:slug/delete removes the post via git rm (deletes and stages in one step)', async () => {
+    const { status, envelope } = await post<{ path: string }>('/api/posts/write-path-fixture/delete', {});
+    expect(status).toBe(200);
+    expect(envelope.ok).toBe(true);
+    expect(envelope.data?.path).toBe(postPath);
+
+    expect(fs.existsSync(path.join(clone, postPath))).toBe(false);
+
+    const statusResult = await gitOrThrow(['status', '--short'], { repoRoot: clone });
+    const line = statusResult.stdout.split('\n').find((l) => l.includes(postPath));
+    expect(line?.trim().startsWith('D')).toBe(true);
+  });
+
+  it('POST /api/posts/:slug/delete for an unknown slug is a precondition failure, not a crash', async () => {
+    const { status, envelope } = await post('/api/posts/does-not-exist/delete', {});
+    expect(status).toBe(200);
+    expect(envelope.ok).toBe(false);
+    expect(envelope.kind).toBe('precondition');
+  });
+
+  it('POST /api/posts/:slug/delete removes a post that was created but never staged (git rm cannot touch it)', async () => {
+    // blog_create_post writes the file straight to the working tree and
+    // never stages it -- listPostFiles/loadPost enumerate the working tree
+    // too, so a request can legitimately target a post `git rm` has never
+    // heard of. `git rm -f` alone fails on an untracked path ("pathspec did
+    // not match"); this is the scenario that regressed without the
+    // tracked/untracked branch in blog_delete_post.
+    const created = await post<{ path: string }>('/api/posts', {
+      title: 'Untracked Delete Fixture',
+      description: 'Never staged before being deleted.',
+      slug: 'untracked-delete-fixture',
+      body: 'This post is deleted before ever being git-added.',
+      tags: ['test'],
+      authors: ['subzerodev'],
+      date: '2099-01-01T00:00:00Z'
+    });
+    expect(created.status).toBe(200);
+    expect(created.envelope.ok).toBe(true);
+    const untrackedPostPath = created.envelope.data?.path as string;
+
+    const statusBefore = await gitOrThrow(['status', '--porcelain'], { repoRoot: clone });
+    expect(statusBefore.stdout).toContain(`?? ${untrackedPostPath}`);
+
+    const { status, envelope } = await post<{ path: string }>('/api/posts/untracked-delete-fixture/delete', {});
+    expect(status).toBe(200);
+    expect(envelope.ok).toBe(true);
+    expect(envelope.data?.path).toBe(untrackedPostPath);
+    expect(fs.existsSync(path.join(clone, untrackedPostPath))).toBe(false);
+
+    const statusAfter = await gitOrThrow(['status', '--porcelain'], { repoRoot: clone });
+    expect(statusAfter.stdout).not.toContain(untrackedPostPath);
+  });
 });
