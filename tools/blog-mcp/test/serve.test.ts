@@ -110,6 +110,18 @@ describe('serve mode', () => {
     expect(res.headers.get('set-cookie')).not.toBeNull();
   });
 
+  it('POST /login with remember: true issues a cookie with a ~30-day Max-Age instead of the default ~30-minute one', async () => {
+    resetAuthStateForTests();
+    const res = await fetch(`${baseUrl}/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: TEST_ORIGIN },
+      body: JSON.stringify({ password: PASSWORD, remember: true })
+    });
+    expect(res.status).toBe(200);
+    const maxAge = Number(/Max-Age=(\d+)/.exec(res.headers.get('set-cookie') ?? '')?.[1]);
+    expect(maxAge).toBeGreaterThan(29 * 24 * 60 * 60); // comfortably longer than a default 30-minute session
+  });
+
   it('5 failed logins trigger rate limiting on the 6th attempt, even with the correct password', async () => {
     resetAuthStateForTests(); // clean baseline -- an earlier test in this file already recorded one failure
     for (let i = 0; i < 5; i++) {

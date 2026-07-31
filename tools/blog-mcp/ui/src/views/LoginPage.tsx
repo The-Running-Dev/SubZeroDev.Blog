@@ -11,6 +11,7 @@ import type { FormEvent } from 'react';
  */
 export default function LoginPage() {
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(event: FormEvent): Promise<void> {
@@ -20,7 +21,7 @@ export default function LoginPage() {
       const res = await fetch('/login', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ password, remember })
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -50,6 +51,16 @@ export default function LoginPage() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
+        </div>
+        <div className="field field-checkbox">
+          <input
+            type="checkbox"
+            id="remember"
+            name="remember"
+            checked={remember}
+            onChange={(event) => setRemember(event.target.checked)}
+          />
+          <label htmlFor="remember">Remember me for 30 days</label>
         </div>
         <button type="submit" className="primary">
           Sign in
