@@ -15,8 +15,8 @@ export default function Layout() {
           <NavLink to="/compose">Compose</NavLink>
           <NavLink to="/log">Log</NavLink>
           <NavLink to="/branches">Branches</NavLink>
-          <NavLink to="/health">Repo health</NavLink>
-          <NavLink to="/pr">PR status</NavLink>
+          <NavLink to="/health">Repo Health</NavLink>
+          <NavLink to="/pr">PR Status</NavLink>
           <button type="button" id="logout" onClick={() => void handleLogout()}>
             Sign out
           </button>

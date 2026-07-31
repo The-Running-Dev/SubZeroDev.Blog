@@ -37,7 +37,7 @@ export default function PrStatusView() {
 
   return (
     <>
-      <h2>PR status</h2>
+      <h2>PR Status</h2>
       <div className="compose-actions">
         <input type="number" placeholder="PR number" value={prNumber} onChange={(event) => setPrNumber(event.target.value)} />
         <button type="button" className="primary" onClick={() => void lookup(prNumber)}>

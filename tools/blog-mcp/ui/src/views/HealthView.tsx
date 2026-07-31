@@ -21,11 +21,11 @@ export default function HealthView() {
   }, []);
 
   if (error) return <p className="error">{error}</p>;
-  if (!health) return <h2>Repo health</h2>;
+  if (!health) return <h2>Repo Health</h2>;
 
   return (
     <>
-      <h2>Repo health</h2>
+      <h2>Repo Health</h2>
       <div className="panel">
         <p>
           Branch: {health.branch} (base: {health.baseBranch})

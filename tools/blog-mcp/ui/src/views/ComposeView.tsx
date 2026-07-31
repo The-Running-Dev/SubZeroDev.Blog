@@ -246,7 +246,17 @@ export default function ComposeView() {
 
   return (
     <>
-      <h2>Compose</h2>
+      <div className="view-header">
+        <h2>Compose</h2>
+        <button
+          type="button"
+          className={`view-header-toggle${showRawMarkdown ? ' active' : ''}`}
+          onClick={() => setShowRawMarkdown((prev) => !prev)}
+          title="Paste a whole markdown file (front matter + body) and derive every field from it in one step"
+        >
+          Markdown
+        </button>
+      </div>
       <p className="muted">
         Create a new post or load an existing one by slug, then publish: branch → write → stage → commit → push → open PR. Opening
         the PR does not merge anything by itself -- click &quot;Arm auto-merge&quot; afterward to tell GitHub to merge that PR
@@ -332,15 +342,11 @@ export default function ComposeView() {
           />
         </div>
 
-        {/* Paste a whole markdown file (front matter fences + body) and derive every
-            field from it in one step, instead of copying each piece by hand. Parsing
+        {/* Toggled by the "Markdown" button up in the view header. Parsing
             happens server-side (POST /api/parse-markdown -> blog_parse_markdown ->
             the same domain/frontmatter.ts parser every other tool uses), not with a
             hand-rolled client-side YAML parser that could silently disagree with what
             publish actually does. */}
-        <button type="button" onClick={() => setShowRawMarkdown((prev) => !prev)}>
-          {showRawMarkdown ? 'Hide raw markdown paste' : 'Paste raw markdown instead'}
-        </button>
         {showRawMarkdown && (
           <div className="field raw-markdown-panel">
             <span className="field-label">Raw markdown</span>
