@@ -10,11 +10,11 @@ tags:
   - lucifer
 ---
 
-<!-- truncate -->
-
 # God's Greatest Practical Joke
 
 Lucifer looked up at God and asked:
+
+<!-- truncate -->
 
 > “Father… what the fuck have you done down there?”
 
