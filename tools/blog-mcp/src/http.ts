@@ -5,6 +5,9 @@ import { createServer, type CreateServerOptions } from './server.js';
 
 export interface HttpServerOptions {
   repoRoot?: string;
+  auditLogPath?: string;
+  /** Directory for scheduler state (schedule.json). Required for blog_schedule_* tools to work when registered (BLOG_MCP_ALLOW_SCHEDULER=1). */
+  stateDir?: string;
   host?: string;
   port?: number;
   /** Bearer token required on every request. If unset, the server logs a warning and allows unauthenticated access -- acceptable only because the default bind is loopback-only. */
@@ -42,19 +45,27 @@ function isOriginAllowed(origin: string | undefined, allowedOrigins: string[]): 
 }
 
 /**
- * Builds the HTTP/SSE entry point. Deliberately stateless: every request
+ * Builds the `/healthz` + `/mcp` request handler, self-contained (its own
+ * top-level error handling, never rejects) so it can be mounted either as a
+ * whole server's only handler (createHttpServer below) or as one path
+ * range inside a bigger handler (src/serve.ts's `/mcp`, alongside `/api` and
+ * the static UI, in a later phase). Deliberately stateless: every request
  * gets a fresh McpServer + StreamableHTTPServerTransport (sessionIdGenerator:
  * undefined), matching how this server is already meant to run -- spawned
  * per session by its caller -- rather than adding session-store lifecycle
  * management (resumable SSE streams, an EventStore) that this deployment
  * model doesn't need.
  */
-export function createHttpServer(options: HttpServerOptions = {}): http.Server {
+export function createMcpRequestHandler(options: HttpServerOptions = {}): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const host = options.host ?? DEFAULT_HOST;
   const port = options.port ?? DEFAULT_PORT;
   const token = options.token;
   const allowedOrigins = options.allowedOrigins ?? [`http://${host}:${port}`, `http://localhost:${port}`];
-  const serverOptions: CreateServerOptions = options.repoRoot ? { repoRoot: options.repoRoot } : {};
+  const serverOptions: CreateServerOptions = {
+    ...(options.repoRoot ? { repoRoot: options.repoRoot } : {}),
+    ...(options.auditLogPath ? { auditLogPath: options.auditLogPath } : {}),
+    ...(options.stateDir ? { stateDir: options.stateDir } : {})
+  };
 
   if (!token) {
     process.stderr.write(
@@ -62,19 +73,10 @@ export function createHttpServer(options: HttpServerOptions = {}): http.Server {
     );
   }
 
-  const httpServer = http.createServer((req: IncomingMessage, res: ServerResponse) => {
-    handleIncoming(req, res).catch((err: unknown) => {
-      process.stderr.write(`blog-mcp http: unhandled request error: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`);
-      if (!res.headersSent) {
-        rpcError(res, 400, -32000, 'Bad request.');
-      }
-    });
-  });
-
   async function handleIncoming(req: IncomingMessage, res: ServerResponse): Promise<void> {
     // Parsing can throw on a malformed request line/Host header; keep this
-    // inside the function the caller already wraps in .catch(), rather than
-    // letting it throw before any handler is attached.
+    // inside the try/catch below rather than letting it throw before any
+    // handler is attached.
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? `${host}:${port}`}`);
 
     if (url.pathname === '/healthz') {
@@ -133,6 +135,28 @@ export function createHttpServer(options: HttpServerOptions = {}): http.Server {
       cleanup();
     }
   }
+
+  return async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
+    try {
+      await handleIncoming(req, res);
+    } catch (err) {
+      process.stderr.write(`blog-mcp http: unhandled request error: ${err instanceof Error ? (err.stack ?? err.message) : String(err)}\n`);
+      if (!res.headersSent) {
+        rpcError(res, 400, -32000, 'Bad request.');
+      }
+    }
+  };
+}
+
+/** Standalone `/mcp`-only server: `createMcpRequestHandler` is the entire handler. */
+export function createHttpServer(options: HttpServerOptions = {}): http.Server {
+  const host = options.host ?? DEFAULT_HOST;
+  const port = options.port ?? DEFAULT_PORT;
+  const handler = createMcpRequestHandler(options);
+
+  const httpServer = http.createServer((req: IncomingMessage, res: ServerResponse) => {
+    void handler(req, res);
+  });
 
   httpServer.on('error', (err: NodeJS.ErrnoException) => {
     process.stderr.write(`blog-mcp http: failed to start on ${host}:${port}: ${err.message}\n`);

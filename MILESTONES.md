@@ -114,6 +114,143 @@ Phases 1–5 delivered in pull request
 [#33](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/33); Phase 7 in
 [#34](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/34); Phase 8 in
 [#35](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/35); Phase 9 in
-the pull request that introduced this line.
+[#37](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/37).
 
 See `tools/blog-mcp/README.md` for the current tool catalogue.
+
+## Milestone 8: blog-mcp becomes a self-contained publishing service — in progress
+
+`tools/blog-mcp/` required a bind-mounted host checkout, which ruled out
+headless operation: a client with no local repo at all (a phone, a scheduled
+job, a remote automation service) could never drive the pipeline. The goal is
+one container that, given only environment variables and a named volume,
+clones the blog, serves the MCP tools, serves a web UI for authoring and
+scheduling, and runs a cron scheduler — with no bind mount and no host
+checkout anywhere.
+
+- Phase 1 (delivered): clone-only bootstrap. `src/bootstrap/repo.ts`'s
+  `ensureRepo()` clones `BLOG_MCP_CLONE_URL` into `BLOG_MCP_WORKSPACE` on
+  first run and reconciles (fetch, fast-forward, or safely leave parked/dirty
+  — never discarding uncommitted work) on every subsequent run; the
+  `/repo`-bind-mount fallback in `src/config.ts` is removed. Git identity
+  (`BLOG_MCP_GIT_USER_NAME`/`_EMAIL`) is set repo-local for the first time —
+  nothing set it before, so a fresh clone would otherwise fail every commit.
+  Verified end-to-end in the built Docker image against the real public
+  remote with no bind mount: fresh clone, zero validation findings, and a
+  second run reconciling via fast-forward.
+- Phase 2 (delivered): repo hygiene and observability. Every tool that
+  mutates the working tree, git state, or a PR/merge is now serialized behind
+  an in-process mutex (`src/exec/repoLock.ts`) and appends a scrubbed,
+  best-effort line to `${BLOG_MCP_WORKSPACE}/state/audit.log`
+  (`src/exec/auditLog.ts`) — the hard prerequisite for `serve` mode's
+  multiple actors (external MCP client, web UI, scheduler tick) sharing one
+  working tree. Three new read-only tools: `blog_log` (defaults to
+  `origin/<base>`, not `HEAD`, since a long-lived container's working tree
+  may be parked on a stale branch), `blog_branches`, and `blog_repo_health`.
+  `blog_sync_base` gained `--prune` and an optional `ffOnly` that fast-forwards
+  the local base branch only when it's checked out and clean — a first fix
+  for the working-tree-parking problem a persistent volume has that a bind
+  mount never did.
+- Phase 3 (delivered): per-consumer capability tiers. Registration tiers were
+  read from `process.env` at call time (`isReadOnly`/`isRemoteEnabled`/
+  `isMonitorEnabled`), a process-global that `serve` mode's UI and cron
+  actors sharing one process would have silently broken —
+  `BLOG_MCP_READ_ONLY` would have stopped meaning anything the moment the UI
+  needed write access. `createServer({ capabilities })` now accepts an
+  explicit `Capabilities` object (`write`, `remote`, `monitor`, `scheduler`,
+  `writablePathPrefixes`) that overrides the env-derived defaults entirely;
+  `src/index.ts` and `src/http-bin.ts` both omit it, so stdio and `/mcp` HTTP
+  are byte-for-byte unchanged. `writablePathPrefixes` also threads through to
+  `blog_stage`/`blog_add_hub_entry`, so a narrower profile (the cron
+  scheduler, a later phase) can be denied `.github/workflows/`, `.config/`,
+  `tools/`, and `build/` while every other consumer keeps the full default
+  allowlist.
+- Phase 4 (delivered): `serve` mode -- a third transport (`src/serve.ts` /
+  `src/serve-bin.ts`) exposing `/mcp` and `/healthz` (unchanged from HTTP
+  transport), a read-only `/api/*`, and a small static UI at `/`
+  (`tools/blog-mcp/public/`: plain HTML + `fetch`, no framework, no bundler,
+  no CDN assets). Every `/api` route is an explicit `tools/call` over an
+  in-process MCP client (`InMemoryTransport`, `src/serve/client.ts`) rather
+  than a generic call-any-tool-by-name proxy, so the UI is provably
+  incapable of anything an MCP client's tool list wouldn't allow. Auth: a
+  256-bit session id in an `HttpOnly`/`SameSite=Strict` cookie, tracked
+  server-side with a 30-minute sliding expiry, a rate-limited login, and a
+  required `X-Blog-Mcp-Csrf` header on `/api` -- deliberately a separate
+  secret (`BLOG_MCP_UI_PASSWORD_HASH`) from `BLOG_MCP_HTTP_TOKEN`, since one
+  is a machine bearer token and the other a password typed into a browser.
+  Manual browser verification of this phase caught a real bug the design
+  review's Origin-based CSRF plan had missed: a same-origin `fetch` POST
+  from the login page did not reliably send an `Origin` header at all, so
+  requiring one outright would have locked out the login form itself; the
+  fix mirrors `/mcp`'s existing policy (missing Origin allowed, only a
+  *present, disallowed* one rejected) and leans on `SameSite=Strict` plus
+  the custom CSRF header as the actual defenses. Verified end to end against
+  the built Docker image with no bind mount: real clone, login, session
+  cookie, and `/api` calls returning real post/log/health data over `curl`.
+  Read-only by design -- Phase 5 adds write routes without touching this
+  phase's capabilities or auth plumbing.
+- Phase 5 (delivered): UI writes. `src/serve/api.ts` gained POST routes for
+  every write tool the phase list calls for -- create/update a post, create
+  a branch, stage, commit, push, open a PR, arm auto-merge -- each still an
+  explicit `tools/call`, never a passthrough. `public/app.js`'s new
+  "Compose" view drives the full publish sequence (branch → write → stage →
+  commit → push → open PR) as one guided flow; arming auto-merge stays a
+  separate, explicit button rather than firing automatically on PR
+  creation. Verified with a new `test/serve-writes.test.ts` (every route,
+  end to end, over real HTTP, against a scratch bare remote and the
+  existing `gh-shim.mjs` -- never the live checkout) and by clicking through
+  the Compose UI in a real browser, which caught a second real bug beyond
+  what the HTTP-level tests could reach: the "Arm auto-merge" button
+  fetched its "expected" head SHA from the same `GET /api/pr/:number` call
+  it then validated against, making the check tautological -- it would
+  always report a match and silently defeat the entire reason
+  `blog_arm_auto_merge` takes an explicit SHA at all. Fixed to use the SHA
+  the session's own push actually returned; this class of bug has no
+  automated regression coverage, since the project has no browser/DOM test
+  runner and the bug lived entirely in client-side JS.
+- Phase 6 (delivered): the cron scheduler. Model (i) only -- "hold the
+  branch/PR, merge at time T" -- three new tools (`blog_schedule_publish`,
+  `blog_list_scheduled_jobs`, `blog_cancel_scheduled_job`) gated behind
+  `BLOG_MCP_ALLOW_SCHEDULER=1` + `BLOG_MCP_ALLOW_REMOTE=1`, plus a 60s tick
+  loop (`src/scheduler/engine.ts`) running inside the `serve` process.
+  Every job explicitly declares its own missed-tick policy
+  (`catch_up`/`skip_if_older_than`) rather than an implicit default; a
+  merge conflict or a SHA that no longer matches the PR's actual head is
+  terminal `needs-attention`, never retried automatically.
+  `src/server.ts`'s registration gating was refactored so Tier C (remote)
+  no longer nests under `write` -- the scheduler's own profile
+  (`CRON_CAPABILITIES`) needs `blog_pr_status`/`blog_arm_auto_merge`
+  without any local-write tool, and env-derived `defaultCapabilities()` is
+  unchanged for every existing caller (`remote` still only true when
+  `write` is too). A real Docker container run caught a genuine wiring gap
+  no unit test reached: `stateDir` was threaded into the scheduler
+  *engine*'s own options but not into `createMcpRequestHandler`/
+  `createHttpServer`/`createServeServer`, so `blog_schedule_publish` failed
+  over a real `/mcp` call even though the tool's own logic (tested via a
+  hand-built `ToolContext`) was correct. Fixed, and
+  `test/http-scheduler-wiring.test.ts` now exercises the real
+  option-threading path so this class of gap fails a unit test next time.
+  End-to-end verified in the built image: scheduled a PR, waited for a real
+  60-second tick to fire unprompted, and watched the job move
+  `pending` → `armed` on its own -- with the parked-branch fail-safe first
+  confirmed to correctly block it until the working tree was back on the
+  base branch.
+- Future-date experiment (run): the cheap throwaway-PR experiment Phase 7
+  was gated on. A post dated `2036-07-31`
+  ([The-Running-Dev/SubZeroDev.Blog#38](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/38),
+  closed without merging) confirmed the future-dated post fully builds into
+  production, gets a real page, **and appears in both `rss.xml` and
+  `atom.xml`**. "This template hides future-dated posts" was folklore, not
+  fact, for this setup -- model (ii) ("merge now, publish later via a
+  future date") is now confirmed rejected, not just assumed. This leaves
+  `blog_dispatch_deploy`'s only remaining justification as its unrelated
+  second use case, recovering a failed deploy -- a smaller, separate
+  feature to decide on independently rather than something this experiment
+  argues for building.
+- Phase 7 (conditional, undecided): not started. `blog_dispatch_deploy`
+  would fire `workflow_dispatch` on `Docs Deploy` to recover a failed
+  deploy -- the only remaining use case now that the future-date scheduling
+  question above is settled against it.
+
+Phase 1 delivered in the pull request that introduced this section; Phases 2
+through 6 in the pull requests that introduced those lines.

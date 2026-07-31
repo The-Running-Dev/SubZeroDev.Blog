@@ -3,11 +3,36 @@ import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import type { BlogConfig } from '../config.js';
 import { toCallToolResult, infrastructureFailure, precondition, type ToolResult } from '../result.js';
 import { PreconditionError, InfrastructureError } from '../errors.js';
+import { withRepoLock } from '../exec/repoLock.js';
+import { appendAuditLog } from '../exec/auditLog.js';
+import { DEFAULT_ALLOWED_PREFIXES } from '../domain/paths.js';
+
+/**
+ * A consumer's registration profile. `POST /mcp` (and stdio) always uses
+ * defaultCapabilities() below, computed fresh from env on every server
+ * construction -- unchanged from before this existed. A later phase's UI or
+ * scheduler session instead builds its own Capabilities and passes it into
+ * createServer() explicitly, so BLOG_MCP_READ_ONLY keeps meaning something
+ * even once multiple consumer profiles share one process.
+ */
+export interface Capabilities {
+  write: boolean;
+  remote: boolean;
+  monitor: boolean;
+  scheduler: boolean;
+  writablePathPrefixes: string[];
+}
 
 export interface ToolContext {
   server: McpServer;
   repoRoot: string;
   config: BlogConfig;
+  /** Optional -- unset in tests and any caller with no workspace concept. See exec/auditLog.ts. */
+  auditLogPath?: string;
+  /** Optional -- unset in tests that build a ToolContext by hand; every check that reads it falls back to the default (env-derived, or DEFAULT_ALLOWED_PREFIXES) when absent. */
+  capabilities?: Capabilities;
+  /** Optional -- directory for scheduler state (schedule.json). Unset in tests and any caller with no workspace concept, same as auditLogPath. */
+  stateDir?: string;
 }
 
 export function isReadOnly(): boolean {
@@ -26,6 +51,41 @@ export function isRemoteEnabled(): boolean {
  */
 export function isMonitorEnabled(): boolean {
   return process.env.BLOG_MCP_ALLOW_MONITOR !== '0' && process.env.BLOG_MCP_ALLOW_MONITOR !== 'false';
+}
+
+/** Gates registration of the blog_schedule_* tools (src/tools/scheduler.ts). Requires BLOG_MCP_ALLOW_REMOTE too -- see defaultCapabilities. */
+export function isSchedulerEnabled(): boolean {
+  return process.env.BLOG_MCP_ALLOW_SCHEDULER === '1' || process.env.BLOG_MCP_ALLOW_SCHEDULER === 'true';
+}
+
+/**
+ * The env-derived profile used whenever a caller doesn't pass an explicit
+ * `capabilities` override -- i.e. every stdio and `/mcp` HTTP server today.
+ * `remote` mirrors createServer's previous inline gating exactly (only
+ * meaningful when write is also on, matching the old nested
+ * `if (!isReadOnly()) { ...; if (isRemoteEnabled()) ... }` shape) --
+ * unchanged from before this field existed. `scheduler` is new in Phase 6
+ * and deliberately NOT tied to write: the scheduler only ever needs
+ * blog_pr_status/blog_arm_auto_merge (Tier C, gated by `remote`), never a
+ * local-write tool, so requiring `BLOG_MCP_ALLOW_SCHEDULER=1` +
+ * `BLOG_MCP_ALLOW_REMOTE=1` is both necessary and sufficient -- exactly what
+ * the milestone plan specifies.
+ */
+export function defaultCapabilities(): Capabilities {
+  const write = !isReadOnly();
+  return {
+    write,
+    remote: write && isRemoteEnabled(),
+    monitor: isMonitorEnabled(),
+    // Deliberately isRemoteEnabled() directly, not the `remote` field above:
+    // blog_schedule_publish/_list/_cancel only ever need Tier C
+    // (blog_pr_status/blog_arm_auto_merge), never a local-write tool, so
+    // gating scheduler behind `write` too would block the useful
+    // "read-only content session, but this one can still enqueue a merge"
+    // combination for no reason tied to what these tools actually touch.
+    scheduler: isRemoteEnabled() && isSchedulerEnabled(),
+    writablePathPrefixes: DEFAULT_ALLOWED_PREFIXES
+  };
 }
 
 /**
@@ -56,5 +116,30 @@ export function wrapTool<A>(handler: (args: A) => Promise<ToolResult>) {
       const message = err instanceof Error ? err.message : String(err);
       return toCallToolResult(infrastructureFailure(`Unexpected error: ${message}`)) as CallToolResult;
     }
+  };
+}
+
+/**
+ * Like wrapTool, but for tools that mutate the repo's working tree, git
+ * state, or a PR/merge on GitHub: serializes them behind the repo mutex
+ * (exec/repoLock.ts) and appends a scrubbed, best-effort audit line
+ * (exec/auditLog.ts) once the call completes. `wrapTool` never throws --
+ * every outcome, including a validation/precondition failure, resolves to a
+ * CallToolResult -- so the lock only ever needs to serialize, never retry.
+ */
+export function wrapMutatingTool<A>(ctx: ToolContext, toolName: string, handler: (args: A) => Promise<ToolResult>) {
+  const inner = wrapTool(handler);
+  return async (args: A, extra?: unknown): Promise<CallToolResult> => {
+    return withRepoLock(async () => {
+      const result = await inner(args, extra);
+      const structured = result.structuredContent as { ok?: boolean; kind?: string; summary?: string } | undefined;
+      appendAuditLog(ctx.auditLogPath, {
+        tool: toolName,
+        ok: structured?.ok === true,
+        ...(structured?.kind ? { kind: structured.kind } : {}),
+        ...(structured?.summary ? { summary: structured.summary } : {})
+      });
+      return result;
+    });
   };
 }

@@ -7,13 +7,15 @@
   "license": "MIT",
   "bin": {
     "blog-mcp": "dist/index.js",
-    "blog-mcp-http": "dist/http-bin.js"
+    "blog-mcp-http": "dist/http-bin.js",
+    "blog-mcp-serve": "dist/serve-bin.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "start": "node dist/index.js",
-    "start:http": "node dist/http-bin.js"
+    "start:http": "node dist/http-bin.js",
+    "start:serve": "node dist/serve-bin.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

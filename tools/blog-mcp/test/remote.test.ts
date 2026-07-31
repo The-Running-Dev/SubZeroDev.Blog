@@ -110,6 +110,7 @@ describe('remote tools against a gh shim (no real GitHub involved)', () => {
     delete process.env.GH_SHIM_HEAD_SHA;
     delete process.env.GH_SHIM_IS_DRAFT;
     delete process.env.GH_SHIM_PR_NUMBER;
+    delete process.env.GH_SHIM_THREADS_JSON;
     fs.rmSync(scratchRoot, { recursive: true, force: true });
   });
 
@@ -117,6 +118,7 @@ describe('remote tools against a gh shim (no real GitHub involved)', () => {
     fs.writeFileSync(ghShimLog, '');
     delete process.env.GH_SHIM_HEAD_SHA;
     delete process.env.GH_SHIM_IS_DRAFT;
+    delete process.env.GH_SHIM_THREADS_JSON;
   });
 
   it('blog_create_pr calls `gh pr create` with a --body-file (never body on argv) and returns the parsed PR', async () => {
@@ -158,9 +160,21 @@ describe('remote tools against a gh shim (no real GitHub involved)', () => {
     expect(result.summary.toLowerCase()).toContain('draft');
   });
 
-  it('blog_arm_auto_merge arms merge when the SHA matches and calls the exact match-head-commit argv', async () => {
+  it('blog_arm_auto_merge refuses when there are unresolved review threads', async () => {
     process.env.GH_SHIM_HEAD_SHA = 'd'.repeat(40);
+    // The shim's default thread list (used by the pagination tests below)
+    // includes one unresolved thread.
     const result = await call(server, 'blog_arm_auto_merge', { pr: 42, headSha: 'd'.repeat(40) });
+    expect(result.ok).toBe(false);
+    expect(result.kind).toBe('precondition');
+    expect(result.summary).toContain('unresolved review thread');
+  });
+
+  it('blog_arm_auto_merge arms merge when the SHA matches, no unresolved threads, and calls the exact match-head-commit argv', async () => {
+    process.env.GH_SHIM_HEAD_SHA = 'd'.repeat(40);
+    process.env.GH_SHIM_THREADS_JSON = '[]';
+    const result = await call(server, 'blog_arm_auto_merge', { pr: 42, headSha: 'd'.repeat(40) });
+    delete process.env.GH_SHIM_THREADS_JSON;
     expect(result.ok).toBe(true);
 
     const invocations = fs

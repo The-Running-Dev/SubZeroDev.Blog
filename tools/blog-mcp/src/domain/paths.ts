@@ -3,11 +3,16 @@ import path from 'node:path';
 
 /**
  * Directories/files a write tool (create/update post, add tag, add hub
- * entry, stage) is allowed to touch, relative to the repo root. This is the
- * single safety boundary reused by every write tool -- nothing outside it
- * can be written or staged, no matter what a caller asks for.
+ * entry, stage) is allowed to touch, relative to the repo root, by default.
+ * This is the single safety boundary reused by every write tool -- nothing
+ * outside it can be written or staged, no matter what a caller asks for.
+ *
+ * Callers with a narrower per-consumer profile (the cron scheduler, a later
+ * phase) pass their own list into checkAllowedPath(s) instead of this
+ * default -- e.g. dropping `.github/workflows/`, `.config/`, `tools/`, and
+ * `build/` for an unattended actor that should only ever touch post content.
  */
-const ALLOWED_PREFIXES = [
+export const DEFAULT_ALLOWED_PREFIXES = [
   'docs/blog/',
   'docs/src/',
   'docs/docs/',
@@ -35,7 +40,11 @@ export interface PathCheckResult {
  * actually exist on disk, so a typo fails here rather than as a confusing
  * git error later.
  */
-export function checkAllowedPath(repoRoot: string, relativePath: string): PathCheckResult {
+export function checkAllowedPath(
+  repoRoot: string,
+  relativePath: string,
+  allowedPrefixes: string[] = DEFAULT_ALLOWED_PREFIXES
+): PathCheckResult {
   if (REJECTED_LITERALS.has(relativePath)) {
     return { ok: false, reason: `'${relativePath}' is not an allowed path; pass explicit file paths, not a wildcard.` };
   }
@@ -51,7 +60,7 @@ export function checkAllowedPath(repoRoot: string, relativePath: string): PathCh
 
   const normalized = relativePath.replace(/\\/g, '/');
 
-  const isAllowedPrefix = ALLOWED_PREFIXES.some((prefix) => normalized.startsWith(prefix));
+  const isAllowedPrefix = allowedPrefixes.some((prefix) => normalized.startsWith(prefix));
   const isAllowedExact = ALLOWED_EXACT.includes(normalized);
   const isRootMarkdown = /^[^/]+\.md$/.test(normalized);
   if (!isAllowedPrefix && !isAllowedExact && !isRootMarkdown) {
@@ -70,9 +79,13 @@ export function checkAllowedPath(repoRoot: string, relativePath: string): PathCh
   return { ok: true };
 }
 
-export function checkAllowedPaths(repoRoot: string, relativePaths: string[]): PathCheckResult {
+export function checkAllowedPaths(
+  repoRoot: string,
+  relativePaths: string[],
+  allowedPrefixes: string[] = DEFAULT_ALLOWED_PREFIXES
+): PathCheckResult {
   for (const p of relativePaths) {
-    const result = checkAllowedPath(repoRoot, p);
+    const result = checkAllowedPath(repoRoot, p, allowedPrefixes);
     if (!result.ok) return result;
   }
   return { ok: true };

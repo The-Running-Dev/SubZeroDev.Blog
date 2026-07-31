@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { ok, precondition, infrastructureFailure } from '../result.js';
 import { PreconditionError } from '../errors.js';
-import { git, gitOrThrow, status } from '../exec/git.js';
+import { git, gitOrThrow, status, currentBranch, isClean } from '../exec/git.js';
 import { checkAllowedPaths } from '../domain/paths.js';
-import { wrapTool, type ToolContext } from './context.js';
+import { wrapTool, wrapMutatingTool, type ToolContext } from './context.js';
 
 const COMMIT_SUBJECT_PATTERN = /^(feat|fix|docs|chore|refactor|style|test|build|ci)(\([a-z0-9-]+\))?: .{1,72}$/;
 
@@ -18,15 +18,42 @@ export function registerLocalGitTools(ctx: ToolContext): void {
     'blog_sync_base',
     {
       title: 'Fetch the base branch',
-      description: 'Runs `git fetch origin <base>`. Network read only; never merges or checks out anything.',
+      description:
+        'Runs `git fetch --prune origin <base>`. With ffOnly, additionally fast-forwards the local base branch -- but only when it is currently checked out and the working tree is clean; never switches branches, never touches a feature branch, never merges anything but a fast-forward.',
       inputSchema: {
-        base: z.string().optional()
+        base: z.string().optional(),
+        ffOnly: z.boolean().optional()
       }
     },
-    wrapTool(async (args: { base?: string }) => {
+    wrapMutatingTool(ctx, 'blog_sync_base', async (args: { base?: string; ffOnly?: boolean }) => {
       const base = args.base ?? config.baseBranch;
-      await gitOrThrow(['fetch', 'origin', base], { repoRoot });
-      return ok(`Fetched origin/${base}`, { base });
+      await gitOrThrow(['fetch', '--prune', 'origin', base], { repoRoot });
+
+      if (!args.ffOnly) {
+        return ok(`Fetched origin/${base}`, { base, fastForwarded: false });
+      }
+
+      const branch = await currentBranch({ repoRoot });
+      if (branch !== base) {
+        return ok(`Fetched origin/${base}; not fast-forwarding -- currently on '${branch}', not '${base}'.`, {
+          base,
+          fastForwarded: false,
+          branch
+        });
+      }
+      if (!(await isClean({ repoRoot }))) {
+        return ok(`Fetched origin/${base}; not fast-forwarding -- working tree is dirty.`, { base, fastForwarded: false, branch });
+      }
+
+      const ff = await git(['merge', '--ff-only', `origin/${base}`], { repoRoot });
+      if (ff.exitCode !== 0) {
+        return ok(`Fetched origin/${base}; fast-forward refused (local '${base}' has commits not on origin).`, {
+          base,
+          fastForwarded: false,
+          branch
+        });
+      }
+      return ok(`Fetched and fast-forwarded '${base}' to origin/${base}`, { base, fastForwarded: true, branch });
     })
   );
 
@@ -43,7 +70,7 @@ export function registerLocalGitTools(ctx: ToolContext): void {
         checkoutExisting: z.boolean().optional()
       }
     },
-    wrapTool(async (args: { name?: string; slug?: string; kind?: string; checkoutExisting?: boolean }) => {
+    wrapMutatingTool(ctx, 'blog_create_branch', async (args: { name?: string; slug?: string; kind?: string; checkoutExisting?: boolean }) => {
       if (!args.name && !args.slug) {
         throw new PreconditionError('Provide either name, or slug (with optional kind).');
       }
@@ -80,8 +107,8 @@ export function registerLocalGitTools(ctx: ToolContext): void {
         paths: z.array(z.string()).min(1)
       }
     },
-    wrapTool(async (args: { paths: string[] }) => {
-      const check = checkAllowedPaths(repoRoot, args.paths);
+    wrapMutatingTool(ctx, 'blog_stage', async (args: { paths: string[] }) => {
+      const check = checkAllowedPaths(repoRoot, args.paths, ctx.capabilities?.writablePathPrefixes);
       if (!check.ok) return precondition(check.reason ?? 'One or more paths are not allowed.');
 
       await gitOrThrow(['add', '--', ...args.paths], { repoRoot });
@@ -104,7 +131,7 @@ export function registerLocalGitTools(ctx: ToolContext): void {
         coAuthor: z.string().optional()
       }
     },
-    wrapTool(async (args: { type?: string; scope?: string; summary?: string; body?: string; message?: string; coAuthor?: string }) => {
+    wrapMutatingTool(ctx, 'blog_commit', async (args: { type?: string; scope?: string; summary?: string; body?: string; message?: string; coAuthor?: string }) => {
       let subject: string;
       if (args.message) {
         subject = args.message.split('\n')[0] ?? args.message;
@@ -173,7 +200,7 @@ export function registerLocalGitTools(ctx: ToolContext): void {
         paths: z.array(z.string()).min(1)
       }
     },
-    wrapTool(async (args: { paths: string[] }) => {
+    wrapMutatingTool(ctx, 'blog_reset_stage', async (args: { paths: string[] }) => {
       await gitOrThrow(['restore', '--staged', '--', ...args.paths], { repoRoot });
       return ok(`Unstaged ${args.paths.length} path(s)`, { paths: args.paths });
     })

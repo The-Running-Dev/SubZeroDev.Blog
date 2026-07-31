@@ -51,4 +51,13 @@ describe('domain/github: resolveOwnerRepo', () => {
   it('throws when neither is available', () => {
     expect(() => resolveOwnerRepo('', undefined)).toThrow();
   });
+
+  it('falls back to the configured clone_url when the actual remote is not GitHub-shaped (e.g. a local scratch-remote path)', () => {
+    const result = resolveOwnerRepo('https://github.com/The-Running-Dev/SubZeroDev.Blog.git', 'C:\\Users\\test\\scratch\\origin.git');
+    expect(result).toEqual({ owner: 'The-Running-Dev', repo: 'SubZeroDev.Blog' });
+  });
+
+  it('throws when the configured clone_url is set but the actual remote is neither GitHub-shaped nor absent-safe -- still resolves via configured, not a crash', () => {
+    expect(() => resolveOwnerRepo('not a url either', '/some/local/path')).toThrow(/Could not resolve/);
+  });
 });
