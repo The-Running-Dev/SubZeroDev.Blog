@@ -285,4 +285,24 @@ describe('serve mode write routes', () => {
     expect(envelope.ok).toBe(true);
     expect(envelope.data?.path).toBe(postPath);
   });
+
+  it('POST /api/posts/:slug/delete removes the post via git rm (deletes and stages in one step)', async () => {
+    const { status, envelope } = await post<{ path: string }>('/api/posts/write-path-fixture/delete', {});
+    expect(status).toBe(200);
+    expect(envelope.ok).toBe(true);
+    expect(envelope.data?.path).toBe(postPath);
+
+    expect(fs.existsSync(path.join(clone, postPath))).toBe(false);
+
+    const statusResult = await gitOrThrow(['status', '--short'], { repoRoot: clone });
+    const line = statusResult.stdout.split('\n').find((l) => l.includes(postPath));
+    expect(line?.trim().startsWith('D')).toBe(true);
+  });
+
+  it('POST /api/posts/:slug/delete for an unknown slug is a precondition failure, not a crash', async () => {
+    const { status, envelope } = await post('/api/posts/does-not-exist/delete', {});
+    expect(status).toBe(200);
+    expect(envelope.ok).toBe(false);
+    expect(envelope.kind).toBe('precondition');
+  });
 });

@@ -12,7 +12,7 @@ import { loadTags, appendTagEntry, tagsYmlPath } from '../domain/tags.js';
 import { insertHubEntry, assertStillParses, type HubEntry } from '../domain/hubs.js';
 import { listPostFiles, loadPost, validateAllPosts, validateHubs, type HubValidationContext } from '../domain/validate.js';
 import { checkAllowedPath } from '../domain/paths.js';
-import { currentBranch, status, remoteUrl } from '../exec/git.js';
+import { currentBranch, status, remoteUrl, gitOrThrow } from '../exec/git.js';
 import { isReadOnly, isRemoteEnabled, wrapTool, wrapMutatingTool, type ToolContext } from './context.js';
 
 async function toolVersions(repoRoot: string): Promise<Record<string, string>> {
@@ -452,6 +452,36 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
 
       fs.writeFileSync(match.absolutePath, content, 'utf8');
       return ok(`Updated ${match.relativePath}`, { path: match.relativePath }, findings);
+    })
+  );
+
+  server.registerTool(
+    'blog_delete_post',
+    {
+      title: 'Delete a blog post',
+      description:
+        'Removes an existing post via `git rm` (deletes the file and stages the removal in one step). Does not touch history, branches, or open a PR -- reuses the same branch/commit/push/PR pipeline every other write does to actually publish the deletion.',
+      inputSchema: {
+        slug: z.string()
+      }
+    },
+    wrapMutatingTool(ctx, 'blog_delete_post', async (args: { slug: string }) => {
+      const files = listPostFiles(repoRoot, config.blogDir);
+      const match = files.map((f) => loadPost(repoRoot, f)).find((p) => p.frontMatter?.slug === args.slug);
+      if (!match || match.frontMatter === null) {
+        return precondition(`No post found for slug '${args.slug}'.`);
+      }
+
+      const check = checkAllowedPath(repoRoot, match.relativePath, ctx.capabilities?.writablePathPrefixes);
+      if (!check.ok) return precondition(check.reason ?? `'${match.relativePath}' is not an allowed path.`);
+
+      // -f: deleting the post is the whole point, so any uncommitted local
+      // edits to that same file are moot -- without -f, `git rm` refuses to
+      // touch a file with modifications not yet committed, which would
+      // otherwise make a delete request fail based on unrelated state the
+      // caller never asked about.
+      await gitOrThrow(['rm', '-f', '--', match.relativePath], { repoRoot });
+      return ok(`Deleted ${match.relativePath}`, { path: match.relativePath });
     })
   );
 
