@@ -57,6 +57,22 @@ function moveToProcessed(watchDir: string, currentPath: string, originalName: st
 }
 
 /**
+ * Deliberately lstat, not stat -- stat follows symlinks, which would let a
+ * symlink dropped into the watch dir (a host bind mount, i.e. an untrusted
+ * boundary) get treated as a regular file and have its target's content
+ * read and published (with auto-merge on by default). lstat reports the
+ * link itself, so a symlink never passes this check regardless of what it
+ * points at or whether that target even exists.
+ */
+function isRealFile(fullPath: string): boolean {
+  try {
+    return fs.lstatSync(fullPath).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Anything left in processing/ at startup means a prior run died mid-file
  * (killed, crashed, container restarted). Never silently reprocess a claimed
  * file -- by the time it was claimed it may already have an open PR, and
@@ -68,7 +84,7 @@ function recoverInterrupted(watchDir: string, now: Date): void {
   if (!fs.existsSync(processingDir)) return;
   for (const name of fs.readdirSync(processingDir)) {
     const full = path.join(processingDir, name);
-    if (!fs.statSync(full).isFile()) continue;
+    if (!isRealFile(full)) continue;
     moveToFailed(
       watchDir,
       full,
@@ -159,11 +175,16 @@ async function publishFile(deps: WatchTickDeps, filePath: string, originalName: 
   const fields = extractRequiredFields(parsed.frontMatter);
   if (typeof fields === 'string') return { ok: false, kind: 'precondition', summary: fields };
 
-  const listResult = await callToolInProcess(deps.serverOptions, 'blog_list_posts', {});
-  if (!listResult.ok) return { ok: false, kind: listResult.kind, summary: `blog_list_posts failed: ${listResult.summary}` };
-  const posts = (listResult.data as { posts: Array<{ slug: string }> }).posts;
-  const exists = posts.some((p) => p.slug === fields.slug);
-
+  // blog_create_branch runs BEFORE the exists check, not after: the watcher
+  // is deliberately allowed to sit parked on a previous file's feature
+  // branch between ticks (see runWatchTick's doc comment), and
+  // blog_list_posts reads whatever's currently checked out. Checking
+  // existence first would answer "does this slug exist on whatever
+  // unrelated branch we happened to be parked on", not "does it exist for
+  // the slug this file is actually about" -- switching to blog/<slug>
+  // first (freshly based on origin/<base>, unless that branch already
+  // exists locally, in which case blog_create_branch reuses it) makes the
+  // exists check scoped to the right branch before it ever runs.
   const branchResult = await callToolInProcess(deps.serverOptions, 'blog_create_branch', {
     slug: fields.slug,
     kind: 'blog',
@@ -171,6 +192,11 @@ async function publishFile(deps: WatchTickDeps, filePath: string, originalName: 
   });
   if (!branchResult.ok) return { ok: false, kind: branchResult.kind, summary: `blog_create_branch failed: ${branchResult.summary}` };
   const branch = (branchResult.data as { branch: string }).branch;
+
+  const listResult = await callToolInProcess(deps.serverOptions, 'blog_list_posts', {});
+  if (!listResult.ok) return { ok: false, kind: listResult.kind, summary: `blog_list_posts failed: ${listResult.summary}` };
+  const posts = (listResult.data as { posts: Array<{ slug: string }> }).posts;
+  const exists = posts.some((p) => p.slug === fields.slug);
 
   // blog_create_post auto-inserts a <!-- truncate --> marker when the body
   // doesn't already have one; blog_update_post does NOT (it expects the
@@ -265,7 +291,7 @@ export async function runWatchTick(deps: WatchTickDeps): Promise<WatchTickResult
   const names = fs
     .readdirSync(deps.watchDir)
     .filter((name) => name.toLowerCase().endsWith('.md'))
-    .filter((name) => fs.statSync(path.join(deps.watchDir, name)).isFile())
+    .filter((name) => isRealFile(path.join(deps.watchDir, name)))
     .sort();
 
   let published = 0;

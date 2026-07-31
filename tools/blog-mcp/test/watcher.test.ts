@@ -69,7 +69,7 @@ describe('watcher engine: runWatchTick', () => {
     fs.mkdirSync(path.join(seed, 'docs', 'blog'), { recursive: true });
     fs.writeFileSync(path.join(seed, 'docs', 'blog', 'tags.yml'), 'test:\n  label: Test\n  permalink: /test\n  description: Fixture tag for tests.\n');
     fs.writeFileSync(path.join(seed, 'docs', 'blog', 'authors.yml'), 'subzerodev:\n  name: SubZeroDev\n  url: https://blog.subzerodev.com/\n');
-    await gitOrThrow(['add', '.'], { repoRoot: seed });
+    await gitOrThrow(['add', '--', 'README.md', '.config', 'docs'], { repoRoot: seed });
     await gitOrThrow(['commit', '-m', 'chore: seed'], { repoRoot: seed });
     await gitOrThrow(['remote', 'add', 'origin', bareRemote], { repoRoot: seed });
     await gitOrThrow(['push', 'origin', 'main'], { repoRoot: seed });
