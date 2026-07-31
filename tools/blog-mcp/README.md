@@ -65,6 +65,22 @@ BLOG_MCP_GIT_USER_NAME=blog-bot BLOG_MCP_GIT_USER_EMAIL=bot@subzerodev.com \
 node dist/index.js
 ```
 
+Or, for an always-on deployment (`serve` mode specifically -- see
+[Serve mode (web UI)](#serve-mode-web-ui)), `docker-compose.yml` is provided:
+
+```bash
+cd tools/blog-mcp
+cp .env.example .env   # fill in real values; .env is git-ignored
+docker compose up -d --build
+```
+
+`BLOG_MCP_HTTP_HOST` is fixed to `0.0.0.0` in `docker-compose.yml` itself
+(required for the published port to reach the container at all -- see the
+note in [Serve mode](#serve-mode-web-ui)); every other variable lives in
+`.env`. There is deliberately no compose service for stdio mode: it's spawned
+per MCP-client session (`docker run -i --rm ...` above), not a standing
+background process.
+
 ### Repo acquisition
 
 `src/bootstrap/repo.ts`'s `ensureRepo()` runs once, inside the server
