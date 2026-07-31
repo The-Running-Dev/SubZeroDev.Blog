@@ -38,3 +38,26 @@ export const CRON_CAPABILITIES: Capabilities = {
     (prefix) => !['.github/workflows/', '.config/', 'tools/', 'build/'].includes(prefix)
   )
 };
+
+/**
+ * The directory watcher's own registration profile (src/watcher/engine.ts).
+ * Unlike the scheduler, the watcher genuinely needs write -- it calls
+ * blog_create_post/blog_update_post/blog_stage/blog_commit as part of
+ * publishing a dropped file, on top of the same blog_create_branch/
+ * blog_push/blog_create_pr/blog_arm_auto_merge sequence the scheduler's
+ * sibling tools already exercise. `writablePathPrefixes` gets the same
+ * defense-in-depth narrowing as CRON_CAPABILITIES: an unattended actor
+ * should never be able to touch workflows/config/build tooling, even by
+ * accident, regardless of what it's actually asked to do today.
+ * `monitor`/`scheduler` are both false -- the watcher never calls a Tier D
+ * monitoring tool or a blog_schedule_* tool.
+ */
+export const WATCHER_CAPABILITIES: Capabilities = {
+  write: true,
+  remote: true,
+  monitor: false,
+  scheduler: false,
+  writablePathPrefixes: DEFAULT_ALLOWED_PREFIXES.filter(
+    (prefix) => !['.github/workflows/', '.config/', 'tools/', 'build/'].includes(prefix)
+  )
+};

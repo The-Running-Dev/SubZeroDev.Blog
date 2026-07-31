@@ -5,6 +5,7 @@
 // blog_pr_status/blog_pr_comments can be exercised end to end without ever
 // touching a real GitHub repository.
 import fs from 'node:fs';
+import { spawnSync } from 'node:child_process';
 
 const args = process.argv.slice(2);
 
@@ -12,9 +13,23 @@ if (process.env.GH_SHIM_LOG) {
   fs.appendFileSync(process.env.GH_SHIM_LOG, JSON.stringify(args) + '\n');
 }
 
+function resolveHeadSha() {
+  // GH_SHIM_HEAD_SHA='GIT_HEAD' + GH_SHIM_REPO_ROOT: for tests whose own
+  // pipeline commits for real mid-test (the watcher's publish pipeline, for
+  // one), so the exact SHA blog_arm_auto_merge must cross-check against
+  // can't be known ahead of time the way a fixed, pre-chosen SHA can for
+  // tests that never commit anything themselves (e.g. the scheduler's,
+  // which only ever act against an already-existing PR).
+  if (process.env.GH_SHIM_HEAD_SHA === 'GIT_HEAD' && process.env.GH_SHIM_REPO_ROOT) {
+    const result = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: process.env.GH_SHIM_REPO_ROOT, encoding: 'utf8' });
+    if (result.status === 0) return result.stdout.trim();
+  }
+  return process.env.GH_SHIM_HEAD_SHA ?? '0'.repeat(40);
+}
+
 const prNumber = Number(process.env.GH_SHIM_PR_NUMBER ?? '42');
 const prUrl = process.env.GH_SHIM_PR_URL ?? `https://github.com/test-owner/test-repo/pull/${prNumber}`;
-const headSha = process.env.GH_SHIM_HEAD_SHA ?? '0'.repeat(40);
+const headSha = resolveHeadSha();
 const isDraft = process.env.GH_SHIM_IS_DRAFT === 'true';
 
 function fail(message) {

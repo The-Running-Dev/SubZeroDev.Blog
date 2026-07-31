@@ -28,6 +28,13 @@
 # session (`docker run -i --rm ...`), not a standing background process --
 # see README.md's "Running" section for that invocation.
 #
+# Both services also bind-mount a watch directory (BLOG_MCP_WATCH_HOST_DIR ->
+# BLOG_MCP_WATCH_DIR below) -- the one deliberate exception to this
+# container's usual "no bind mounts" design, since the directory watcher
+# needs a real host path to drop files into. It's inert unless
+# BLOG_MCP_ALLOW_WATCHER and BLOG_MCP_WATCH_DIR are set -- see README.md's
+# "Watcher (directory)" section.
+#
 # Copy .env.example to .env (git-ignored) and fill in real values before
 # running `docker compose up -d`.
 
@@ -48,6 +55,14 @@ x-blog-mcp-common: &blog-mcp-common
     - "${BLOG_MCP_HTTP_PORT:-8765}:${BLOG_MCP_HTTP_PORT:-8765}"
   volumes:
     - blog-workspace:/workspace
+    # Deliberate bind mount, not a named volume like blog-workspace above --
+    # this is the directory watcher's input directory (see README.md's
+    # "Watcher (directory)" section), so it needs to be a real host path the
+    # user can drop files into. Only takes effect when BLOG_MCP_ALLOW_WATCHER
+    # and BLOG_MCP_WATCH_DIR are also set in .env; otherwise it's just an
+    # unused empty mount. BLOG_MCP_WATCH_DIR must match the mount's
+    # container-side path here.
+    - ${BLOG_MCP_WATCH_HOST_DIR:-./watch}:${BLOG_MCP_WATCH_DIR:-/watch}
 
 services:
   serve:

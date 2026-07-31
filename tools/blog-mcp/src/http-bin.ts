@@ -2,6 +2,9 @@
 import path from 'node:path';
 import { createHttpServer } from './http.js';
 import { ensureRepo, ensureRepoOptionsFromEnv } from './bootstrap/repo.js';
+import { isRemoteEnabled, isWatcherEnabled, isWatchAutoMergeEnabled } from './tools/context.js';
+import { WATCHER_CAPABILITIES } from './serve/capabilities.js';
+import { startWatcher, type WatcherHandle } from './watcher/engine.js';
 
 function parseFlag(argv: string[], flag: string): string | undefined {
   const index = argv.indexOf(flag);
@@ -18,6 +21,8 @@ async function main(): Promise<void> {
   const allowedOriginsEnv = process.env.BLOG_MCP_HTTP_ALLOWED_ORIGINS;
   const maxSessionsEnv = process.env.BLOG_MCP_HTTP_MAX_SESSIONS;
   const maxSessions = maxSessionsEnv ? Number(maxSessionsEnv) : undefined;
+  const watchIntervalEnv = process.env.BLOG_MCP_WATCH_INTERVAL_MS;
+  const watchIntervalMs = watchIntervalEnv ? Number(watchIntervalEnv) : undefined;
 
   if (portArg && (!Number.isInteger(port) || port === undefined || port <= 0)) {
     process.stderr.write(`blog-mcp http: invalid port '${portArg}'\n`);
@@ -25,6 +30,10 @@ async function main(): Promise<void> {
   }
   if (maxSessionsEnv && (!Number.isInteger(maxSessions) || maxSessions === undefined || maxSessions <= 0)) {
     process.stderr.write(`blog-mcp http: invalid BLOG_MCP_HTTP_MAX_SESSIONS '${maxSessionsEnv}'\n`);
+    process.exit(1);
+  }
+  if (watchIntervalEnv && (!Number.isInteger(watchIntervalMs) || watchIntervalMs === undefined || watchIntervalMs <= 0)) {
+    process.stderr.write(`blog-mcp http: invalid BLOG_MCP_WATCH_INTERVAL_MS '${watchIntervalEnv}'\n`);
     process.exit(1);
   }
 
@@ -38,7 +47,7 @@ async function main(): Promise<void> {
   const stateDir = path.join(path.dirname(repoOptions.repoPath), 'state');
   const auditLogPath = path.join(stateDir, 'audit.log');
 
-  createHttpServer({
+  const httpServer = createHttpServer({
     repoRoot: repo.repoRoot,
     auditLogPath,
     stateDir,
@@ -49,6 +58,35 @@ async function main(): Promise<void> {
     ...(allowedOriginsEnv ? { allowedOrigins: allowedOriginsEnv.split(',').map((s) => s.trim()) } : {}),
     ...(maxSessions !== undefined ? { maxSessions } : {})
   });
+
+  let watcher: WatcherHandle | undefined;
+  const watchDir = process.env.BLOG_MCP_WATCH_DIR;
+  if (isRemoteEnabled() && isWatcherEnabled() && watchDir) {
+    watcher = startWatcher({
+      repoRoot: repo.repoRoot,
+      watchDir,
+      autoMerge: isWatchAutoMergeEnabled(),
+      ...(watchIntervalMs !== undefined ? { tickIntervalMs: watchIntervalMs } : {}),
+      serverOptions: { repoRoot: repo.repoRoot, auditLogPath, capabilities: WATCHER_CAPABILITIES }
+    });
+    process.stderr.write(`blog-mcp: watcher started (watching ${watchDir})\n`);
+  } else {
+    process.stderr.write(
+      'blog-mcp: watcher disabled -- set BLOG_MCP_ALLOW_REMOTE=1, BLOG_MCP_ALLOW_WATCHER=1, and BLOG_MCP_WATCH_DIR to enable\n'
+    );
+  }
+
+  // http mode had no background subsystem before the watcher -- this is its
+  // first shutdown handler. Same drain-not-interrupt shape as serve-bin.ts's.
+  const shutdown = (signal: string): void => {
+    process.stderr.write(`blog-mcp http: received ${signal}, shutting down\n`);
+    void (async () => {
+      await watcher?.stop();
+      httpServer.close(() => process.exit(0));
+    })();
+  };
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGINT', () => shutdown('SIGINT'));
 }
 
 main().catch((err) => {

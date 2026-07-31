@@ -58,6 +58,16 @@ export function isSchedulerEnabled(): boolean {
   return process.env.BLOG_MCP_ALLOW_SCHEDULER === '1' || process.env.BLOG_MCP_ALLOW_SCHEDULER === 'true';
 }
 
+/** Gates the directory watcher subsystem (src/watcher/engine.ts). Requires BLOG_MCP_ALLOW_REMOTE too, same reasoning as the scheduler -- publishing a dropped file needs push/PR/arm-merge, not just a local write. */
+export function isWatcherEnabled(): boolean {
+  return process.env.BLOG_MCP_ALLOW_WATCHER === '1' || process.env.BLOG_MCP_ALLOW_WATCHER === 'true';
+}
+
+/** Default-on, matching isMonitorEnabled's shape -- an operator opts OUT of auto-merge for watcher-published PRs, not in. */
+export function isWatchAutoMergeEnabled(): boolean {
+  return process.env.BLOG_MCP_WATCH_AUTO_MERGE !== '0' && process.env.BLOG_MCP_WATCH_AUTO_MERGE !== 'false';
+}
+
 /**
  * The env-derived profile used whenever a caller doesn't pass an explicit
  * `capabilities` override -- i.e. every stdio and `/mcp` HTTP server today.
