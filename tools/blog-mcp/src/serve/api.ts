@@ -138,6 +138,13 @@ export async function handleApiRequest(
       return callTool(serverOptions, 'blog_update_post', { ...args, slug });
     }
 
+    const deletePostMatch = /^\/api\/posts\/([^/]+)\/delete$/.exec(pathname);
+    if (deletePostMatch) {
+      const slug = safeDecodeSlug(deletePostMatch[1] as string);
+      if (slug === undefined) return { status: 400, body: { error: 'Malformed slug in URL path.' } };
+      return callTool(serverOptions, 'blog_delete_post', { slug });
+    }
+
     if (pathname === '/api/branch') {
       return callTool(serverOptions, 'blog_create_branch', args);
     }

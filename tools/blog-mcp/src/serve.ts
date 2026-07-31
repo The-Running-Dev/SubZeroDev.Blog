@@ -226,6 +226,7 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
     res.writeHead(200, {
       'content-type': file.contentType,
       'content-length': file.body.length,
+      'cache-control': file.cacheControl === 'immutable' ? 'public, max-age=31536000, immutable' : 'no-cache',
       // Static UI only -- no inline scripts, no CDN assets (src/serve/api.ts
       // is same-origin JSON, and PR/review-thread bodies rendered into the
       // page are author-controlled text that must never execute).
