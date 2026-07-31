@@ -8,14 +8,14 @@ export interface ApiResponse {
 }
 
 /**
- * Read-only route table for Phase 4 (`serve` mode's read-only-first UI):
- * list posts, show a post, git log/branches, repo health, and PR/check/
- * deploy status. Every route is an explicit `tools/call`, never a generic
- * "call any tool by name" proxy -- that would silently re-expose whatever
- * capabilities.write/.remote later phases register, defeating the entire
- * "the UI can only do what an MCP client's tool list allows" property this
- * design exists for. Phase 5 adds the write routes as new entries here, not
- * by widening this into a passthrough.
+ * Route table for `serve` mode's `/api/*`. Every route is an explicit
+ * `tools/call`, never a generic "call any tool by name" proxy -- that would
+ * silently re-expose whatever the UI's capabilities profile
+ * (src/serve/capabilities.ts) registers, defeating the entire "the UI can
+ * only do what an MCP client's tool list allows" property this design
+ * exists for. Phase 4 shipped only the GET (read) routes below; Phase 5
+ * adds the POST (write) ones as new entries here, not by widening this into
+ * a passthrough.
  */
 async function callTool(serverOptions: CreateServerOptions, tool: string, args: Record<string, unknown>): Promise<ApiResponse> {
   let result: ToolResult;
@@ -43,53 +43,106 @@ function queryNumber(url: URL, name: string): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+/** Body is whatever JSON the caller sent; the underlying tool's own zod schema is the real validator, so this just needs an object to spread fields from. */
+function asRecord(body: unknown): Record<string, unknown> {
+  return typeof body === 'object' && body !== null ? (body as Record<string, unknown>) : {};
+}
+
 /** Returns undefined for any path/method this route table doesn't recognize -- the caller falls through to a 404. */
-export async function handleApiRequest(pathname: string, method: string, url: URL, serverOptions: CreateServerOptions): Promise<ApiResponse | undefined> {
-  if (method !== 'GET') return undefined;
+export async function handleApiRequest(
+  pathname: string,
+  method: string,
+  url: URL,
+  serverOptions: CreateServerOptions,
+  body?: unknown
+): Promise<ApiResponse | undefined> {
+  if (method === 'GET') {
+    if (pathname === '/api/posts') {
+      const tag = queryString(url, 'tag');
+      const limit = queryNumber(url, 'limit');
+      return callTool(serverOptions, 'blog_list_posts', { ...(tag ? { tag } : {}), ...(limit !== undefined ? { limit } : {}) });
+    }
 
-  if (pathname === '/api/posts') {
-    const tag = queryString(url, 'tag');
-    const limit = queryNumber(url, 'limit');
-    return callTool(serverOptions, 'blog_list_posts', { ...(tag ? { tag } : {}), ...(limit !== undefined ? { limit } : {}) });
+    const getPostMatch = /^\/api\/posts\/([^/]+)$/.exec(pathname);
+    if (getPostMatch) {
+      return callTool(serverOptions, 'blog_get_post', { slug: decodeURIComponent(getPostMatch[1] as string) });
+    }
+
+    if (pathname === '/api/repo/status') {
+      return callTool(serverOptions, 'blog_repo_status', {});
+    }
+
+    if (pathname === '/api/repo/health') {
+      return callTool(serverOptions, 'blog_repo_health', {});
+    }
+
+    if (pathname === '/api/log') {
+      const ref = queryString(url, 'ref');
+      const limit = queryNumber(url, 'limit');
+      return callTool(serverOptions, 'blog_log', { ...(ref ? { ref } : {}), ...(limit !== undefined ? { limit } : {}) });
+    }
+
+    if (pathname === '/api/branches') {
+      return callTool(serverOptions, 'blog_branches', {});
+    }
+
+    const prMatch = /^\/api\/pr\/(\d+)$/.exec(pathname);
+    if (prMatch) {
+      return callTool(serverOptions, 'blog_pr_status', { pr: Number(prMatch[1]) });
+    }
+
+    if (pathname === '/api/checks') {
+      const ref = queryString(url, 'ref');
+      return callTool(serverOptions, 'blog_check_status', { ...(ref ? { ref } : {}) });
+    }
+
+    if (pathname === '/api/deploy') {
+      const mergeCommitSha = queryString(url, 'mergeCommitSha');
+      if (!mergeCommitSha) return { status: 400, body: { error: 'mergeCommitSha query parameter is required.' } };
+      return callTool(serverOptions, 'blog_deploy_status', { mergeCommitSha });
+    }
+
+    return undefined;
   }
 
-  const postMatch = /^\/api\/posts\/([^/]+)$/.exec(pathname);
-  if (postMatch) {
-    return callTool(serverOptions, 'blog_get_post', { slug: decodeURIComponent(postMatch[1] as string) });
-  }
+  if (method === 'POST') {
+    const args = asRecord(body);
 
-  if (pathname === '/api/repo/status') {
-    return callTool(serverOptions, 'blog_repo_status', {});
-  }
+    if (pathname === '/api/posts') {
+      return callTool(serverOptions, 'blog_create_post', args);
+    }
 
-  if (pathname === '/api/repo/health') {
-    return callTool(serverOptions, 'blog_repo_health', {});
-  }
+    const updatePostMatch = /^\/api\/posts\/([^/]+)$/.exec(pathname);
+    if (updatePostMatch) {
+      return callTool(serverOptions, 'blog_update_post', { ...args, slug: decodeURIComponent(updatePostMatch[1] as string) });
+    }
 
-  if (pathname === '/api/log') {
-    const ref = queryString(url, 'ref');
-    const limit = queryNumber(url, 'limit');
-    return callTool(serverOptions, 'blog_log', { ...(ref ? { ref } : {}), ...(limit !== undefined ? { limit } : {}) });
-  }
+    if (pathname === '/api/branch') {
+      return callTool(serverOptions, 'blog_create_branch', args);
+    }
 
-  if (pathname === '/api/branches') {
-    return callTool(serverOptions, 'blog_branches', {});
-  }
+    if (pathname === '/api/stage') {
+      return callTool(serverOptions, 'blog_stage', args);
+    }
 
-  const prMatch = /^\/api\/pr\/(\d+)$/.exec(pathname);
-  if (prMatch) {
-    return callTool(serverOptions, 'blog_pr_status', { pr: Number(prMatch[1]) });
-  }
+    if (pathname === '/api/commit') {
+      return callTool(serverOptions, 'blog_commit', args);
+    }
 
-  if (pathname === '/api/checks') {
-    const ref = queryString(url, 'ref');
-    return callTool(serverOptions, 'blog_check_status', { ...(ref ? { ref } : {}) });
-  }
+    if (pathname === '/api/push') {
+      return callTool(serverOptions, 'blog_push', args);
+    }
 
-  if (pathname === '/api/deploy') {
-    const mergeCommitSha = queryString(url, 'mergeCommitSha');
-    if (!mergeCommitSha) return { status: 400, body: { error: 'mergeCommitSha query parameter is required.' } };
-    return callTool(serverOptions, 'blog_deploy_status', { mergeCommitSha });
+    if (pathname === '/api/pr') {
+      return callTool(serverOptions, 'blog_create_pr', args);
+    }
+
+    const armMergeMatch = /^\/api\/pr\/(\d+)\/merge$/.exec(pathname);
+    if (armMergeMatch) {
+      return callTool(serverOptions, 'blog_arm_auto_merge', { ...args, pr: Number(armMergeMatch[1]) });
+    }
+
+    return undefined;
   }
 
   return undefined;

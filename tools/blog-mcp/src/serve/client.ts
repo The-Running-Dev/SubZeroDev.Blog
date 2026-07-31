@@ -32,7 +32,13 @@ export async function callToolInProcess(
   try {
     await Promise.all([server.connect(serverTransport), client.connect(clientTransport)]);
     const result = await client.callTool({ name: toolName, arguments: args });
-    return result.structuredContent as ToolResult;
+    if (result.structuredContent) return result.structuredContent as ToolResult;
+    // A protocol-level failure (e.g. args that fail the tool's own zod
+    // schema before the handler ever runs) has no structuredContent -- fall
+    // back to whatever text content the SDK did produce, rather than
+    // letting `.data`/`.kind` reads downstream throw on `undefined`.
+    const text = Array.isArray(result.content) && result.content[0]?.type === 'text' ? (result.content[0] as { text: string }).text : undefined;
+    return { ok: false, kind: 'infrastructure', summary: text ?? `'${toolName}' failed with no structured content.` };
   } finally {
     await client.close().catch(() => undefined);
     await server.close().catch(() => undefined);

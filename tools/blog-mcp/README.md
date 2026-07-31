@@ -149,12 +149,14 @@ SSE stream from or `DELETE`); both return `405`. `GET /healthz` returns
 
 `serve` is a third transport (`src/serve.ts` / `src/serve-bin.ts`), one Node
 process, no supervisor: `/mcp` and `/healthz` (identical to HTTP transport
-above), a read-only `/api/*` (list posts, show a post, git log, branches,
-repo health, PR/check/deploy status), and a small static UI at `/` — plain
-HTML + `fetch`, no framework, no bundler, no CDN assets (`tools/blog-mcp/public/`).
-Writes (create/update a post, branch → commit → push → PR → arm auto-merge)
-are a later phase; this one is read-only end to end, proving the plumbing
-and the auth surface at zero write risk.
+above), `/api/*` (read: list posts, show a post, git log, branches, repo
+health, PR/check/deploy status; write: create/update a post, create a
+branch, stage, commit, push, open a PR, arm auto-merge), and a small static
+UI at `/` — plain HTML + `fetch`, no framework, no bundler, no CDN assets
+(`tools/blog-mcp/public/`). The UI's "Compose" view drives the full publish
+sequence (branch → write → stage → commit → push → open PR) as one guided
+flow, then arming auto-merge is a separate, explicit button — never
+automatic on PR creation.
 
 ```bash
 docker run --rm -p 8765:8765 \
@@ -187,12 +189,23 @@ author-controlled text are rendered via `textContent`, never `innerHTML`.
 
 The UI session's registration profile is always the full one — write +
 remote + monitor (`src/serve/capabilities.ts`) — independent of
-`BLOG_MCP_READ_ONLY`/`BLOG_MCP_ALLOW_REMOTE`; what actually keeps this phase
-read-only is that `src/serve/api.ts`'s route table only implements `GET`
-routes. Every route is an explicit `tools/call` over an in-process MCP
-client (`InMemoryTransport`, `src/serve/client.ts`) — never a generic
-"call any tool by name" proxy, which would silently re-expose whatever
-write tools are registered.
+`BLOG_MCP_READ_ONLY`/`BLOG_MCP_ALLOW_REMOTE`. Every route, read or write, is
+an explicit `tools/call` over an in-process MCP client (`InMemoryTransport`,
+`src/serve/client.ts`) — never a generic "call any tool by name" proxy,
+which would silently re-expose whatever write tools are registered beyond
+this route table's own explicit list (`src/serve/api.ts`).
+
+**Arming auto-merge validates against the SHA this session actually
+pushed, not whatever `GET /api/pr/:number` currently reports.** Fetching
+the "expected" head from the same place the check validates against would
+make the cross-check tautological — it would always "match" and defeat the
+entire reason `blog_arm_auto_merge` takes an explicit `headSha` at all: to
+catch the branch having moved (a concurrent push) between publish and
+arming. This was a real bug caught by manually clicking through the UI in a
+real browser during this phase's development, not by the automated test
+suite (which drove the API directly and so never exercised the client-side
+sequencing) — see `public/app.js`'s `armButton` handler and the comment
+there.
 
 ## Capability tiers
 
@@ -304,3 +317,5 @@ Remote and monitor tool tests never touch real GitHub: `test/remote.test.ts` dri
 `test/capabilities.test.ts` calls `createServer({ capabilities })` directly (introspecting the real `McpServer`'s registered tool names, not a fake) and proves the override wins over env in both directions — write+remote registered despite `BLOG_MCP_READ_ONLY=1`, and vice versa — plus that omitting `capabilities` reproduces the exact env-derived tool set from before this option existed. A second block proves `writablePathPrefixes` isn't just plumbing: `blog_stage` actually refuses a path that's inside the module's `DEFAULT_ALLOWED_PREFIXES` but outside a narrower override.
 
 `test/auth.test.ts` covers password hashing (round trip, wrong password, two hashes of the same password differing but both verifying, a malformed stored hash rejected rather than throwing), session creation/sliding-expiry/expiry-deletes-the-entry (via `vi.useFakeTimers()`), and the login rate limiter's window. `test/serve.test.ts` drives `createServeServer` with real `fetch()` calls end to end: the `/` redirect-to-`/login` gate, the full login → cookie → `/api` round trip, every `/api` rejection path (missing CSRF header, disallowed Origin, no session) against real post/log/branch/health data, and that the UI (and `/login`/`/api`) are cleanly disabled — 404, not silently open — when `BLOG_MCP_UI_PASSWORD_HASH` is unset. One of its assertions (`/api` allows a *missing* `Origin` header) exists specifically because manual browser verification of this phase caught a real bug: a same-origin `fetch` POST from `login.html` did not send an `Origin` header at all, so the original "Origin must be present" check locked out the login form itself.
+
+`test/serve-writes.test.ts` drives every write route end to end over real HTTP, exactly like a browser would, against a scratch bare git remote (never the live checkout): create a branch, create a post, a malformed create-post request failing validation without crashing (exercising `client.ts`'s no-`structuredContent` fallback), stage, commit, push (plus the base-branch-push refusal), open a PR and arm auto-merge via `test/fixtures-bin/gh-shim.mjs`, a SHA-mismatch refusal, and an update. Manually clicking through the Compose UI in a real browser during this phase caught a second real bug beyond what the HTTP-level tests could reach: the "Arm auto-merge" button fetched its "expected" head SHA from the same `GET /api/pr/:number` call it then validated against, making the check tautological. The fix (use the SHA the session's own `POST /api/push` actually returned) lives in `public/app.js` and has no vitest coverage since this project has no browser/DOM test runner -- the browser walkthrough itself was the regression test.

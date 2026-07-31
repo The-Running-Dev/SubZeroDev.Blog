@@ -213,8 +213,12 @@ describe('serve mode', () => {
       expect(res.status).toBe(400);
     });
 
-    it('POST /api/posts (a write method) is not implemented in this phase -- falls through to 404, never silently succeeds', async () => {
-      const res = await fetch(`${baseUrl}/api/posts`, { method: 'POST', headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+    it('POST to an unrecognized /api route is a 404, not silently accepted', async () => {
+      const res = await fetch(`${baseUrl}/api/not-a-real-route`, {
+        method: 'POST',
+        headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1', 'content-type': 'application/json' },
+        body: '{}'
+      });
       expect(res.status).toBe(404);
     });
 

@@ -24,6 +24,7 @@ const DEFAULT_PORT = 8765;
 const SESSION_COOKIE = 'blog_mcp_session';
 const CSRF_HEADER = 'x-blog-mcp-csrf';
 const MAX_LOGIN_BODY_BYTES = 4096;
+const MAX_API_BODY_BYTES = 2 * 1024 * 1024; // generous for a full post body; still bounded
 
 function sendJson(res: ServerResponse, status: number, body: unknown, extraHeaders: Record<string, string> = {}): void {
   const text = JSON.stringify(body);
@@ -172,7 +173,18 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
       return;
     }
 
-    const result = await handleApiRequest(url.pathname, req.method ?? 'GET', url, serverOptions);
+    let parsedBody: unknown;
+    if (req.method === 'POST') {
+      try {
+        const raw = await readBoundedBody(req, MAX_API_BODY_BYTES);
+        parsedBody = raw ? JSON.parse(raw) : {};
+      } catch {
+        sendJson(res, 400, { error: 'Invalid JSON body.' });
+        return;
+      }
+    }
+
+    const result = await handleApiRequest(url.pathname, req.method ?? 'GET', url, serverOptions, parsedBody);
     if (!result) {
       sendJson(res, 404, { error: 'Not found.' });
       return;

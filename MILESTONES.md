@@ -189,11 +189,30 @@ checkout anywhere.
   cookie, and `/api` calls returning real post/log/health data over `curl`.
   Read-only by design -- Phase 5 adds write routes without touching this
   phase's capabilities or auth plumbing.
-- Phases 5–7: planned. See the phase list in this milestone's design plan
-  for UI writes, the cron scheduler that only ever holds a PR and arms
-  GitHub's own auto-merge at the scheduled time (never merges directly,
-  never fires early on unverified assumptions about build behavior), and the
+- Phase 5 (delivered): UI writes. `src/serve/api.ts` gained POST routes for
+  every write tool the phase list calls for -- create/update a post, create
+  a branch, stage, commit, push, open a PR, arm auto-merge -- each still an
+  explicit `tools/call`, never a passthrough. `public/app.js`'s new
+  "Compose" view drives the full publish sequence (branch → write → stage →
+  commit → push → open PR) as one guided flow; arming auto-merge stays a
+  separate, explicit button rather than firing automatically on PR
+  creation. Verified with a new `test/serve-writes.test.ts` (every route,
+  end to end, over real HTTP, against a scratch bare remote and the
+  existing `gh-shim.mjs` -- never the live checkout) and by clicking through
+  the Compose UI in a real browser, which caught a second real bug beyond
+  what the HTTP-level tests could reach: the "Arm auto-merge" button
+  fetched its "expected" head SHA from the same `GET /api/pr/:number` call
+  it then validated against, making the check tautological -- it would
+  always report a match and silently defeat the entire reason
+  `blog_arm_auto_merge` takes an explicit SHA at all. Fixed to use the SHA
+  the session's own push actually returned; this class of bug has no
+  automated regression coverage, since the project has no browser/DOM test
+  runner and the bug lived entirely in client-side JS.
+- Phases 6–7: planned. See the phase list in this milestone's design plan
+  for the cron scheduler that only ever holds a PR and arms GitHub's own
+  auto-merge at the scheduled time (never merges directly, never fires
+  early on unverified assumptions about build behavior), and the
   conditional `blog_dispatch_deploy` tool.
 
 Phase 1 delivered in the pull request that introduced this section; Phases 2
-through 4 in the pull requests that introduced those lines.
+through 5 in the pull requests that introduced those lines.
