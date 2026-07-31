@@ -129,15 +129,28 @@ export default function ComposeView() {
     [logLine]
   );
 
+  // Filters to known vocabulary keys when one exists -- the tag checklist
+  // below only ever renders a checkbox per `existingTags` entry, so any tag
+  // outside that list (e.g. from pasted front matter) would otherwise sit in
+  // `checkedTags` with no checkbox to show or uncheck it: invisible in the
+  // form, then only discovered as a generic "Unknown tag key" finding at
+  // Publish time.
   const setCheckedTags = useCallback(
     (tags: string[] | undefined) => {
       if (hasTagVocab) {
-        setCheckedTagsState(new Set(tags ?? []));
+        const known = new Set(existingTags.map((t) => t.key));
+        const wanted = tags ?? [];
+        const kept = wanted.filter((t) => known.has(t));
+        const dropped = wanted.filter((t) => !known.has(t));
+        setCheckedTagsState(new Set(kept));
+        if (dropped.length > 0) {
+          logLine(`Dropped tag(s) not in docs/blog/tags.yml: ${dropped.join(', ')}. Pick from the checklist below instead.`, true);
+        }
       } else {
         setTagsFallback((tags ?? []).join(', '));
       }
     },
-    [hasTagVocab]
+    [hasTagVocab, existingTags, logLine]
   );
 
   function tagList(): string[] {
@@ -292,7 +305,10 @@ export default function ComposeView() {
         logLine(`Date '${trimmedDate}' doesn't parse -- fix it or clear the field to default to now.`, true);
         return;
       }
-      isoDate = new Date(parsed).toISOString();
+      // .toISOString() always appends milliseconds (".000Z"); the server's
+      // Date rule only accepts YYYY-MM-DDTHH:MM:SSZ, exactly, with none --
+      // stripped the same way blog_create_post's own now() default is.
+      isoDate = new Date(parsed).toISOString().replace(/\.\d{3}Z$/, 'Z');
     }
 
     try {
