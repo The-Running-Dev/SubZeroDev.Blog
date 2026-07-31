@@ -4,9 +4,10 @@
 # publishing steps as callable tools. Deliberately carries NO Docker and
 # does not run the production Docusaurus build -- that stays with the
 # `Verify Documentation Build` CI check. The repository itself is never
-# baked into this image: it arrives at run time as a bind mount at /repo,
-# so the server always operates on the caller's live working tree and can
-# commit/push against it. See tools/blog-mcp/README.md.
+# baked into this image: on every start, the entrypoint clones (or
+# reconciles an existing clone of) BLOG_MCP_CLONE_URL into a volume at
+# BLOG_MCP_WORKSPACE, so the container is fully self-contained -- no host
+# checkout or bind mount required. See tools/blog-mcp/README.md.
 
 ARG NODE_IMAGE=node:22-bookworm-slim
 
@@ -50,11 +51,14 @@ COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Reuse the base image's existing non-root `node` user (uid 1000) rather
-# than adding a new one -- one less thing to keep in sync with a bind-mounted
-# host repo's ownership.
+# than adding a new one. The workspace volume is where the clone lives
+# across restarts; owned by `node` up front since a fresh named volume
+# mounts as root:root.
+RUN mkdir -p /workspace && chown node:node /workspace
+
 USER node
 ENV HOME=/home/node
-ENV BLOG_MCP_REPO=/repo
+ENV BLOG_MCP_WORKSPACE=/workspace
 
 # Documentation only -- EXPOSE does not publish the port by itself. HTTP
 # mode binds 127.0.0.1 by default, which `-p` cannot forward into; pass

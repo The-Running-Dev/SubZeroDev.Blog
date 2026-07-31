@@ -24,10 +24,15 @@ it *can* run unmodified is `build/Test-Documentation.ps1` (the link/anchor/
 terminology gate), which is pure PowerShell with no Docker or network
 dependency.
 
-The repository is never baked into the image. It arrives at run time as a
-bind mount, so the server always operates on the caller's live working tree
-and any commit it makes lands there directly — not trapped in an ephemeral
-container layer.
+The repository is never baked into the image, and it is never bind-mounted
+either: on every start, the entrypoint clones (or reconciles an existing
+clone of) `BLOG_MCP_CLONE_URL` into a volume at `BLOG_MCP_WORKSPACE` before
+the server or transport starts. The container is fully self-contained — the
+only inputs are environment variables and, optionally, a named volume to
+persist the clone across restarts. This is what makes headless operation
+possible: an authoring client with no local checkout at all (a phone, a
+scheduled job, a remote automation service) can still drive the full
+publishing pipeline. See [Repo acquisition](#repo-acquisition).
 
 ## Running
 
@@ -37,10 +42,15 @@ Build once:
 docker build -t subzerodev-blog-mcp tools/blog-mcp
 ```
 
-Run against a checkout (stdio transport, the default):
+Run with only env vars and a named volume — no bind mount anywhere
+(stdio transport, the default):
 
 ```bash
-docker run -i --rm -v "/path/to/SubZeroDev.Blog:/repo" subzerodev-blog-mcp
+docker run -i --rm \
+  -v blog-workspace:/workspace \
+  -e BLOG_MCP_CLONE_URL=https://github.com/The-Running-Dev/SubZeroDev.Blog.git \
+  -e BLOG_MCP_GIT_USER_NAME=blog-bot -e BLOG_MCP_GIT_USER_EMAIL=bot@subzerodev.com \
+  subzerodev-blog-mcp
 ```
 
 Or run outside a container during development:
@@ -49,8 +59,37 @@ Or run outside a container during development:
 cd tools/blog-mcp
 npm install
 npm run build
-node dist/index.js --repo /path/to/SubZeroDev.Blog
+BLOG_MCP_CLONE_URL=https://github.com/The-Running-Dev/SubZeroDev.Blog.git \
+BLOG_MCP_WORKSPACE=/tmp/blog-workspace \
+BLOG_MCP_GIT_USER_NAME=blog-bot BLOG_MCP_GIT_USER_EMAIL=bot@subzerodev.com \
+node dist/index.js
 ```
+
+### Repo acquisition
+
+`src/bootstrap/repo.ts`'s `ensureRepo()` runs once, inside the server
+process, before the transport starts (never per-request — `src/http.ts`
+builds a fresh `McpServer` per request, so cloning there would fetch on
+every request). It never discards uncommitted work: no `reset --hard`, no
+`clean`, no `rm -rf` of the volume, matching the same rule in
+[What is deliberately not a tool](#what-is-deliberately-not-a-tool).
+
+| State of `BLOG_MCP_WORKSPACE/repo` | Action |
+|---|---|
+| Absent or empty | Clone (full, never shallow) |
+| Non-empty, not a git repo | Refuse startup |
+| `.git` present but corrupt/invalid | Refuse startup |
+| `origin` doesn't match `BLOG_MCP_CLONE_URL` | Refuse startup — never repoints the remote |
+| Clean, on the base branch | Fetch + fast-forward |
+| Clean, on a feature branch already merged (checked via `gh pr list`) | Switch to base + fast-forward |
+| Clean, on an unmerged feature branch | Fetch only; left parked, reported |
+| Dirty (staged/unstaged/untracked changes) | Fetch only; **boots successfully anyway** — refusing would make the container unrecoverable, since there'd be no tool left to inspect it |
+
+Required env vars: `BLOG_MCP_CLONE_URL`, `BLOG_MCP_GIT_USER_NAME`,
+`BLOG_MCP_GIT_USER_EMAIL` (git identity is set repo-local, in the volume, not
+`--global` — nothing set it before this, so a fresh clone would otherwise
+fail every commit with "Please tell me who you are"). `BLOG_MCP_WORKSPACE`
+defaults to `/workspace`.
 
 ### MCP client configuration (stdio)
 
@@ -59,7 +98,14 @@ node dist/index.js --repo /path/to/SubZeroDev.Blog
   "mcpServers": {
     "blog-publish": {
       "command": "docker",
-      "args": ["run", "-i", "--rm", "-v", "${PWD}:/repo", "subzerodev-blog-mcp"]
+      "args": [
+        "run", "-i", "--rm",
+        "-v", "blog-workspace:/workspace",
+        "-e", "BLOG_MCP_CLONE_URL=https://github.com/The-Running-Dev/SubZeroDev.Blog.git",
+        "-e", "BLOG_MCP_GIT_USER_NAME=blog-bot",
+        "-e", "BLOG_MCP_GIT_USER_EMAIL=bot@subzerodev.com",
+        "subzerodev-blog-mcp"
+      ]
     }
   }
 }
@@ -73,8 +119,10 @@ meant to run, spawned per session by its caller.
 
 ```bash
 docker run --rm -p 8765:8765 \
+  -v blog-workspace:/workspace \
+  -e BLOG_MCP_CLONE_URL=https://github.com/The-Running-Dev/SubZeroDev.Blog.git \
+  -e BLOG_MCP_GIT_USER_NAME=blog-bot -e BLOG_MCP_GIT_USER_EMAIL=bot@subzerodev.com \
   -e BLOG_MCP_HTTP_HOST=0.0.0.0 -e BLOG_MCP_HTTP_TOKEN \
-  -v "/path/to/SubZeroDev.Blog:/repo" \
   subzerodev-blog-mcp http
 ```
 
@@ -112,11 +160,11 @@ talked into existing by text embedded in a blog draft or a PR comment.
 | `BLOG_MCP_ALLOW_MONITOR=0` | on | Unregisters Tier D (CI/deploy monitoring). Set to disable it explicitly; it's on by default because it never writes anything. |
 
 ```bash
-docker run -i --rm -e BLOG_MCP_READ_ONLY=1 -v "$PWD:/repo:ro" subzerodev-blog-mcp
-docker run -i --rm -e BLOG_MCP_ALLOW_REMOTE=1 -e GH_TOKEN -v "$PWD:/repo" subzerodev-blog-mcp
+docker run -i --rm -e BLOG_MCP_READ_ONLY=1 -v blog-workspace:/workspace -e BLOG_MCP_CLONE_URL -e BLOG_MCP_GIT_USER_NAME -e BLOG_MCP_GIT_USER_EMAIL subzerodev-blog-mcp
+docker run -i --rm -e BLOG_MCP_ALLOW_REMOTE=1 -e GH_TOKEN -v blog-workspace:/workspace -e BLOG_MCP_CLONE_URL -e BLOG_MCP_GIT_USER_NAME -e BLOG_MCP_GIT_USER_EMAIL subzerodev-blog-mcp
 ```
 
-**Token delivery.** Pass `GH_TOKEN` **by name** (`-e GH_TOKEN`, not `-e GH_TOKEN=$(gh auth token)`) so the value never appears in the container's command line or in `ps`/shell history. The entrypoint wires `credential.helper = !gh auth git-credential` when a token is present, so `blog_push` authenticates over HTTPS without ever writing a token into the bind-mounted repo's `.git-credentials`. Captured subprocess output is also scrubbed of anything shaped like a `gh_*`/`github_pat_*` token before it can reach a tool result or an audit line.
+**Token delivery.** Pass `GH_TOKEN` **by name** (`-e GH_TOKEN`, not `-e GH_TOKEN=$(gh auth token)`) so the value never appears in the container's command line or in `ps`/shell history. The entrypoint wires `credential.helper = !gh auth git-credential` when a token is present, so `blog_push` authenticates over HTTPS without ever writing a token into the volume's `.git-credentials`. Captured subprocess output is also scrubbed of anything shaped like a `gh_*`/`github_pat_*` token before it can reach a tool result or an audit line.
 
 ## What is deliberately not a tool
 
@@ -182,9 +230,14 @@ npm test        # vitest
 node test/smoke-stdio.mjs                  # exercises the built server over a real stdio subprocess
 node test/smoke-stdio.mjs --read-only      # same, asserting write and remote tools are unregistered
 node test/smoke-stdio.mjs --remote         # same, asserting Tier C tools are registered
+BLOG_MCP_CLONE_URL=https://github.com/The-Running-Dev/SubZeroDev.Blog.git \
+BLOG_MCP_WORKSPACE=/tmp/blog-workspace \
+BLOG_MCP_GIT_USER_NAME=blog-bot BLOG_MCP_GIT_USER_EMAIL=bot@subzerodev.com \
 node dist/http-bin.js --port 8765          # runs the HTTP transport directly, outside Docker
 ```
 
 `test/http.test.ts` exercises the HTTP transport with real `fetch()` calls against an ephemeral-port server: health check, 404s, the stateless 405s on `GET`/`DELETE /mcp`, bearer-auth accept/reject, `Origin` allow/reject, and a full `initialize` → `tools/list` → `tools/call` round trip.
+
+`test/bootstrap-repo.test.ts` exercises `ensureRepo()` against a real scratch bare git remote (not a mock): fresh clone, idempotent re-run (fast-forward), refusal on a non-empty non-git directory, refusal on a mismatched `origin`, dirty-tree boot-without-switching, and an unmerged feature branch staying parked. `test/smoke-stdio.mjs` clones this repository itself (a fast, local-filesystem clone) into a scratch `BLOG_MCP_WORKSPACE` rather than pointing at the live checkout directly, since clone-mode has no bind mount to point at.
 
 Remote and monitor tool tests never touch real GitHub: `test/remote.test.ts` drives `blog_push` against a scratch bare git remote and the PR tools against `test/fixtures-bin/gh-shim.mjs`; `test/monitor.test.ts` drives the same shim for check/deploy status plus a real local HTTP server (`node:http`, ephemeral port) for the `blog_verify_published_url` success path. Point `BLOG_MCP_GH_COMMAND` at `["node","/path/to/gh-shim.mjs"]` (a JSON array) to reuse it elsewhere — this exists because a `.cmd`/`.bat` shim cannot be `spawn()`ed under `shell:false` on Windows at all, so `exec/gh.ts` never relies on PATH-based resolution of a literal `gh` name for tests. The hard-rule test in `monitor.test.ts` is the load-bearing one: it drives the shim through `in_progress`, `completed`/`failure`, and *absent* deploy states and asserts `verified: false` with no `url` field present in any of them.

@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createServer } from './server.js';
-
-function parseRepoFlag(argv: string[]): string | undefined {
-  const index = argv.indexOf('--repo');
-  return index !== -1 ? argv[index + 1] : undefined;
-}
+import { ensureRepo, ensureRepoOptionsFromEnv } from './bootstrap/repo.js';
 
 async function main(): Promise<void> {
-  const repoRoot = parseRepoFlag(process.argv.slice(2));
-  const server = createServer(repoRoot ? { repoRoot } : {});
+  const repoOptions = ensureRepoOptionsFromEnv();
+  const repo = await ensureRepo(repoOptions);
+  process.stderr.write(
+    `blog-mcp: repo ready at ${repo.repoRoot} (${repo.action}, branch ${repo.branch}${repo.dirty ? ', dirty' : ''})\n`
+  );
+
+  const server = createServer({ repoRoot: repo.repoRoot });
   const transport = new StdioServerTransport();
 
   // Nothing but MCP framing may reach stdout in stdio mode -- every log

@@ -79,21 +79,16 @@ export function resolveRepoRoot(explicit?: string): string {
     return found;
   }
 
-  if (fs.existsSync('/repo/.git')) {
-    return '/repo';
-  }
-
   const found = findRepoRootFrom(process.cwd());
   if (!found) {
     throw new PreconditionError(
-      'Could not locate a git repository from --repo, BLOG_MCP_REPO, /repo, or the working directory.'
+      'Could not locate a git repository from --repo, BLOG_MCP_REPO, or the working directory.'
     );
   }
   return found;
 }
 
 interface RawBlogJson {
-  repo_path?: string;
   clone_url?: string;
   base_branch?: string;
   site_root?: string;

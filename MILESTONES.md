@@ -114,6 +114,35 @@ Phases 1–5 delivered in pull request
 [#33](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/33); Phase 7 in
 [#34](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/34); Phase 8 in
 [#35](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/35); Phase 9 in
-the pull request that introduced this line.
+[#37](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/37).
 
 See `tools/blog-mcp/README.md` for the current tool catalogue.
+
+## Milestone 8: blog-mcp becomes a self-contained publishing service — in progress
+
+`tools/blog-mcp/` required a bind-mounted host checkout, which ruled out
+headless operation: a client with no local repo at all (a phone, a scheduled
+job, a remote automation service) could never drive the pipeline. The goal is
+one container that, given only environment variables and a named volume,
+clones the blog, serves the MCP tools, serves a web UI for authoring and
+scheduling, and runs a cron scheduler — with no bind mount and no host
+checkout anywhere.
+
+- Phase 1 (delivered): clone-only bootstrap. `src/bootstrap/repo.ts`'s
+  `ensureRepo()` clones `BLOG_MCP_CLONE_URL` into `BLOG_MCP_WORKSPACE` on
+  first run and reconciles (fetch, fast-forward, or safely leave parked/dirty
+  — never discarding uncommitted work) on every subsequent run; the
+  `/repo`-bind-mount fallback in `src/config.ts` is removed. Git identity
+  (`BLOG_MCP_GIT_USER_NAME`/`_EMAIL`) is set repo-local for the first time —
+  nothing set it before, so a fresh clone would otherwise fail every commit.
+  Verified end-to-end in the built Docker image against the real public
+  remote with no bind mount: fresh clone, zero validation findings, and a
+  second run reconciling via fast-forward.
+- Phases 2–7: planned. See the phase list in this milestone's design plan for
+  repo hygiene/observability, per-consumer capability tiers, the `serve` mode
+  with an in-process MCP-client-driven web UI, and a cron scheduler that only
+  ever holds a PR and arms GitHub's own auto-merge at the scheduled time
+  (never merges directly, never fires early on unverified assumptions about
+  build behavior).
+
+Phase 1 delivered in the pull request that introduced this section.
