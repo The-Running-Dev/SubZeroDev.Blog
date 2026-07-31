@@ -36,7 +36,10 @@ export default function ComposeView() {
   const [checkedTags, setCheckedTagsState] = useState<Set<string>>(new Set());
   const [tagsFallback, setTagsFallback] = useState('');
 
-  const [showRawMarkdown, setShowRawMarkdown] = useState(false);
+  // 'compose': the structured slug/title/description/tags/body fields.
+  // 'markdown': a single raw-markdown textarea that Parses into those same
+  // fields -- mutually exclusive with 'compose', not shown alongside it.
+  const [mode, setMode] = useState<'compose' | 'markdown'>('compose');
   const [rawMarkdown, setRawMarkdown] = useState('');
 
   const [exists, setExists] = useState(false);
@@ -133,6 +136,7 @@ export default function ComposeView() {
       if (!frontMatterPresent) {
         logLine('No "---" front matter fences found -- pasted the whole input into Body as-is.');
         setBody(rawMarkdown);
+        setMode('compose');
         return;
       }
       if (!frontMatter) {
@@ -146,6 +150,7 @@ export default function ComposeView() {
       setCheckedTags(Array.isArray(fm.tags) ? fm.tags : []);
       setBody(parsedBody);
       logLine('Parsed front matter and body from the pasted markdown.');
+      setMode('compose');
     } catch (err) {
       logLine(err instanceof Error ? err.message : String(err), true);
     }
@@ -247,11 +252,18 @@ export default function ComposeView() {
   return (
     <>
       <div className="view-header">
-        <h2>Compose</h2>
         <button
           type="button"
-          className={`view-header-toggle${showRawMarkdown ? ' active' : ''}`}
-          onClick={() => setShowRawMarkdown((prev) => !prev)}
+          className={`view-header-toggle${mode === 'compose' ? ' active' : ''}`}
+          onClick={() => setMode('compose')}
+          title="Fill in the slug/title/description/tags/body fields directly"
+        >
+          Compose
+        </button>
+        <button
+          type="button"
+          className={`view-header-toggle${mode === 'markdown' ? ' active' : ''}`}
+          onClick={() => setMode('markdown')}
           title="Paste a whole markdown file (front matter + body) and derive every field from it in one step"
         >
           Markdown
@@ -269,89 +281,95 @@ export default function ComposeView() {
           ))}
         </datalist>
 
-        <div className="field">
-          <span className="field-label">Slug</span>
-          <div className="slug-row">
-            <input
-              type="text"
-              placeholder="slug (e.g. my-post)"
-              list="existing-slugs"
-              value={slug}
-              onChange={(event) => handleSlugChange(event.target.value)}
-              onBlur={handleSlugBlurOrChange}
-            />
-            <button
-              type="button"
-              disabled={!slug.trim()}
-              onClick={() => slug.trim() && void loadExisting(slug.trim())}
-              title={slug.trim() ? `Load '${slug.trim()}' into the fields below` : 'Type or pick an existing slug first'}
-            >
-              Load existing
-            </button>
-          </div>
-          <span className="muted">
-            Typing shows matching existing slugs to pick from. Leave this blank and Publish will create a brand-new post instead.
-          </span>
-        </div>
-
-        <div className="field">
-          <span className="field-label">Title</span>
-          <input type="text" placeholder="Title" value={title} onChange={(event) => setTitle(event.target.value)} />
-        </div>
-
-        <div className="field">
-          <span className="field-label">Description</span>
-          <input type="text" placeholder="Description" value={description} onChange={(event) => setDescription(event.target.value)} />
-        </div>
-
-        <div className="field">
-          <span className="field-label">Tags</span>
-          {hasTagVocab ? (
-            <div className="tag-checklist">
-              {existingTags.map((tag) => (
-                <label key={tag.key} className="tag-chip" htmlFor={`tag-${tag.key}`}>
-                  <input
-                    type="checkbox"
-                    id={`tag-${tag.key}`}
-                    checked={checkedTags.has(tag.key)}
-                    onChange={(event) => {
-                      setCheckedTagsState((prev) => {
-                        const next = new Set(prev);
-                        if (event.target.checked) next.add(tag.key);
-                        else next.delete(tag.key);
-                        return next;
-                      });
-                    }}
-                  />
-                  {tag.label || tag.key}
-                </label>
-              ))}
+        {mode === 'compose' && (
+          <>
+            <div className="field">
+              <span className="field-label">Slug</span>
+              <div className="slug-row">
+                <input
+                  type="text"
+                  placeholder="slug (e.g. my-post)"
+                  list="existing-slugs"
+                  value={slug}
+                  onChange={(event) => handleSlugChange(event.target.value)}
+                  onBlur={handleSlugBlurOrChange}
+                />
+                <button
+                  type="button"
+                  disabled={!slug.trim()}
+                  onClick={() => slug.trim() && void loadExisting(slug.trim())}
+                  title={slug.trim() ? `Load '${slug.trim()}' into the fields below` : 'Type or pick an existing slug first'}
+                >
+                  Load existing
+                </button>
+              </div>
+              <span className="muted">
+                Typing shows matching existing slugs to pick from. Leave this blank and Publish will create a brand-new post instead.
+              </span>
             </div>
-          ) : (
-            <input type="text" placeholder="tags (comma-separated)" value={tagsFallback} onChange={(event) => setTagsFallback(event.target.value)} />
-          )}
-        </div>
 
-        <div className="field">
-          <span className="field-label">Body</span>
-          <textarea
-            rows={12}
-            placeholder="Body (markdown, include <!-- truncate --> when updating)"
-            value={body}
-            onChange={(event) => setBody(event.target.value)}
-          />
-        </div>
+            <div className="field">
+              <span className="field-label">Title</span>
+              <input type="text" placeholder="Title" value={title} onChange={(event) => setTitle(event.target.value)} />
+            </div>
 
-        {/* Toggled by the "Markdown" button up in the view header. Parsing
-            happens server-side (POST /api/parse-markdown -> blog_parse_markdown ->
-            the same domain/frontmatter.ts parser every other tool uses), not with a
-            hand-rolled client-side YAML parser that could silently disagree with what
-            publish actually does. */}
-        {showRawMarkdown && (
+            <div className="field">
+              <span className="field-label">Description</span>
+              <input type="text" placeholder="Description" value={description} onChange={(event) => setDescription(event.target.value)} />
+            </div>
+
+            <div className="field">
+              <span className="field-label">Tags</span>
+              {hasTagVocab ? (
+                <div className="tag-checklist">
+                  {existingTags.map((tag) => (
+                    <label key={tag.key} className="tag-chip" htmlFor={`tag-${tag.key}`}>
+                      <input
+                        type="checkbox"
+                        id={`tag-${tag.key}`}
+                        checked={checkedTags.has(tag.key)}
+                        onChange={(event) => {
+                          setCheckedTagsState((prev) => {
+                            const next = new Set(prev);
+                            if (event.target.checked) next.add(tag.key);
+                            else next.delete(tag.key);
+                            return next;
+                          });
+                        }}
+                      />
+                      {tag.label || tag.key}
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <input type="text" placeholder="tags (comma-separated)" value={tagsFallback} onChange={(event) => setTagsFallback(event.target.value)} />
+              )}
+            </div>
+
+            <div className="field">
+              <span className="field-label">Body</span>
+              <textarea
+                rows={12}
+                placeholder="Body (markdown, include <!-- truncate --> when updating)"
+                value={body}
+                onChange={(event) => setBody(event.target.value)}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Switched to via the "Markdown" tab up in the view header, and back
+            to 'compose' automatically once parsing succeeds so the result can
+            be reviewed/edited. Parsing happens server-side (POST
+            /api/parse-markdown -> blog_parse_markdown -> the same
+            domain/frontmatter.ts parser every other tool uses), not with a
+            hand-rolled client-side YAML parser that could silently disagree
+            with what publish actually does. */}
+        {mode === 'markdown' && (
           <div className="field raw-markdown-panel">
             <span className="field-label">Raw markdown</span>
             <textarea
-              rows={10}
+              rows={16}
               placeholder={'--- \ntitle: "..."\ndescription: "..."\nslug: ...\n...\n---\n\nBody...'}
               value={rawMarkdown}
               onChange={(event) => setRawMarkdown(event.target.value)}

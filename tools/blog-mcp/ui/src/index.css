@@ -176,9 +176,9 @@ button.primary:hover:not(:disabled) {
 }
 
 main {
-  max-width: 980px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 1.5rem;
+  padding: 1.5rem clamp(1.5rem, 4vw, 3rem);
 }
 
 main h2 {
