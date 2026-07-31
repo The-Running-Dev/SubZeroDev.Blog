@@ -216,6 +216,15 @@ describe('serve mode', () => {
       expect(body.data.path).toContain('docs/blog/');
     });
 
+    it('GET /api/tags returns the controlled tag vocabulary', async () => {
+      const res = await fetch(`${baseUrl}/api/tags`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { data: { tags: Array<{ key: string; label: string }> } };
+      expect(body.data.tags.length).toBeGreaterThan(0);
+      expect(body.data.tags[0]).toHaveProperty('key');
+      expect(body.data.tags[0]).toHaveProperty('label');
+    });
+
     it('GET /api/repo/health reports read-only repo state', async () => {
       const res = await fetch(`${baseUrl}/api/repo/health`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
       expect(res.status).toBe(200);

@@ -97,6 +97,10 @@ export async function handleApiRequest(
       return callTool(serverOptions, 'blog_branches', {});
     }
 
+    if (pathname === '/api/tags') {
+      return callTool(serverOptions, 'blog_list_tags', {});
+    }
+
     const prMatch = /^\/api\/pr\/(\d+)$/.exec(pathname);
     if (prMatch) {
       return callTool(serverOptions, 'blog_pr_status', { pr: Number(prMatch[1]) });
