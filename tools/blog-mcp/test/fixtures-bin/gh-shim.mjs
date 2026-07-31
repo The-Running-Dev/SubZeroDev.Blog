@@ -104,7 +104,9 @@ if (group === 'api' && args[1] === 'graphql') {
       page = priorIndex === -1 ? undefined : pages[priorIndex + 1];
     }
     const resolved = page ?? { nodes: [], pageInfo: { hasNextPage: false, endCursor: null } };
-    const payload = { repository: { pullRequest: { reviewThreads: { pageInfo: resolved.pageInfo, nodes: resolved.nodes } } } };
+    // Wrapped in `data`, matching the real `gh api graphql` response body --
+    // ghGraphQl() unwraps this same envelope shape before returning to callers.
+    const payload = { data: { repository: { pullRequest: { reviewThreads: { pageInfo: resolved.pageInfo, nodes: resolved.nodes } } } } };
     process.stdout.write(JSON.stringify(payload) + '\n');
     process.exit(0);
   }
@@ -123,7 +125,7 @@ if (group === 'api' && args[1] === 'graphql') {
           comments: { nodes: [{ path: 'docs/blog/example.md', line: 20, body: 'Already fine.', url: `${prUrl}#discussion-2` }] }
         }
       ];
-  const payload = { repository: { pullRequest: { reviewThreads: { pageInfo: { hasNextPage: false, endCursor: null }, nodes: threads } } } };
+  const payload = { data: { repository: { pullRequest: { reviewThreads: { pageInfo: { hasNextPage: false, endCursor: null }, nodes: threads } } } } };
   process.stdout.write(JSON.stringify(payload) + '\n');
   process.exit(0);
 }

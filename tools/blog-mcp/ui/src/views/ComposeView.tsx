@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api, post, ApiError } from '../lib/api';
 import { isoToDatetimeLocal } from '../lib/formatDate';
@@ -69,6 +69,19 @@ export default function ComposeView() {
   const [date, setDate] = useState('');
   const [checkedTags, setCheckedTagsState] = useState<Set<string>>(new Set());
   const [tagsFallback, setTagsFallback] = useState('');
+  // Tags parsed from front matter that aren't in docs/blog/tags.yml yet --
+  // offered as one-click "Create tag" buttons rather than only a log
+  // warning, since the fix for an unknown tag is usually "yes, add it",
+  // not "pick something else".
+  const [pendingTags, setPendingTags] = useState<string[]>([]);
+  const [creatingTag, setCreatingTag] = useState<string | null>(null);
+  // docs/blog/tags.yml's path once blog_add_tag has actually touched it this
+  // session -- blog_add_tag only writes the file, it doesn't stage/commit
+  // it, so without this Publish would leave a brand-new tag as an
+  // uncommitted local change: the pushed post would reference a tag that
+  // doesn't exist on the remote branch at all, the exact class of bug the
+  // "create tag" button exists to prevent.
+  const [tagsFilePath, setTagsFilePath] = useState<string | null>(null);
 
   // 'compose': the structured slug/title/description/tags/body fields.
   // 'markdown': a single raw-markdown textarea that Parses into those same
@@ -90,25 +103,15 @@ export default function ComposeView() {
   // double-invoke in dev, tagsLoaded flipping, etc.).
   const prefilledRef = useRef(false);
 
-  // .compose-log is `position: fixed` to the bottom of the viewport (a
-  // status "toast"), so it no longer pushes the form's own layout down --
-  // without reserving matching space beneath the form, a tall toast (long
-  // messages, several findings, multiple log lines) can cover the Publish
-  // button and other bottom controls. Re-measured with useLayoutEffect
-  // (synchronous, right after the DOM commits each new log line) rather
-  // than a fixed padding guess or a ResizeObserver -- the latter schedules
-  // its callback on the browser's own resize-observation step, which is one
-  // more async hop than necessary when `log` is already the one React state
-  // that drives the toast's height.
-  const logRef = useRef<HTMLUListElement>(null);
-  const [logHeight, setLogHeight] = useState(0);
-
-  useLayoutEffect(() => {
-    setLogHeight(logRef.current?.offsetHeight ?? 0);
-  }, [log]);
-
   const logLine = useCallback((text: string, isError = false) => {
     setLog((prev) => [...prev, { text, isError }]);
+  }, []);
+
+  // Toasts stack in a fixed corner (position: fixed, not part of document
+  // flow), so unlike an inline log they never clear themselves -- each one
+  // is dismissed individually via its own close button.
+  const dismissLog = useCallback((index: number) => {
+    setLog((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   // Surfaces the specific validation rule(s) that failed, not just the
@@ -143,8 +146,9 @@ export default function ComposeView() {
         const kept = wanted.filter((t) => known.has(t));
         const dropped = wanted.filter((t) => !known.has(t));
         setCheckedTagsState(new Set(kept));
+        setPendingTags(dropped);
         if (dropped.length > 0) {
-          logLine(`Dropped tag(s) not in docs/blog/tags.yml: ${dropped.join(', ')}. Pick from the checklist below instead.`, true);
+          logLine(`Dropped tag(s) not in docs/blog/tags.yml: ${dropped.join(', ')}. Create them below or pick from the checklist instead.`, true);
         }
       } else {
         setTagsFallback((tags ?? []).join(', '));
@@ -152,6 +156,39 @@ export default function ComposeView() {
     },
     [hasTagVocab, existingTags, logLine]
   );
+
+  // Title-Cases a kebab-case key for a default label ("ai-assisted" ->
+  // "Ai Assisted") -- a reasonable starting point, not a claim it's
+  // grammatically perfect; the author can still hand-edit tags.yml.
+  function titleCaseFromKey(key: string): string {
+    return key
+      .split('-')
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  async function createPendingTag(key: string) {
+    setCreatingTag(key);
+    try {
+      const label = titleCaseFromKey(key);
+      const result = await post<{ key: string; permalink: string; path: string }>('/api/tags', {
+        key,
+        label,
+        description: `Posts related to ${label}.`
+      });
+      const created = { key, label };
+      setExistingTags((prev) => [...prev, created]);
+      setCheckedTagsState((prev) => new Set(prev).add(key));
+      setPendingTags((prev) => prev.filter((t) => t !== key));
+      if (result.data?.path) setTagsFilePath(result.data.path);
+      logLine(`Created tag '${key}' and checked it.`);
+    } catch (err) {
+      logError(err);
+    } finally {
+      setCreatingTag(null);
+    }
+  }
 
   function tagList(): string[] {
     if (hasTagVocab) return [...checkedTags];
@@ -341,7 +378,8 @@ export default function ComposeView() {
       logLine(`Wrote ${newPath}.`);
 
       logLine('Staging...');
-      await post('/api/stage', { paths: [newPath] });
+      const stagePaths = [newPath, ...(tagsFilePath ? [tagsFilePath] : [])].filter((p): p is string => Boolean(p));
+      await post('/api/stage', { paths: stagePaths });
 
       logLine('Committing...');
       await post('/api/commit', { type: 'feat', scope: 'blog', summary: `add ${trimmedSlug}` });
@@ -401,7 +439,7 @@ export default function ComposeView() {
         &quot;Auto-Merge&quot; checked, that PR is also armed to merge automatically once its required checks pass -- uncheck it to
         leave the PR open for a manual review/merge instead. Nothing merges before the PR is actually opened.
       </p>
-      <div className="compose-form" style={log.length > 0 ? { paddingBottom: logHeight } : undefined}>
+      <div className="compose-form">
         <datalist id="existing-slugs">
           {existingSlugs.map((s) => (
             <option key={s} value={s} />
@@ -478,6 +516,22 @@ export default function ComposeView() {
               ) : (
                 <input type="text" placeholder="tags (comma-separated)" value={tagsFallback} onChange={(event) => setTagsFallback(event.target.value)} />
               )}
+              {hasTagVocab && pendingTags.length > 0 && (
+                <div className="tag-checklist pending-tags">
+                  {pendingTags.map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className="tag-chip pending-tag-chip"
+                      disabled={creatingTag === key}
+                      onClick={() => void createPendingTag(key)}
+                      title={`'${key}' isn't in docs/blog/tags.yml yet -- add it with a default label/description`}
+                    >
+                      {creatingTag === key ? `Creating '${key}'...` : `+ Create '${key}'`}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="field">
@@ -533,10 +587,13 @@ export default function ComposeView() {
         </div>
       </div>
 
-      <ul className="compose-log" ref={logRef}>
+      <ul className="compose-log">
         {log.map((line, i) => (
           <li key={i} className={line.isError ? 'error' : undefined}>
-            {line.text}
+            <span className="toast-text">{line.text}</span>
+            <button type="button" className="toast-dismiss" aria-label="Dismiss" onClick={() => dismissLog(i)}>
+              &times;
+            </button>
           </li>
         ))}
       </ul>

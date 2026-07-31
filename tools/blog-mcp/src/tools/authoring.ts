@@ -557,7 +557,7 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
       }
 
       fs.writeFileSync(filePath, updated, 'utf8');
-      return ok(`Added tag '${args.key}' to ${relativePath}`, { key: args.key, permalink });
+      return ok(`Added tag '${args.key}' to ${relativePath}`, { key: args.key, permalink, path: relativePath });
     })
   );
 
