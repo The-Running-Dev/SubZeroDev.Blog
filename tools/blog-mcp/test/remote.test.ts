@@ -192,6 +192,39 @@ describe('remote tools against a gh shim (no real GitHub involved)', () => {
     expect((result.data as { number: number }).number).toBe(42);
   });
 
+  it('blog_list_prs sorts by most-recently-updated regardless of gh\'s own return order, and calls the exact argv', async () => {
+    process.env.GH_SHIM_PR_LIST_JSON = JSON.stringify([
+      { number: 10, title: 'Older', state: 'MERGED', isDraft: false, headRefName: 'blog/older', url: 'https://github.com/test-owner/test-repo/pull/10', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-02T00:00:00Z', mergedAt: '2026-01-02T00:00:00Z' },
+      { number: 12, title: 'Newest', state: 'OPEN', isDraft: false, headRefName: 'blog/newest', url: 'https://github.com/test-owner/test-repo/pull/12', createdAt: '2026-01-03T00:00:00Z', updatedAt: '2026-01-05T00:00:00Z', mergedAt: null },
+      { number: 11, title: 'Middle', state: 'CLOSED', isDraft: false, headRefName: 'blog/middle', url: 'https://github.com/test-owner/test-repo/pull/11', createdAt: '2026-01-02T00:00:00Z', updatedAt: '2026-01-03T00:00:00Z', mergedAt: null }
+    ]);
+
+    const result = await call(server, 'blog_list_prs', { limit: 2 });
+    expect(result.ok).toBe(true);
+    const data = result.data as { prs: Array<{ number: number; title: string }>; limit: number };
+    expect(data.prs.map((p) => p.number)).toEqual([12, 11, 10]);
+    expect(data.limit).toBe(2);
+
+    const invocations = fs
+      .readFileSync(ghShimLog, 'utf8')
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line) as string[]);
+    const listCall = invocations.find((argv) => argv[0] === 'pr' && argv[1] === 'list');
+    expect(listCall).toBeDefined();
+    expect(listCall).toEqual(['pr', 'list', '--state', 'all', '--json', 'number,title,state,isDraft,headRefName,url,createdAt,updatedAt,mergedAt', '--limit', '2']);
+
+    delete process.env.GH_SHIM_PR_LIST_JSON;
+  });
+
+  it('blog_list_prs defaults its limit when none is given', async () => {
+    process.env.GH_SHIM_PR_LIST_JSON = '[]';
+    const defaulted = await call(server, 'blog_list_prs', {});
+    expect(defaulted.ok).toBe(true);
+    expect((defaulted.data as { limit: number }).limit).toBe(30);
+    delete process.env.GH_SHIM_PR_LIST_JSON;
+  });
+
   it('blog_pr_comments returns review threads and honors unresolvedOnly', async () => {
     const all = await call(server, 'blog_pr_comments', { pr: 42 });
     expect(all.ok).toBe(true);

@@ -293,6 +293,29 @@ describe('serve mode', () => {
       expect(typeof body.data.current).toBe('string');
     });
 
+    it('GET /api/prs returns the combined PR list', async () => {
+      process.env.GH_SHIM_PR_LIST_JSON = JSON.stringify([
+        { number: 5, title: 'Fixture PR', state: 'OPEN', isDraft: false, headRefName: 'blog/fixture', url: 'https://github.com/test-owner/test-repo/pull/5', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', mergedAt: null }
+      ]);
+      const res = await fetch(`${baseUrl}/api/prs`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { data: { prs: Array<{ number: number }>; limit: number } };
+      expect(body.data.prs.map((p) => p.number)).toEqual([5]);
+      expect(body.data.limit).toBe(30);
+      delete process.env.GH_SHIM_PR_LIST_JSON;
+    });
+
+    it('GET /api/prs with an out-of-range limit is a 400, not a misclassified 502', async () => {
+      const tooLarge = await fetch(`${baseUrl}/api/prs?limit=101`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      expect(tooLarge.status).toBe(400);
+
+      const notAnInteger = await fetch(`${baseUrl}/api/prs?limit=1.5`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      expect(notAnInteger.status).toBe(400);
+
+      const zero = await fetch(`${baseUrl}/api/prs?limit=0`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      expect(zero.status).toBe(400);
+    });
+
     it('GET /api/deploy without mergeCommitSha is a 400, not a crash', async () => {
       const res = await fetch(`${baseUrl}/api/deploy`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
       expect(res.status).toBe(400);

@@ -10,7 +10,8 @@ import { resolveOwnerRepoFromGit } from '../domain/github.js';
 import { wrapTool, wrapMutatingTool, type ToolContext } from './context.js';
 
 const DEFAULT_PR_LIST_LIMIT = 30;
-const MAX_PR_LIST_LIMIT = 100;
+/** Exported so src/serve/api.ts's /api/prs route can validate `limit` itself before forwarding -- an invalid value (non-integer, out of range) should be a 400 client error, not fail this tool's zod schema and surface as a misleading 502. */
+export const MAX_PR_LIST_LIMIT = 100;
 
 interface PrViewJson {
   number: number;
