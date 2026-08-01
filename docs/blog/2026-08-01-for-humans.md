@@ -1,6 +1,14 @@
 ---
 title: For Humans
-sidebar_position: 9
+description: A one-page, non-corporate summary of how someone ends up ahead of every rubric they're handed.
+slug: for-humans
+authors:
+  - subzerodev
+date: 2026-08-01T14:40:00Z
+tags:
+  - stories
+  - philosophy
+  - ahead-of-the-rubric
 ---
 
 # For Humans  
@@ -24,6 +32,8 @@ If you’re curious how someone ends up:
 - and outgrowing rubrics faster than institutions can update them,
 
 keep reading.
+
+<!-- truncate -->
 
 ---
 
@@ -72,7 +82,7 @@ This has happened:
 - repeatedly.
 
 You can read the full origin story here:  
-→ **[Ahead of the Rubric — The Full Timeline](./ahead-of-the-rubric.md)**
+→ **[Ahead of the Rubric — The Full Timeline](/ahead-of-the-rubric)**
 
 ---
 

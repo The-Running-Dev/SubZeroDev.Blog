@@ -1,6 +1,13 @@
 ---
 title: What I Expect From You
-sidebar_position: 14
+description: The mirror to What I'm Not -- everything asked of others, asked equally of me.
+slug: what-i-expect-from-you
+authors:
+  - subzerodev
+date: 2026-08-01T16:20:00Z
+tags:
+  - philosophy
+  - ahead-of-the-rubric
 ---
 
 # What I Expect From You  
@@ -10,6 +17,8 @@ sidebar_position: 14
 > It’s symmetrical.
 
 I don’t ask for anything I don’t give.
+
+<!-- truncate -->
 
 ---
 

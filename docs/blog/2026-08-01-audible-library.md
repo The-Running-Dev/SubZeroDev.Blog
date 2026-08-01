@@ -1,6 +1,12 @@
 ---
 title: Audible Library — Final 11-Credit Canon
-sidebar_position: 16
+description: The final eleven-credit Audible canon -- Stoics, sober sci-fi, and nothing written to be ironic.
+slug: audible-library
+authors:
+  - subzerodev
+date: 2026-08-01T17:00:00Z
+tags:
+  - reading-list
 ---
 
 # 📚 Audible Library — Final 11-Credit Canon
@@ -18,6 +24,8 @@ sidebar_position: 16
 3. Letters from a Stoic — Seneca  
    **Why:** Stoicism applied to money, anger, politics, time, and compromise; human and imperfect.  
    **Listen profile:** 🔁 Re-listen selectively; letters work as stand-alone meditations.
+
+<!-- truncate -->
 
 ---
 

@@ -1,6 +1,14 @@
 ---
 title: Ahead of the Rubric
-sidebar_position: 10
+description: An origin story spanning three decades of building things institutions weren't ready to grade.
+slug: ahead-of-the-rubric
+authors:
+  - subzerodev
+date: 2026-08-01T15:00:00Z
+tags:
+  - stories
+  - philosophy
+  - ahead-of-the-rubric
 ---
 
 # Ahead of the Rubric
@@ -13,6 +21,8 @@ sidebar_position: 10
 
 > This wasn’t a phase.  
 > This pattern will repeat.
+
+<!-- truncate -->
 
 ---
 

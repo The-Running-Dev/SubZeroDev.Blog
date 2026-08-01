@@ -1,6 +1,13 @@
 ---
 title: Selected Incidents
-sidebar_position: 11
+description: A running, incomplete list of times being early looked a lot like being wrong.
+slug: selected-incidents
+authors:
+  - subzerodev
+date: 2026-08-01T15:20:00Z
+tags:
+  - stories
+  - ahead-of-the-rubric
 ---
 
 # Selected Incidents  
@@ -8,6 +15,8 @@ sidebar_position: 11
 
 > This section has no end.  
 > It exists to document pattern, not exhaust it.
+
+<!-- truncate -->
 
 ### 1996–1997 — The Rubric Incident
 

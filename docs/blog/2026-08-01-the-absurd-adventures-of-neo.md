@@ -1,6 +1,14 @@
 ---
 title: The Absurd Adventures of Neo — Project Brief
-sidebar_position: 15
+description: A project brief for a philosophical-absurdist series where Neo is awake, aware, and refuses to save the world.
+slug: the-absurd-adventures-of-neo
+authors:
+  - subzerodev
+date: 2026-08-01T16:40:00Z
+tags:
+  - absurd
+  - lucifer
+  - stories
 ---
 
 # The Absurd Adventures of Neo
@@ -14,6 +22,8 @@ He does not fight the system.
 He plays with it.
 
 The system isn’t defeated—it’s gently humiliated.
+
+<!-- truncate -->
 
 ## Tone
 

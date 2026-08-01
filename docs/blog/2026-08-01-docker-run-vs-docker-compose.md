@@ -1,6 +1,13 @@
 ---
 title: Docker Run vs. Docker Compose
-sidebar_position: 8
+description: When to reach for a quick docker run versus a reusable Docker Compose setup, with side-by-side examples.
+slug: docker-run-vs-docker-compose
+authors:
+  - subzerodev
+date: 2026-08-01T14:20:00Z
+tags:
+  - development
+  - docker
 ---
 
 # Docker Run vs. Docker Compose
@@ -18,6 +25,8 @@ You can think of it like this:
 
 - `docker run` = one command, typed by hand
 - `docker compose` = a saved recipe in a `docker-compose.yml` file
+
+<!-- truncate -->
 
 ---
 
