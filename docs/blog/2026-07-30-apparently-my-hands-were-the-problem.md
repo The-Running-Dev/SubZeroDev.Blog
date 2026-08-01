@@ -7,7 +7,6 @@ authors:
 date: 2026-07-30T03:22:20Z
 tags:
   - absurd
-  - lucifer
   - stories
 ---
 

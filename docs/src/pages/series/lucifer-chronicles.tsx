@@ -16,6 +16,12 @@ export default function LuciferChronicles(): React.JSX.Element {
           href: '/lucifer-chronicles/'
         },
         {
+          title: "God's Greatest Practical Joke",
+          description:
+            'Lucifer asks God to explain one particularly absurd human and discovers the joke may have been intentional.',
+          href: '/gods-greatest-practical-joke/'
+        },
+        {
           title: 'Lucifer, the Fly, and the Negotiation That Failed Spectacularly',
           description: 'A perfectly reasonable attempt at diplomacy.',
           href: '/lucifer-fly-negotiation/'
@@ -30,6 +36,20 @@ export default function LuciferChronicles(): React.JSX.Element {
           title: 'The Absurdity of Humanity',
           description: "God and Lucifer inspect humanity's missing escape hatch.",
           href: '/the-absurdity-of-humanity/'
+        },
+        {
+          title: 'Lucifer Finally Fixed AI Project Management',
+          description:
+            'Lucifer responds to humanity wasting expensive reasoning models by publishing a model-selection policy.',
+          href: '/lucifer-ai-model-selection-policy/'
+        },
+        {
+          label: 'Spin-off project',
+          title: 'The Absurd Adventures of Neo',
+          description:
+            'A project brief for an awake, amused Neo and a recurring Lucifer who refuses to let the system stay dramatic.',
+          href: '/the-absurd-adventures-of-neo/',
+          variant: 'related'
         }
       ]}
     />

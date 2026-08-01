@@ -102,8 +102,11 @@ $requiredRoutes = @(
     'tags/index.html'
     'series/lucifer-chronicles/index.html'
     'series/ai-assisted-engineering/index.html'
+    'series/building-the-blog/index.html'
+    'series/docker/index.html'
     'series/state-of-dev/index.html'
     'projects/game-engine/index.html'
+    'about/index.html'
 )
 
 foreach ($route in $requiredRoutes) {
