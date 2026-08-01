@@ -51,7 +51,7 @@ x-blog-mcp-common: &blog-mcp-common
     - "blog-workspace:${BLOG_MCP_WORKSPACE:-/workspace}"
     - "${BLOG_MCP_WATCH_HOST_DIR:-/srv/blog-mcp/watch}:${BLOG_MCP_WATCH_DIR:-/watch}"
   networks:
-    - proxy
+    - proxy-net
 
 services:
   blog-bot:
@@ -72,6 +72,6 @@ networks:
   # Create this network once (for example, `docker network create proxy`) and
   # attach Nginx Proxy Manager to it too. Override the name when the proxy
   # stack already has a differently named shared external network.
-  proxy:
+  proxy-net:
     external: true
     name: "${BLOG_MCP_PROXY_NETWORK:-proxy}"
