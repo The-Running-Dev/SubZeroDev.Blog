@@ -115,6 +115,10 @@ the externally bound stack without that bearer token. Set
 publishing deliberately with `BLOG_MCP_ALLOW_REMOTE=1` and a scoped
 `GH_TOKEN`; neither secret is stored in the Compose file.
 
+The deployment allows browser requests from `https://blogging.subzerodev.com`
+by default. Set `BLOG_MCP_HTTP_ALLOWED_ORIGINS` to a comma-separated list when
+the UI is served from a different public origin.
+
 ### Reverse proxy deployment
 
 The deployment Compose file uses the named Docker network `proxy-net` by
