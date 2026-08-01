@@ -55,12 +55,10 @@ docker pull ghcr.io/the-running-dev/subzerodev-blog-mcp:latest
 
 Substitute `ghcr.io/the-running-dev/subzerodev-blog-mcp:latest` for
 `subzerodev-blog-mcp` in any `docker run` command below to run the
-published image instead of one built locally. This does **not** apply to
-`docker-compose.yml`: its services still declare a `build:` section, so
-`docker compose up -d --build` (the documented command) always rebuilds
-locally regardless of what `image:` is named -- see the comment on
-`docker-compose.yml`'s `image:` line for why that stays as-is rather than
-pointing at the registry.
+published image instead of one built locally. For Compose, use the form that
+matches the environment: `tools/blog-mcp/docker-compose.yml` is for local
+builds, while the repository-root [`docker-compose.yml`](https://github.com/The-Running-Dev/SubZeroDev.Blog/blob/main/docker-compose.yml)
+pulls the published GHCR image for an always-on deployment.
 
 Run with only env vars and a named volume — no bind mount anywhere
 (stdio transport, the default):
@@ -85,9 +83,9 @@ BLOG_MCP_GIT_USER_NAME=blog-bot BLOG_MCP_GIT_USER_EMAIL=bot@subzerodev.com \
 node dist/index.js
 ```
 
-Or, for an always-on deployment, `docker-compose.yml` is provided as two
-service *forms* of the same image sharing config via a plain YAML anchor
-(`x-blog-mcp-common`), not Compose's own `extends:`:
+For local development, the tool-local `docker-compose.yml` builds source and
+provides two service *forms* of the same image sharing config via a plain YAML
+anchor (`x-blog-mcp-common`), not Compose's own `extends:`:
 
 ```bash
 cd tools/blog-mcp
@@ -95,6 +93,27 @@ cp .env.example .env   # fill in real values; .env is git-ignored
 docker compose up -d --build          # `serve` (default): /mcp + the web UI
 docker compose --profile http up -d --build http   # `http` only: bare /mcp, no UI
 ```
+
+For an always-on deployment, use the repository-root Compose file. It pulls
+`ghcr.io/the-running-dev/subzerodev-blog-mcp:latest` by default (override
+`BLOG_MCP_IMAGE` to pin a digest or immutable tag), and accepts configuration
+through the deployment environment or a git-ignored root `.env` file:
+
+```bash
+# From the repository root. The copied file is git-ignored; fill in the
+# required clone URL and Git identity before starting the stack.
+cp tools/blog-mcp/.env.example .env
+docker compose pull
+docker compose up -d                 # `blog-bot`: /mcp + optional web UI
+docker compose --profile http up -d http  # bare /mcp, no UI
+```
+
+The deployment form requires `BLOG_MCP_CLONE_URL`, `BLOG_MCP_GIT_USER_NAME`,
+`BLOG_MCP_GIT_USER_EMAIL`, and `BLOG_MCP_HTTP_TOKEN`; Compose refuses to start
+the externally bound stack without that bearer token. Set
+`BLOG_MCP_UI_PASSWORD_HASH` before enabling the web UI. Enable remote
+publishing deliberately with `BLOG_MCP_ALLOW_REMOTE=1` and a scoped
+`GH_TOKEN`; neither secret is stored in the Compose file.
 
 `serve` (see [Serve mode (web UI)](#serve-mode-web-ui)) is the default --
 plain `docker compose up -d` starts only it, since it's already a strict

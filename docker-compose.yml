@@ -1,0 +1,65 @@
+# Deployment Compose file: pulls the published blog-mcp image rather than
+# building source. Use it from this repository's root or import it as a
+# Portainer stack. Set the required variables in a git-ignored root `.env` or
+# in the stack's environment; never commit tokens or password hashes.
+#
+# For local development, use tools/blog-mcp/docker-compose.yml instead. It
+# deliberately has `build: context: .` and is run from tools/blog-mcp with
+# `docker compose up -d --build`.
+#
+# `blog-bot` is the default and includes /mcp, /healthz, and the optional web
+# UI. It runs the image's `serve` command.
+# `http` is a profile for a bare MCP endpoint. Do not run both against the same
+# named volume: one process at a time must own the cloned working tree.
+
+x-blog-mcp-common: &blog-mcp-common
+  image: "${BLOG_MCP_IMAGE:-ghcr.io/the-running-dev/subzerodev-blog-mcp:latest}"
+  pull_policy: always
+  restart: unless-stopped
+  stdin_open: true
+  tty: true
+  environment:
+    BLOG_MCP_CLONE_URL: "${BLOG_MCP_CLONE_URL:?Set BLOG_MCP_CLONE_URL to the Git repository URL}"
+    BLOG_MCP_GIT_USER_NAME: "${BLOG_MCP_GIT_USER_NAME:?Set BLOG_MCP_GIT_USER_NAME}"
+    BLOG_MCP_GIT_USER_EMAIL: "${BLOG_MCP_GIT_USER_EMAIL:?Set BLOG_MCP_GIT_USER_EMAIL}"
+    BLOG_MCP_WORKSPACE: "${BLOG_MCP_WORKSPACE:-/workspace}"
+    BLOG_MCP_HTTP_HOST: 0.0.0.0
+    BLOG_MCP_HTTP_PORT: "${BLOG_MCP_HTTP_PORT:-8765}"
+    # This deployment publishes a non-loopback port, so the primary MCP
+    # bearer token is mandatory. BLOG_MCP_HTTP_READONLY_TOKEN may additionally
+    # be supplied for restricted third-party clients.
+    BLOG_MCP_HTTP_TOKEN: "${BLOG_MCP_HTTP_TOKEN:?Set BLOG_MCP_HTTP_TOKEN before exposing the deployment service}"
+    BLOG_MCP_HTTP_READONLY_TOKEN: "${BLOG_MCP_HTTP_READONLY_TOKEN:-}"
+    BLOG_MCP_HTTP_ALLOWED_ORIGINS: "${BLOG_MCP_HTTP_ALLOWED_ORIGINS:-}"
+    BLOG_MCP_HTTP_MAX_SESSIONS: "${BLOG_MCP_HTTP_MAX_SESSIONS:-}"
+    BLOG_MCP_UI_PASSWORD_HASH: "${BLOG_MCP_UI_PASSWORD_HASH:-}"
+    BLOG_MCP_READ_ONLY: "${BLOG_MCP_READ_ONLY:-}"
+    BLOG_MCP_ALLOW_REMOTE: "${BLOG_MCP_ALLOW_REMOTE:-}"
+    BLOG_MCP_ALLOW_MONITOR: "${BLOG_MCP_ALLOW_MONITOR:-}"
+    BLOG_MCP_ALLOW_SCHEDULER: "${BLOG_MCP_ALLOW_SCHEDULER:-}"
+    BLOG_MCP_ALLOW_WATCHER: "${BLOG_MCP_ALLOW_WATCHER:-}"
+    BLOG_MCP_WATCH_DIR: "${BLOG_MCP_WATCH_DIR:-/watch}"
+    BLOG_MCP_WATCH_INTERVAL_MS: "${BLOG_MCP_WATCH_INTERVAL_MS:-15000}"
+    BLOG_MCP_WATCH_AUTO_MERGE: "${BLOG_MCP_WATCH_AUTO_MERGE:-}"
+    GH_TOKEN: "${GH_TOKEN:-}"
+    TZ: "${TZ:-Etc/UTC}"
+  ports:
+    - "${BLOG_MCP_HTTP_PORT:-8765}:${BLOG_MCP_HTTP_PORT:-8765}"
+  volumes:
+    - "blog-workspace:${BLOG_MCP_WORKSPACE:-/workspace}"
+    - "${BLOG_MCP_WATCH_HOST_DIR:-/srv/blog-mcp/watch}:${BLOG_MCP_WATCH_DIR:-/watch}"
+
+services:
+  blog-bot:
+    <<: *blog-mcp-common
+    container_name: blog-bot
+    command: serve
+
+  http:
+    <<: *blog-mcp-common
+    container_name: blog-mcp-http
+    command: http
+    profiles: ["http"]
+
+volumes:
+  blog-workspace:

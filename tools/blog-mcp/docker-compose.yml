@@ -1,3 +1,7 @@
+# Local-development Compose file: builds from this directory. The repository
+# root's docker-compose.yml is the deployment counterpart; it pulls the
+# published GHCR image instead.
+#
 # Two forms of the same image, sharing config via a plain YAML anchor
 # (`x-blog-mcp-common` below) rather than Compose's own `extends:` -- one
 # service per transport, not one service with a command override, so each
@@ -39,15 +43,9 @@
 # running `docker compose up -d`.
 
 x-blog-mcp-common: &blog-mcp-common
-  # `docker compose up -d --build` (the documented command) always builds
-  # locally, ignoring the published image entirely -- unchanged by CI now
-  # publishing ghcr.io/the-running-dev/subzerodev-blog-mcp on every push to
-  # main (see .github/workflows/blog-mcp-image.yml). Deliberately not
-  # rewiring `image:` to that registry path here: that would make a plain
-  # `docker compose up --build` tag the freshly-built local image under the
-  # *registry* name, which is surprising. To run the published image instead
-  # of building, use `docker run`/`docker pull` directly -- see
-  # tools/blog-mcp/README.md's "Running" section.
+  # Keep the local image name separate from the published registry name: a
+  # `docker compose up -d --build` here must never tag a local build as the
+  # deployable GHCR image. See ../../docker-compose.yml for deployment.
   build:
     context: .
   image: subzerodev-blog-mcp
@@ -63,7 +61,7 @@ x-blog-mcp-common: &blog-mcp-common
   ports:
     - "${BLOG_MCP_HTTP_PORT:-8765}:${BLOG_MCP_HTTP_PORT:-8765}"
   volumes:
-    - blog-workspace:/workspace
+    - "blog-workspace:${BLOG_MCP_WORKSPACE:-/workspace}"
     # Deliberate bind mount, not a named volume like blog-workspace above --
     # this is the directory watcher's input directory (see README.md's
     # "Watcher (directory)" section), so it needs to be a real host path the
