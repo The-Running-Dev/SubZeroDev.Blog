@@ -7,6 +7,7 @@ import { hashPassword, resetAuthStateForTests } from '../src/serve/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
+const GH_SHIM_SCRIPT = path.join(__dirname, 'fixtures-bin', 'gh-shim.mjs');
 const PASSWORD = 'correct horse battery staple';
 // A fixed, non-port-dependent origin -- port:0 (ephemeral) means the real
 // bound port isn't known until after listening, so an Origin check that
@@ -27,6 +28,12 @@ describe('serve mode', () => {
 
   beforeAll(async () => {
     resetAuthStateForTests();
+    // blog_repo_health's GitHub-derived fields make real `gh` calls now --
+    // shim it, same as test/serve-writes.test.ts, so this "unit" test never
+    // reaches the real GitHub API even though it points at the live
+    // SubZeroDev.Blog checkout (REPO_ROOT) for its local-git assertions.
+    process.env.BLOG_MCP_GH_COMMAND = JSON.stringify(['node', GH_SHIM_SCRIPT]);
+    process.env.GH_SHIM_THREADS_JSON = '[]';
     server = createServeServer({
       repoRoot: REPO_ROOT,
       host: '127.0.0.1',
@@ -41,6 +48,8 @@ describe('serve mode', () => {
 
   afterAll(() => {
     server.close();
+    delete process.env.BLOG_MCP_GH_COMMAND;
+    delete process.env.GH_SHIM_THREADS_JSON;
   });
 
   it('GET /healthz works without auth, same as plain HTTP mode', async () => {
@@ -245,12 +254,29 @@ describe('serve mode', () => {
       expect(body.data.tags[0]).toHaveProperty('label');
     });
 
-    it('GET /api/repo/health reports read-only repo state', async () => {
+    it('GET /api/repo/health reports read-only repo state plus GitHub-derived fields via the shim', async () => {
       const res = await fetch(`${baseUrl}/api/repo/health`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
       expect(res.status).toBe(200);
-      const body = (await res.json()) as { data: { branch: string; baseBranch: string } };
+      const body = (await res.json()) as {
+        data: {
+          branch: string;
+          baseBranch: string;
+          commitsLast7Days: number;
+          daysSinceLastCommit: number | null;
+          staleBranches: { count: number; names: string[] };
+          github: { openPrCount: number; lastDeployRun: unknown; requiredCheckPassRate: { sampled: number; passed: number } } | null;
+        };
+      };
       expect(typeof body.data.branch).toBe('string');
       expect(typeof body.data.baseBranch).toBe('string');
+      expect(typeof body.data.commitsLast7Days).toBe('number');
+      expect(typeof body.data.staleBranches.count).toBe('number');
+      // UI_CAPABILITIES has monitor:true and this suite shims `gh` -- the
+      // GitHub-derived block must actually run and populate `github`, not
+      // silently fall back to the degraded null/githubNote path.
+      expect(body.data.github).not.toBeNull();
+      expect(body.data.github?.openPrCount).toBe(0);
+      expect(typeof body.data.github?.requiredCheckPassRate.sampled).toBe('number');
     });
 
     it('GET /api/log returns commit records', async () => {

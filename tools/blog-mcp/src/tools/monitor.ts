@@ -32,7 +32,7 @@ interface CheckRunsResponse {
   check_runs: CheckRun[];
 }
 
-interface CheckStatusResult {
+export interface CheckStatusResult {
   ref: string;
   checks: Array<{ name: string; status: string; conclusion: string | null; url: string }>;
   requiredMissing: string[];
@@ -42,7 +42,8 @@ interface CheckStatusResult {
 
 const TERMINAL_FAILURE_CONCLUSIONS = new Set(['failure', 'cancelled', 'timed_out', 'action_required', 'stale']);
 
-async function checkStatus(ctx: ToolContext, ref: string, required: string[]): Promise<CheckStatusResult> {
+/** Exported for src/tools/repoInfo.ts's blog_repo_health, which samples this over several recent commits for a required-check pass rate -- reuses the same GitHub check-run fetch and per-name dedup rather than reimplementing it. */
+export async function checkStatus(ctx: ToolContext, ref: string, required: string[]): Promise<CheckStatusResult> {
   const { owner, repo } = await resolveRepo(ctx);
   const response = await ghJson<CheckRunsResponse>(['api', `repos/${owner}/${repo}/commits/${ref}/check-runs`], { repoRoot: ctx.repoRoot });
 

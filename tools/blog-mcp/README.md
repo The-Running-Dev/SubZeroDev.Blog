@@ -466,8 +466,8 @@ Read-only:
 - `blog_validate_hubs` — resolvable hrefs, no duplicate hrefs, and a post whose tag matches a hub's rule but is missing from it (the class of bug that produced PR #31)
 - `blog_run_doc_gate`, `blog_run_artifact_check` (honestly reports `delegated-to-ci` when no production artifact is present), `blog_preflight`
 - `blog_log` — recent commits, defaulting to `origin/<base>` rather than `HEAD` (a long-lived container's working tree may be parked on a stale branch), NUL-separated records and a control-character field separator so a crafted commit subject can't spoof the output shape
-- `blog_branches` — local branches with ahead/behind counts against `origin/<base>` and the currently-checked-out one flagged
-- `blog_repo_health` — one consolidated view (branch, dirty, parked-off-base, ahead/behind) for dashboards/monitoring; never used to gate a decision by itself
+- `blog_branches` — local branches with ahead/behind counts against `origin/<base>`, each one's last commit date, and the currently-checked-out one flagged
+- `blog_repo_health` — one consolidated view for dashboards/monitoring: branch, dirty, parked-off-base, ahead/behind, commits in the last 7 days, days since the last commit, and a stale-branch count (30+ days) -- all local-git, always populated. Plus, best-effort when `monitor` capability is on and GitHub is reachable: open PR count, the most recent Docs Deploy run, and a required-check pass rate sampled over the 5 most recently merged PRs' own head commits (reusing `blog_check_status`'s own check-run logic) -- deliberately not `origin/<base>`'s own commit log, since this repository squash-merges and its required checks run on the PR's head commit, not the resulting merge commit, which never carries that check-run history. Degrades to `github: null` plus a `githubNote` explaining why on any GitHub-side failure -- the local fields are never blocked by it. Never used to gate a decision by itself
 
 Local filesystem writes:
 
