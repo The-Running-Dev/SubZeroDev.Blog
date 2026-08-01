@@ -22,6 +22,7 @@ async function main(): Promise<void> {
   const mcpReadOnlyToken = process.env.BLOG_MCP_HTTP_READONLY_TOKEN;
   const allowedOriginsEnv = process.env.BLOG_MCP_HTTP_ALLOWED_ORIGINS;
   const uiPasswordHash = process.env.BLOG_MCP_UI_PASSWORD_HASH;
+  const oauthIssuer = process.env.BLOG_MCP_OAUTH_ISSUER;
   const maxSessionsEnv = process.env.BLOG_MCP_HTTP_MAX_SESSIONS;
   const mcpMaxSessions = maxSessionsEnv ? Number(maxSessionsEnv) : undefined;
   const watchIntervalEnv = process.env.BLOG_MCP_WATCH_INTERVAL_MS;
@@ -60,7 +61,8 @@ async function main(): Promise<void> {
     ...(mcpReadOnlyToken ? { mcpReadOnlyToken } : {}),
     ...(allowedOriginsEnv ? { mcpAllowedOrigins: allowedOriginsEnv.split(',').map((s) => s.trim()) } : {}),
     ...(mcpMaxSessions !== undefined ? { mcpMaxSessions } : {}),
-    ...(uiPasswordHash ? { uiPasswordHash } : {})
+    ...(uiPasswordHash ? { uiPasswordHash } : {}),
+    ...(oauthIssuer ? { oauthIssuer } : {})
   });
 
   let scheduler: SchedulerHandle | undefined;

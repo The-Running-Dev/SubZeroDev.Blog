@@ -30,6 +30,10 @@ export interface HttpServerOptions {
   allowedOrigins?: string[];
   /** Caps concurrent MCP sessions (each holds its own McpServer instance). A POST that would create a session beyond this limit is rejected with 503 rather than admitted -- otherwise a reachable client (more likely if BLOG_MCP_HTTP_TOKEN is unset) could keep initializing new sessions and hold them all open until the 30-minute idle reap. */
   maxSessions?: number;
+  /** Optional OAuth bearer-token verifier. Static deployment tokens remain supported alongside it. */
+  authorize?: (authorizationHeader: string | undefined) => { capabilities: Capabilities } | undefined;
+  /** Added to a 401 challenge when an OAuth protected-resource endpoint is configured. */
+  unauthorizedHeaders?: () => Record<string, string>;
 }
 
 const DEFAULT_HOST = '127.0.0.1';
@@ -48,8 +52,10 @@ function sendJson(res: ServerResponse, status: number, body: unknown): void {
   res.end(text);
 }
 
-function rpcError(res: ServerResponse, status: number, code: number, message: string): void {
-  sendJson(res, status, { jsonrpc: '2.0', error: { code, message }, id: null });
+function rpcError(res: ServerResponse, status: number, code: number, message: string, headers: Record<string, string> = {}): void {
+  const text = JSON.stringify({ jsonrpc: '2.0', error: { code, message }, id: null });
+  res.writeHead(status, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(text), ...headers });
+  res.end(text);
 }
 
 function isOriginAllowed(origin: string | undefined, allowedOrigins: string[]): boolean {
@@ -144,7 +150,7 @@ export function createMcpRequestHandler(options: HttpServerOptions = {}): McpReq
     ...(options.stateDir ? { stateDir: options.stateDir } : {})
   };
 
-  if (!token && !readOnlyToken) {
+  if (!token && !readOnlyToken && !options.authorize) {
     process.stderr.write(
       'blog-mcp http: BLOG_MCP_HTTP_TOKEN is not set -- running without bearer auth. Safe only because the default bind is loopback-only; do not do this while bound to a non-loopback host.\n'
     );
@@ -247,12 +253,16 @@ export function createMcpRequestHandler(options: HttpServerOptions = {}): McpReq
     // same value by mistake, a match should resolve to the *less* privileged
     // outcome, not silently grant full capabilities.
     let capabilitiesOverride: Capabilities | undefined;
-    if (token || readOnlyToken) {
-      const authHeader = req.headers.authorization ?? '';
-      const matchesReadOnly = readOnlyToken !== undefined && timingSafeEqual(authHeader, `Bearer ${readOnlyToken}`);
-      const matchesFull = token !== undefined && timingSafeEqual(authHeader, `Bearer ${token}`);
+    const authHeader = req.headers.authorization;
+    const oauthResult = options.authorize?.(authHeader);
+    if (oauthResult) {
+      capabilitiesOverride = oauthResult.capabilities;
+    } else if (token || readOnlyToken || options.authorize) {
+      const suppliedAuth = authHeader ?? '';
+      const matchesReadOnly = readOnlyToken !== undefined && timingSafeEqual(suppliedAuth, `Bearer ${readOnlyToken}`);
+      const matchesFull = token !== undefined && timingSafeEqual(suppliedAuth, `Bearer ${token}`);
       if (!matchesReadOnly && !matchesFull) {
-        rpcError(res, 401, -32000, 'Unauthorized.');
+        rpcError(res, 401, -32000, 'Unauthorized.', options.unauthorizedHeaders?.());
         return;
       }
       if (matchesReadOnly) {

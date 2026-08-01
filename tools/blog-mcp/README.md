@@ -119,6 +119,41 @@ The deployment allows browser requests from `https://blogging.subzerodev.com`
 by default. Set `BLOG_MCP_HTTP_ALLOWED_ORIGINS` to a comma-separated list when
 the UI is served from a different public origin.
 
+### Claude and other OAuth MCP connectors
+
+`serve` supports OAuth 2.1 for remote MCP clients. OAuth is opt-in and off by
+default: set both `BLOG_MCP_UI_PASSWORD_HASH` and `BLOG_MCP_OAUTH_ISSUER` to
+enable it, with `BLOG_MCP_OAUTH_ISSUER` set to the public HTTPS origin (e.g.
+`https://blogging.subzerodev.com`), not a Docker host.
+The existing UI password authenticates the operator; it is never given to the
+MCP client. OAuth authorization codes use PKCE (`S256`), clients register
+dynamically, and OAuth access/refresh tokens are opaque and process-local, so
+a container restart intentionally requires the client to authorize again.
+
+The authorization page lets the operator grant either `blog-mcp:read` or the
+requested `blog-mcp:write` scope. Read tokens never register mutating or
+remote-publishing tools. Write tokens use the deployment's normal capability
+settings, so `BLOG_MCP_READ_ONLY` and `BLOG_MCP_ALLOW_REMOTE` still constrain
+what is actually available.
+
+In Claude, add a custom web connector named **Blog-Bot** with
+`https://blogging.subzerodev.com/mcp`. Leave the OAuth client ID and secret
+blank: the server supports Dynamic Client Registration. Click **Add**, then
+**Connect**, sign in with the Blog-Bot UI password, and select the appropriate
+scope. The OAuth callback URLs `https://claude.ai/api/mcp/auth_callback` and
+`https://claude.com/api/mcp/auth_callback` are valid HTTPS redirect URIs for
+the dynamic registration flow; no server-side pre-registration is needed.
+
+Remote connectors run from the provider's cloud infrastructure, not the
+operator's browser. Nginx Proxy Manager must forward `/mcp`, `/.well-known/`,
+and `/oauth/` to `blog-bot:8765` without an interactive access-list challenge,
+and the public host's firewall must permit inbound connections from wherever
+that provider's connector actually runs. If the provider publishes a source
+IP range for outbound connector traffic, allow that range explicitly rather
+than opening the host broadly; check that provider's own documentation, since
+this varies by provider and changes over time. The `http` Compose profile is a
+bare MCP server and does not provide OAuth; use the default `blog-bot` service.
+
 ### Reverse proxy deployment
 
 The deployment Compose file uses the named Docker network `proxy-net` by
