@@ -4,9 +4,9 @@ import path from 'node:path';
 import { z } from 'zod';
 import { ok, precondition } from '../result.js';
 import { InfrastructureError } from '../errors.js';
-import { gitOrThrow, git, headSha as gitHeadSha, remoteUrl, currentBranch } from '../exec/git.js';
+import { gitOrThrow, git, headSha as gitHeadSha, currentBranch } from '../exec/git.js';
 import { ghOrThrow, ghJson, ghGraphQl } from '../exec/gh.js';
-import { resolveOwnerRepo } from '../domain/github.js';
+import { resolveOwnerRepoFromGit } from '../domain/github.js';
 import { wrapTool, wrapMutatingTool, type ToolContext } from './context.js';
 
 interface PrViewJson {
@@ -212,8 +212,7 @@ export function registerRemoteTools(ctx: ToolContext): void {
       // scheduler) waiting indefinitely with no explanation of why nothing
       // happens; refusing up front turns a silent stall into an immediate,
       // actionable message.
-      const remote = await remoteUrl({ repoRoot }).catch(() => undefined);
-      const { owner, repo } = resolveOwnerRepo(config.cloneUrl, remote);
+      const { owner, repo } = await resolveOwnerRepoFromGit(repoRoot, config.cloneUrl);
       const { nodes, truncated } = await fetchAllReviewThreads(repoRoot, owner, repo, args.pr);
       if (truncated) {
         throw new InfrastructureError(
@@ -262,8 +261,7 @@ export function registerRemoteTools(ctx: ToolContext): void {
       }
     },
     wrapTool(async (args: { pr: number; unresolvedOnly?: boolean }) => {
-      const remote = await remoteUrl({ repoRoot }).catch(() => undefined);
-      const { owner, repo } = resolveOwnerRepo(config.cloneUrl, remote);
+      const { owner, repo } = await resolveOwnerRepoFromGit(repoRoot, config.cloneUrl);
 
       const { nodes, truncated } = await fetchAllReviewThreads(repoRoot, owner, repo, args.pr);
       if (truncated) {
