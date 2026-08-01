@@ -11,7 +11,7 @@
 # UI. It runs the image's `serve` command.
 # `http` is a profile for a bare MCP endpoint. Do not run both against the same
 # named volume: one process at a time must own the cloned working tree.
-# Both services join the external proxy network so an Nginx Proxy Manager
+# Both services join the named proxy network so an Nginx Proxy Manager
 # container on that network can forward to `blog-bot:8765` by service name.
 
 x-blog-mcp-common: &blog-mcp-common
@@ -51,7 +51,7 @@ x-blog-mcp-common: &blog-mcp-common
     - "blog-workspace:${BLOG_MCP_WORKSPACE:-/workspace}"
     - "${BLOG_MCP_WATCH_HOST_DIR:-/srv/blog-mcp/watch}:${BLOG_MCP_WATCH_DIR:-/watch}"
   networks:
-    - ${BLOG_MCP_PROXY_NETWORK:-proxy-net}
+    - proxy-net
 
 services:
   blog-bot:
@@ -69,8 +69,7 @@ volumes:
   blog-workspace:
 
 networks:
-  # Create this network once (for example, `docker network create proxy`) and
-  # attach Nginx Proxy Manager to it too. Override the name when the proxy
-  # stack already has a differently named shared external network.
+  # Compose creates this named network when the stack is deployed. Attach
+  # Nginx Proxy Manager to the same network; override its name when needed.
   proxy-net:
-    name: ${BLOG_MCP_PROXY_NETWORK:-proxy-net}
+    name: "${BLOG_MCP_PROXY_NETWORK:-proxy-net}"

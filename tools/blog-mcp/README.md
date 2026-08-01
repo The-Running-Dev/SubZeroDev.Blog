@@ -117,19 +117,18 @@ publishing deliberately with `BLOG_MCP_ALLOW_REMOTE=1` and a scoped
 
 ### Reverse proxy deployment
 
-The deployment Compose file joins the external Docker network named `proxy` by
-default. Create that network once and attach the Nginx Proxy Manager stack to
-the same network:
+The deployment Compose file uses the named Docker network `proxy-net` by
+default, creating it when the stack is deployed. Attach the Nginx Proxy Manager
+stack to that same network:
 
 ```bash
-docker network create proxy
+docker network connect proxy-net <nginx-proxy-manager-container>
 ```
 
-If the proxy uses a different existing external network, set
-`BLOG_MCP_PROXY_NETWORK` to its name in the deployment environment. Configure
-the Nginx Proxy Manager host with scheme `http`, forward hostname `blog-bot`,
-and forward port `8765`. Docker DNS resolves that hostname only while both
-containers share this network.
+Set `BLOG_MCP_PROXY_NETWORK` when the deployment should use a different named
+network. Configure the Nginx Proxy Manager host with scheme `http`, forward
+hostname `blog-bot`, and forward port `8765`. Docker DNS resolves that hostname
+only while both containers share this network.
 
 `serve` (see [Serve mode (web UI)](#serve-mode-web-ui)) is the default --
 plain `docker compose up -d` starts only it, since it's already a strict
