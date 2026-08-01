@@ -11,6 +11,8 @@ tags:
   - llm
   - development
   - productivity
+  - absurd
+  - lucifer
 ---
 
 # Lucifer Finally Fixed AI Project Management

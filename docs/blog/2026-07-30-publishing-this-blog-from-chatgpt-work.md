@@ -9,6 +9,7 @@ tags:
   - ai-assisted-engineering
   - automation
   - site-updates
+  - blog-publishing
 ---
 
 This blog is Git-backed, but that does not mean I need to sit at a desktop to publish something.

@@ -3,6 +3,11 @@ site-updates:
   permalink: /site-updates
   description: Changes to the SubZeroDev Blog, its publishing workflow, and its public structure.
 
+blog-publishing:
+  label: Blog Publishing
+  permalink: /blog-publishing
+  description: Building and operating the repository-driven publishing system behind this blog.
+
 ai-assisted-engineering:
   label: AI-Assisted Engineering
   permalink: /ai-assisted-engineering
@@ -39,14 +44,14 @@ stories:
   description: Personal narratives, incidents, and fictionalized observations.
 
 ai:
-  label: Ai
+  label: AI
   permalink: /ai
-  description: Posts related to Ai.
+  description: Posts about artificial intelligence beyond the specific AI-assisted engineering workflow.
 
 llm:
-  label: Llm
+  label: LLM
   permalink: /llm
-  description: Posts related to Llm.
+  description: Model selection, behavior, and practical work with large language models.
 
 development:
   label: Development

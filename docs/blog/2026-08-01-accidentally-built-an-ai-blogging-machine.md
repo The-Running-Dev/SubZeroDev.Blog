@@ -10,6 +10,7 @@ tags:
   - development
   - automation
   - productivity
+  - blog-publishing
 ---
 
 # I Accidentally Automated Myself Into Being a Blogger

@@ -63,6 +63,13 @@ export default function AiAssistedEngineering(): React.JSX.Element {
           description:
             'The client-to-pull-request workflow that turns a conversation into a reviewed blog post.',
           href: '/publishing-this-blog-from-chatgpt-work/'
+        },
+        {
+          label: 'Field note',
+          title: 'State of Dev – Week of July 27, 2026',
+          description:
+            'A snapshot of the workflow becoming an automation platform, told from the operator in the middle of it.',
+          href: '/state-of-dev-week-of-july-27-2026/'
         }
       ]}
     />

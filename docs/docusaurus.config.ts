@@ -88,16 +88,24 @@ const config: Config = {
           position: 'left',
           items: [
             {
-              to: '/series/lucifer-chronicles/',
-              label: 'Lucifer Chronicles'
-            },
-            {
               to: '/series/ai-assisted-engineering/',
               label: 'AI-Assisted Engineering'
             },
             {
+              to: '/series/building-the-blog/',
+              label: 'Building the Blog'
+            },
+            {
+              to: '/series/docker/',
+              label: 'Docker'
+            },
+            {
               to: '/series/state-of-dev/',
               label: 'State of Dev'
+            },
+            {
+              to: '/series/lucifer-chronicles/',
+              label: 'Lucifer Chronicles'
             }
           ]
         },
@@ -108,8 +116,17 @@ const config: Config = {
             {
               to: '/projects/game-engine/',
               label: 'Game Engine'
+            },
+            {
+              to: '/the-absurd-adventures-of-neo/',
+              label: 'The Absurd Adventures of Neo'
             }
           ]
+        },
+        {
+          to: '/about/',
+          position: 'left',
+          label: 'About Me'
         },
         {
           type: 'docSidebar',
