@@ -75,7 +75,7 @@ Lucifer took another page from the stack.
 
 ---
 
-# The Official AI Model Selection Policy
+## The Official AI Model Selection Policy
 
 ## GPT-5.6 Sol
 
@@ -174,7 +174,7 @@ If Luna starts asking philosophical questions...
 
 ---
 
-# Escalation
+## Escalation
 
 Lucifer drew a tiny pyramid.
 
@@ -200,7 +200,7 @@ Humans rarely follow this last instruction.
 
 ---
 
-# General Principles
+## General Principles
 
 Lucifer underlined three sentences.
 
