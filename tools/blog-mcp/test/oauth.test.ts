@@ -202,4 +202,62 @@ describe('OAuth remote MCP authorization', () => {
     });
     expect(legacy.status).toBe(200);
   });
+
+  describe('unauthenticated endpoints are bounded against unbounded memory growth', () => {
+    // Each test gets its own server rather than sharing one at describe
+    // level: both tests fill a process-local Map to its cap, and sharing an
+    // instance would mean the first test's cap-filling leaves no room for
+    // the second test's own client registration.
+    async function startServer(): Promise<{ server: ReturnType<typeof createServeServer>; url: string }> {
+      const server = createServeServer({
+        repoRoot: REPO_ROOT,
+        host: '127.0.0.1',
+        port: 0,
+        uiPasswordHash: hashPassword(PASSWORD),
+        oauthIssuer: 'http://127.0.0.1'
+      });
+      await new Promise<void>((resolve) => server.once('listening', resolve));
+      const address = server.address() as AddressInfo;
+      return { server, url: `http://127.0.0.1:${address.port}` };
+    }
+
+    it('rejects registration once the registered-client cap is reached', async () => {
+      const { server, url } = await startServer();
+      try {
+        for (let i = 0; i < 500; i++) {
+          await registerClient(url);
+        }
+        const oneTooMany = await fetch(`${url}/oauth/register`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ client_name: 'One too many', redirect_uris: [REDIRECT_URI] })
+        });
+        expect(oneTooMany.status).toBe(503);
+      } finally {
+        server.close();
+      }
+    }, 20000);
+
+    it('rejects a new authorization request once the pending cap is reached', async () => {
+      const { server, url } = await startServer();
+      try {
+        const clientId = await registerClient(url);
+        const authorizeUrl = new URL(`${url}/oauth/authorize`);
+        authorizeUrl.searchParams.set('response_type', 'code');
+        authorizeUrl.searchParams.set('client_id', clientId);
+        authorizeUrl.searchParams.set('redirect_uri', REDIRECT_URI);
+        authorizeUrl.searchParams.set('code_challenge', crypto.createHash('sha256').update(VERIFIER).digest('base64url'));
+        authorizeUrl.searchParams.set('code_challenge_method', 'S256');
+
+        for (let i = 0; i < 500; i++) {
+          const response = await fetch(authorizeUrl);
+          expect(response.status).toBe(200);
+        }
+        const oneTooMany = await fetch(authorizeUrl);
+        expect(oneTooMany.status).toBe(503);
+      } finally {
+        server.close();
+      }
+    }, 20000);
+  });
 });

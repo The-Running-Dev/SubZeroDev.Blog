@@ -37,9 +37,11 @@ x-blog-mcp-common: &blog-mcp-common
     BLOG_MCP_HTTP_ALLOWED_ORIGINS: "${BLOG_MCP_HTTP_ALLOWED_ORIGINS:-https://blogging.subzerodev.com}"
     BLOG_MCP_HTTP_MAX_SESSIONS: "${BLOG_MCP_HTTP_MAX_SESSIONS:-}"
     BLOG_MCP_UI_PASSWORD_HASH: "${BLOG_MCP_UI_PASSWORD_HASH:-}"
-    # Enables OAuth for remote MCP clients such as Claude when the UI password
-    # hash is also set. This must be the public HTTPS origin, not a Docker host.
-    BLOG_MCP_OAUTH_ISSUER: "${BLOG_MCP_OAUTH_ISSUER:-https://blogging.subzerodev.com}"
+    # Opt-in: unset (or empty) keeps OAuth disabled even when the UI password
+    # hash is set. Enables OAuth for remote MCP clients such as Claude only
+    # when explicitly set to the public HTTPS origin, not a Docker host --
+    # e.g. BLOG_MCP_OAUTH_ISSUER=https://blogging.subzerodev.com.
+    BLOG_MCP_OAUTH_ISSUER: "${BLOG_MCP_OAUTH_ISSUER:-}"
     BLOG_MCP_READ_ONLY: "${BLOG_MCP_READ_ONLY:-}"
     BLOG_MCP_ALLOW_REMOTE: "${BLOG_MCP_ALLOW_REMOTE:-}"
     BLOG_MCP_ALLOW_MONITOR: "${BLOG_MCP_ALLOW_MONITOR:-}"

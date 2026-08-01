@@ -103,12 +103,29 @@ function isAllowedApiOrigin(origin: string | undefined, allowedOrigins: string[]
   return origin === undefined || allowedOrigins.includes(origin);
 }
 
+/**
+ * A raw `startsWith('https://')` check on the issuer string is
+ * case/whitespace-sensitive and can disagree with OAuthService's own
+ * URL-based issuer normalization, silently leaving the session cookie
+ * non-Secure on a deployment that is actually HTTPS. Parsing it the same
+ * way (via the URL constructor) keeps this decision consistent regardless
+ * of casing or incidental whitespace in the env var.
+ */
+function isHttpsOrigin(raw: string | undefined): boolean {
+  if (!raw) return false;
+  try {
+    return new URL(raw.trim()).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 export function createServeServer(options: ServeServerOptions = {}): http.Server {
   const host = options.host ?? DEFAULT_HOST;
   const port = options.port ?? DEFAULT_PORT;
   const allowedOrigins = options.mcpAllowedOrigins ?? defaultAllowedOrigins(host, port);
   const uiPasswordHash = options.uiPasswordHash;
-  const secureSessionCookie = options.oauthIssuer?.startsWith('https://') ?? false;
+  const secureSessionCookie = isHttpsOrigin(options.oauthIssuer);
   const serverOptions: CreateServerOptions = {
     ...(options.repoRoot ? { repoRoot: options.repoRoot } : {}),
     ...(options.auditLogPath ? { auditLogPath: options.auditLogPath } : {}),

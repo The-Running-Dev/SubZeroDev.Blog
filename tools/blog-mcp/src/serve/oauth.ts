@@ -5,6 +5,19 @@ const AUTHORIZATION_CODE_TTL_MS = 5 * 60 * 1000;
 const ACCESS_TOKEN_TTL_MS = 60 * 60 * 1000;
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const AUTHORIZATION_REQUEST_TTL_MS = 10 * 60 * 1000;
+// A client with no valid refresh token left is already useless, so tying
+// registration lifetime to the refresh token TTL bounds how long an
+// abandoned registration lingers without inventing a second policy to reason
+// about.
+const CLIENT_REGISTRATION_TTL_MS = REFRESH_TOKEN_TTL_MS;
+// /oauth/register and /oauth/authorize (GET) are unauthenticated by design --
+// required for Dynamic Client Registration and for an unauthenticated client
+// to start a login flow -- so without a cap a remote caller could grow these
+// process-local Maps without bound and OOM the server. Generous enough for
+// real single-operator usage (a handful of MCP clients), tight enough to
+// keep worst-case memory bounded.
+const MAX_REGISTERED_CLIENTS = 500;
+const MAX_PENDING_AUTHORIZATIONS = 500;
 const READ_SCOPE = 'blog-mcp:read';
 const WRITE_SCOPE = 'blog-mcp:write';
 const SUPPORTED_SCOPES = new Set([READ_SCOPE, WRITE_SCOPE]);
@@ -15,6 +28,7 @@ interface RegisteredClient {
   clientId: string;
   clientName: string;
   redirectUris: string[];
+  expiresAt: number;
 }
 
 interface PendingAuthorization {
@@ -241,6 +255,11 @@ export class OAuthService {
       sendJson(res, 405, { error: 'method_not_allowed' }, { allow: 'POST' });
       return;
     }
+    pruneExpired(this.clients);
+    if (this.clients.size >= MAX_REGISTERED_CLIENTS) {
+      sendJson(res, 503, { error: 'temporarily_unavailable' });
+      return;
+    }
     let body: Record<string, unknown>;
     try {
       body = JSON.parse(await readBody(req)) as Record<string, unknown>;
@@ -269,7 +288,8 @@ export class OAuthService {
     const client: RegisteredClient = {
       clientId,
       clientName: typeof clientName === 'string' && clientName.length <= 200 ? clientName : 'MCP client',
-      redirectUris: redirectUris as string[]
+      redirectUris: redirectUris as string[],
+      expiresAt: Date.now() + CLIENT_REGISTRATION_TTL_MS
     };
     this.clients.set(clientId, client);
     sendJson(res, 201, {
@@ -326,6 +346,10 @@ export class OAuthService {
       const valid = this.validateAuthorization(url.searchParams);
       if ('error' in valid) {
         sendHtml(res, 400, `<!doctype html><title>Authorization error</title><p>${escapeHtml(valid.error)}</p>`);
+        return;
+      }
+      if (this.pending.size >= MAX_PENDING_AUTHORIZATIONS) {
+        sendHtml(res, 503, '<!doctype html><title>Server busy</title><p>Too many pending authorization requests. Try again shortly.</p>');
         return;
       }
       const requestId = randomToken();
