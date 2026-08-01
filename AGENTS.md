@@ -154,7 +154,7 @@ reimplementing them, so the two never drift apart. See
 ## Git and pull requests
 
 Use focused commits with concise conventional messages. After the applicable
-local validation passes, open a ready pull request and arm automatic squash
+local validation passes, open a ready pull request and enable automatic squash
 merge against the exact validated head commit. Use a draft pull request only
 when the user explicitly requests a hold, a draft, or no auto-merge.
 
@@ -163,9 +163,9 @@ Stage only files that belong to the change, named explicitly. Never run
 working-tree state. `tools/blog-mcp`'s `blog_stage` tool enforces this as an
 explicit path allowlist rather than relying on the same discipline by hand.
 
-For a post-only change, arm auto-merge immediately after publishing the PR.
+For a post-only change, enable auto-merge immediately after publishing the PR.
 For code, styling, configuration, or workflow changes, run any available
-automated review and address valid findings before arming auto-merge. Check
+automated review and address valid findings before enabling auto-merge. Check
 by review **thread**, not just requested reviewers: this repository has
 `qodo-code-review` configured, and it leaves unresolved conversation threads
 without appearing in `gh pr view --json reviewRequests,latestReviews` — that
@@ -180,7 +180,7 @@ query in `.agents/workflows/publish-change.md`. Required PR checks are:
 Do not require the merge-only deployment job. Enable GitHub auto-merge with
 the allowed squash strategy and the exact validated head SHA; GitHub will merge
 only after the required checks and conversation resolution pass. If the head
-changes, revalidate it and arm auto-merge again with the new SHA. Protect
+changes, revalidate it and enable auto-merge again with the new SHA. Protect
 `main` with required pull requests, successful checks, conversation resolution,
 and blocked force pushes and deletions.
 
@@ -188,7 +188,7 @@ After a validated fix directly satisfies a review thread, resolve that thread
 so it cannot keep auto-merge blocked. Leave ambiguous findings unresolved and
 report them instead.
 
-After auto-merge is armed, the agent must monitor the two required checks for
+After auto-merge is enabled, the agent must monitor the two required checks for
 the exact head SHA and report their outcome. After merge, monitor the `Docs
 Deploy` workflow for the resulting merge commit. For a new or changed blog
 post, verify its canonical HTTPS route after deployment succeeds and report the

@@ -144,36 +144,36 @@ describe('remote tools against a gh shim (no real GitHub involved)', () => {
     delete process.env.GH_SHIM_PR_NUMBER;
   });
 
-  it('blog_arm_auto_merge refuses when the validated SHA does not match the PR head', async () => {
+  it('blog_auto_merge refuses when the validated SHA does not match the PR head', async () => {
     process.env.GH_SHIM_HEAD_SHA = 'a'.repeat(40);
-    const result = await call(server, 'blog_arm_auto_merge', { pr: 42, headSha: 'b'.repeat(40) });
+    const result = await call(server, 'blog_auto_merge', { pr: 42, headSha: 'b'.repeat(40) });
     expect(result.ok).toBe(false);
     expect(result.kind).toBe('precondition');
     expect(result.summary).toContain('does not match');
   });
 
-  it('blog_arm_auto_merge refuses a draft PR', async () => {
+  it('blog_auto_merge refuses a draft PR', async () => {
     process.env.GH_SHIM_IS_DRAFT = 'true';
     process.env.GH_SHIM_HEAD_SHA = 'c'.repeat(40);
-    const result = await call(server, 'blog_arm_auto_merge', { pr: 42, headSha: 'c'.repeat(40) });
+    const result = await call(server, 'blog_auto_merge', { pr: 42, headSha: 'c'.repeat(40) });
     expect(result.ok).toBe(false);
     expect(result.summary.toLowerCase()).toContain('draft');
   });
 
-  it('blog_arm_auto_merge refuses when there are unresolved review threads', async () => {
+  it('blog_auto_merge refuses when there are unresolved review threads', async () => {
     process.env.GH_SHIM_HEAD_SHA = 'd'.repeat(40);
     // The shim's default thread list (used by the pagination tests below)
     // includes one unresolved thread.
-    const result = await call(server, 'blog_arm_auto_merge', { pr: 42, headSha: 'd'.repeat(40) });
+    const result = await call(server, 'blog_auto_merge', { pr: 42, headSha: 'd'.repeat(40) });
     expect(result.ok).toBe(false);
     expect(result.kind).toBe('precondition');
     expect(result.summary).toContain('unresolved review thread');
   });
 
-  it('blog_arm_auto_merge arms merge when the SHA matches, no unresolved threads, and calls the exact match-head-commit argv', async () => {
+  it('blog_auto_merge enables auto-merge when the SHA matches, no unresolved threads, and calls the exact match-head-commit argv', async () => {
     process.env.GH_SHIM_HEAD_SHA = 'd'.repeat(40);
     process.env.GH_SHIM_THREADS_JSON = '[]';
-    const result = await call(server, 'blog_arm_auto_merge', { pr: 42, headSha: 'd'.repeat(40) });
+    const result = await call(server, 'blog_auto_merge', { pr: 42, headSha: 'd'.repeat(40) });
     delete process.env.GH_SHIM_THREADS_JSON;
     expect(result.ok).toBe(true);
 

@@ -11,7 +11,7 @@ export interface WatchTickDeps {
   repoRoot: string;
   /** Directory polled for new *.md files -- typically a bind mount (see README.md's "Watcher (directory)" section). */
   watchDir: string;
-  /** Whether a successfully opened PR also gets blog_arm_auto_merge called on it. */
+  /** Whether a successfully opened PR also gets blog_auto_merge called on it. */
   autoMerge: boolean;
   /** Must carry the watcher Capabilities profile (src/serve/capabilities.ts's WATCHER_CAPABILITIES). */
   serverOptions: CreateServerOptions;
@@ -150,7 +150,7 @@ interface PublishOutcome {
 
 /**
  * Branch -> create/update -> stage -> commit -> push -> open PR -> (if
- * autoMerge) arm auto-merge. Mirrors the sequence ui/src/views/ComposeView.tsx
+ * autoMerge) enable auto-merge. Mirrors the sequence ui/src/views/ComposeView.tsx
  * drives from the browser, one tools/call at a time via callToolInProcess --
  * every mutating step gets the repo mutex and audit log for free, exactly
  * like a human clicking through the UI would. Deliberately does NOT wrap
@@ -255,18 +255,18 @@ async function publishFile(deps: WatchTickDeps, filePath: string, originalName: 
   const { pr, url } = prResult.data as { pr: number; url: string };
 
   if (!deps.autoMerge) {
-    return { ok: true, kind: 'success', summary: `Published '${fields.slug}' as PR #${pr} (${url}); auto-merge not armed (BLOG_MCP_WATCH_AUTO_MERGE=0).` };
+    return { ok: true, kind: 'success', summary: `Published '${fields.slug}' as PR #${pr} (${url}); auto-merge not enabled (BLOG_MCP_WATCH_AUTO_MERGE=0).` };
   }
 
   // Deliberately the SHA this run itself just pushed, not whatever
   // /api/pr-equivalent currently reports -- fetching the "expected" value
   // from the same place the check validates against would make the
   // cross-check tautological (same rule Compose and the scheduler follow).
-  const armResult = await callToolInProcess(deps.serverOptions, 'blog_arm_auto_merge', { pr, headSha: localSha });
-  if (!armResult.ok) {
-    return { ok: false, kind: armResult.kind, summary: `Opened PR #${pr} (${url}) but blog_arm_auto_merge failed: ${armResult.summary}` };
+  const autoMergeResult = await callToolInProcess(deps.serverOptions, 'blog_auto_merge', { pr, headSha: localSha });
+  if (!autoMergeResult.ok) {
+    return { ok: false, kind: autoMergeResult.kind, summary: `Opened PR #${pr} (${url}) but blog_auto_merge failed: ${autoMergeResult.summary}` };
   }
-  return { ok: true, kind: 'success', summary: `Published '${fields.slug}' as PR #${pr} (${url}), auto-merge armed.` };
+  return { ok: true, kind: 'success', summary: `Published '${fields.slug}' as PR #${pr} (${url}), auto-merge enabled.` };
 }
 
 /**

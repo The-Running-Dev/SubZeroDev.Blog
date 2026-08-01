@@ -30,7 +30,7 @@ function requireStateDir(ctx: ToolContext): string | undefined {
  * tools/context.ts's defaultCapabilities). Model (i) only: "hold the
  * branch/PR, merge at time T." The PR already exists (opened via
  * blog_create_pr, by a human or the UI's Compose flow) -- these tools only
- * ever hold it and arm auto-merge once the scheduled time arrives. There is
+ * ever hold it and enable auto-merge once the scheduled time arrives. There is
  * no tool here that creates a post or opens a PR on its own schedule; see
  * MILESTONES.md Milestone 8's scheduling-model discussion for why "merge
  * now, publish later via a future frontmatter date" was rejected outright.
@@ -43,7 +43,7 @@ export function registerSchedulerTools(ctx: ToolContext): void {
     {
       title: 'Schedule an already-open PR to auto-merge at a future time',
       description:
-        "Holds an open PR and arms GitHub's auto-merge once scheduledAt arrives (hold-then-merge). Validates the PR is open, not a draft, and that headSha matches its actual current head before accepting the job -- the same cross-check blog_arm_auto_merge performs at arm time, done again up front so a stale SHA is rejected immediately rather than silently sitting in the schedule. onMissed is required, not defaulted: 'catch_up' runs the job whenever next noticed; 'skip_if_older_than' abandons it past a staleness bound.",
+        "Holds an open PR and enables GitHub's auto-merge once scheduledAt arrives (hold-then-merge). Validates the PR is open, not a draft, and that headSha matches its actual current head before accepting the job -- the same cross-check blog_auto_merge performs when it later enables auto-merge, done again up front so a stale SHA is rejected immediately rather than silently sitting in the schedule. onMissed is required, not defaulted: 'catch_up' runs the job whenever next noticed; 'skip_if_older_than' abandons it past a staleness bound.",
       inputSchema: {
         pr: z.number().int().positive(),
         headSha: z.string().regex(/^[0-9a-f]{40}$/i, 'headSha must be a full 40-character commit SHA'),
@@ -90,7 +90,7 @@ export function registerSchedulerTools(ctx: ToolContext): void {
       title: 'List scheduled publish jobs',
       description: 'Lists every job in the schedule store, including terminal ones (merged/skipped/cancelled/needs-attention). Read-only.',
       inputSchema: {
-        status: z.enum(['pending', 'armed', 'merged', 'skipped', 'cancelled', 'needs-attention']).optional()
+        status: z.enum(['pending', 'auto-merge-enabled', 'merged', 'skipped', 'cancelled', 'needs-attention']).optional()
       }
     },
     wrapTool(async (args: { status?: string }) => {
@@ -107,7 +107,7 @@ export function registerSchedulerTools(ctx: ToolContext): void {
     {
       title: 'Cancel a pending scheduled job',
       description:
-        "Cancels a job that hasn't started running yet. Refuses on any job that has already been armed, merged, or otherwise reached a terminal state -- an already-armed PR's auto-merge must be disabled directly (via GitHub or blog_arm_auto_merge's own gh surface), not through this tool.",
+        "Cancels a job that hasn't started running yet. Refuses on any job that has already had auto-merge enabled, merged, or otherwise reached a terminal state -- a PR with auto-merge already enabled must be disabled directly (via GitHub or blog_auto_merge's own gh surface), not through this tool.",
       inputSchema: {
         id: z.string()
       }

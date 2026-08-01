@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // A fake `gh` used only by tests: logs every invocation's argv to
 // GH_SHIM_LOG (one JSON array per line) and returns canned responses shaped
-// like the real CLI, so blog_push/blog_create_pr/blog_arm_auto_merge/
+// like the real CLI, so blog_push/blog_create_pr/blog_auto_merge/
 // blog_pr_status/blog_pr_comments can be exercised end to end without ever
 // touching a real GitHub repository.
 import fs from 'node:fs';
@@ -16,7 +16,7 @@ if (process.env.GH_SHIM_LOG) {
 function resolveHeadSha() {
   // GH_SHIM_HEAD_SHA='GIT_HEAD' + GH_SHIM_REPO_ROOT: for tests whose own
   // pipeline commits for real mid-test (the watcher's publish pipeline, for
-  // one), so the exact SHA blog_arm_auto_merge must cross-check against
+  // one), so the exact SHA blog_auto_merge must cross-check against
   // can't be known ahead of time the way a fixed, pre-chosen SHA can for
   // tests that never commit anything themselves (e.g. the scheduler's,
   // which only ever act against an already-existing PR).

@@ -81,9 +81,9 @@ agent no longer has to remember to get them right by reading prose.
 - Phase 4–5 (local, reversible): post/tag/hub authoring writes and local git
   (branch, stage, commit) behind a shared write-path allowlist.
 - Phase 6 (delivered): remote tools (`blog_push`, `blog_create_pr`,
-  `blog_arm_auto_merge`, `blog_pr_status`, `blog_pr_comments`), gated behind
+  `blog_auto_merge`, `blog_pr_status`, `blog_pr_comments`), gated behind
   `BLOG_MCP_ALLOW_REMOTE`, off by default. No merge tool exists other than
-  arming GitHub's own auto-merge; a GitHub token is never written to disk in
+  enabling GitHub's own auto-merge; a GitHub token is never written to disk in
   the container.
 - Phase 7 (delivered): CI and deploy monitoring (`blog_check_status`,
   `blog_wait_for_checks`, `blog_wait_for_merge`, `blog_deploy_status`,
@@ -191,20 +191,20 @@ checkout anywhere.
   phase's capabilities or auth plumbing.
 - Phase 5 (delivered): UI writes. `src/serve/api.ts` gained POST routes for
   every write tool the phase list calls for -- create/update a post, create
-  a branch, stage, commit, push, open a PR, arm auto-merge -- each still an
+  a branch, stage, commit, push, open a PR, enable auto-merge -- each still an
   explicit `tools/call`, never a passthrough. `public/app.js`'s new
   "Compose" view drives the full publish sequence (branch → write → stage →
-  commit → push → open PR) as one guided flow; arming auto-merge stays a
+  commit → push → open PR) as one guided flow; enabling auto-merge stays a
   separate, explicit button rather than firing automatically on PR
   creation. Verified with a new `test/serve-writes.test.ts` (every route,
   end to end, over real HTTP, against a scratch bare remote and the
   existing `gh-shim.mjs` -- never the live checkout) and by clicking through
   the Compose UI in a real browser, which caught a second real bug beyond
-  what the HTTP-level tests could reach: the "Arm auto-merge" button
-  fetched its "expected" head SHA from the same `GET /api/pr/:number` call
-  it then validated against, making the check tautological -- it would
-  always report a match and silently defeat the entire reason
-  `blog_arm_auto_merge` takes an explicit SHA at all. Fixed to use the SHA
+  what the HTTP-level tests could reach: the auto-merge button fetched its
+  "expected" head SHA from the same `GET /api/pr/:number` call it then
+  validated against, making the check tautological -- it would always
+  report a match and silently defeat the entire reason
+  `blog_auto_merge` takes an explicit SHA at all. Fixed to use the SHA
   the session's own push actually returned; this class of bug has no
   automated regression coverage, since the project has no browser/DOM test
   runner and the bug lived entirely in client-side JS.
@@ -219,7 +219,7 @@ checkout anywhere.
   terminal `needs-attention`, never retried automatically.
   `src/server.ts`'s registration gating was refactored so Tier C (remote)
   no longer nests under `write` -- the scheduler's own profile
-  (`CRON_CAPABILITIES`) needs `blog_pr_status`/`blog_arm_auto_merge`
+  (`CRON_CAPABILITIES`) needs `blog_pr_status`/`blog_auto_merge`
   without any local-write tool, and env-derived `defaultCapabilities()` is
   unchanged for every existing caller (`remote` still only true when
   `write` is too). A real Docker container run caught a genuine wiring gap
@@ -232,7 +232,7 @@ checkout anywhere.
   option-threading path so this class of gap fails a unit test next time.
   End-to-end verified in the built image: scheduled a PR, waited for a real
   60-second tick to fire unprompted, and watched the job move
-  `pending` → `armed` on its own -- with the parked-branch fail-safe first
+  `pending` → `auto-merge-enabled` on its own -- with the parked-branch fail-safe first
   confirmed to correctly block it until the working tree was back on the
   base branch.
 - Future-date experiment (run): the cheap throwaway-PR experiment Phase 7
@@ -284,7 +284,7 @@ directly into the new UI rather than built twice.
 - Phase 2 (delivered): `blog_delete_post`, mirroring `blog_create_post`/
   `blog_update_post`'s shape and reusing the *same* publish pipeline every
   write already goes through (branch → delete → stage → commit → push →
-  open PR → arm-auto-merge) -- no new merge path, `blog_arm_auto_merge`
+  open PR → enable auto-merge) -- no new merge path, `blog_auto_merge`
   stays the only one. Removes the file via `git rm -f` (not a bare
   `fs.unlinkSync`): the `-f` is deliberate, since deleting the post is the
   whole point, so any uncommitted local edits to that same file are moot --
@@ -307,7 +307,7 @@ directly into the new UI rather than built twice.
 - Phase 5 (delivered): the Posts view's per-row Delete -- confirms first
   (deleting a *published, live* post is more consequential than
   create/update, which this UI already gates behind a separate
-  arm-auto-merge step), then drives the same guided pipeline Phase 2's tool
+  auto-merge step), then drives the same guided pipeline Phase 2's tool
   plugs into, landing on a PR-status view that reads the PR number from a
   `?pr=` query param and looks it up automatically.
 - Phase 6 (delivered): a new `ui-build` Dockerfile stage; the runtime stage
@@ -315,7 +315,7 @@ directly into the new UI rather than built twice.
   real scratch bare-remote repo (never the live checkout) in a real browser,
   mirroring `test/serve-writes.test.ts`'s own pattern: logged in, edited an
   existing post, created a new one via raw-markdown-paste and published it
-  through the full pipeline, attempted arm-auto-merge (correctly reported a
+  through the full pipeline, attempted to enable auto-merge (correctly reported a
   SHA mismatch against the fixture's static head, proving the check itself
   still works), deleted a post through the full pipeline and confirmed via
   `git status` that the right file was removed and pushed on its own

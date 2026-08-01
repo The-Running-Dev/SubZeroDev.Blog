@@ -74,7 +74,7 @@ async function setIdentity(repoRoot: string, name: string, email: string): Promi
 }
 
 /**
- * `blog_arm_auto_merge` squash-merges (src/tools/remote.ts), which rewrites
+ * `blog_auto_merge` squash-merges (src/tools/remote.ts), which rewrites
  * commits -- a squash-merged branch's commits are never ancestors of
  * origin/<base>, so `git merge-base --is-ancestor` would say "unmerged"
  * forever. Ask GitHub instead. Best-effort: if `gh` is unavailable or

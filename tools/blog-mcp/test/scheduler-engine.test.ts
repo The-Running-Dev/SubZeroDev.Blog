@@ -37,7 +37,7 @@ describe('scheduler engine: runTick', () => {
     await gitOrThrow(['config', 'user.email', 'test@example.test'], { repoRoot: seed });
     await gitOrThrow(['config', 'user.name', 'Test'], { repoRoot: seed });
     fs.writeFileSync(path.join(seed, 'README.md'), '# seed\n');
-    // clone_url is a GitHub-shaped URL so blog_arm_auto_merge's review-thread
+    // clone_url is a GitHub-shaped URL so blog_auto_merge's review-thread
     // check can resolve owner/repo -- the real git remote below is a local
     // bare path (needed for real push testing), which cannot resolve to one.
     fs.mkdirSync(path.join(seed, '.config'));
@@ -69,8 +69,8 @@ describe('scheduler engine: runTick', () => {
     delete process.env.GH_SHIM_MERGEABLE;
     delete process.env.GH_SHIM_HEAD_SHA;
     // The shim's default thread list includes one unresolved thread;
-    // blog_arm_auto_merge now refuses to arm while any are unresolved, so
-    // tests that expect a successful arm must opt into a clean list.
+    // blog_auto_merge now refuses to enable auto-merge while any are
+    // unresolved, so tests that expect it to succeed must opt into a clean list.
     process.env.GH_SHIM_THREADS_JSON = '[]';
   });
 
@@ -125,12 +125,12 @@ describe('scheduler engine: runTick', () => {
     expect(job?.reason).toContain('unresolved review thread');
   });
 
-  it('arms auto-merge for a due job once the SHA matches and the PR is open', async () => {
+  it('enables auto-merge for a due job once the SHA matches and the PR is open', async () => {
     process.env.GH_SHIM_HEAD_SHA = 'd'.repeat(40);
     saveSchedule(stateDir, { jobs: [baseJob({ headSha: 'd'.repeat(40) })] });
     const result = await runTick({ repoRoot: clone, baseBranch: 'main', stateDir, serverOptions });
     expect(result.jobsAdvanced).toBe(1);
-    expect(loadSchedule(stateDir).jobs[0]?.status).toBe('armed');
+    expect(loadSchedule(stateDir).jobs[0]?.status).toBe('auto-merge-enabled');
   });
 
   it('marks a job merged once GitHub reports MERGED', async () => {
@@ -180,7 +180,7 @@ describe('scheduler engine: runTick', () => {
     process.env.GH_SHIM_HEAD_SHA = 'd'.repeat(40);
     saveSchedule(stateDir, { jobs: [baseJob({ scheduledAt: wayPast, headSha: 'd'.repeat(40), onMissed: { mode: 'catch_up' } })] });
     await runTick({ repoRoot: clone, baseBranch: 'main', stateDir, serverOptions });
-    expect(loadSchedule(stateDir).jobs[0]?.status).toBe('armed');
+    expect(loadSchedule(stateDir).jobs[0]?.status).toBe('auto-merge-enabled');
   });
 
   it('leaves a job pending on a transient infrastructure failure -- never a terminal verdict from a hiccup', async () => {

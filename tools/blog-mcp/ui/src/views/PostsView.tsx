@@ -34,10 +34,10 @@ export default function PostsView() {
   async function handleDelete(slug: string) {
     // Deleting a *published, live* post is more consequential than the
     // create/update flow this UI already gates behind a separate,
-    // explicit arm-auto-merge step (broken inbound links, RSS/Atom
+    // explicit auto-merge step (broken inbound links, RSS/Atom
     // entries, search indexing) -- confirm before driving the same
     // guided branch -> delete -> stage -> commit -> push -> PR pipeline.
-    if (!window.confirm(`Delete '${slug}'? This opens a PR removing it -- arming auto-merge is still a separate step.`)) {
+    if (!window.confirm(`Delete '${slug}'? This opens a PR removing it -- enabling auto-merge is still a separate step.`)) {
       return;
     }
     setDeleting(slug);
@@ -71,8 +71,8 @@ export default function PostsView() {
       <h2>Posts</h2>
       <p className="muted">
         &quot;Edit&quot; jumps into Compose with that post loaded. &quot;Delete&quot; opens a PR that removes the post -- it does not
-        merge or take the post down by itself; that still needs a separate, explicit &quot;Arm auto-merge&quot; click (or a manual
-        merge) on the PR it opens.
+        merge or take the post down by itself; that still needs a separate, explicit auto-merge or manual merge on the PR it
+        opens.
       </p>
       <Table
         headers={['Date', 'Title', 'Slug', 'Tags', 'Actions']}

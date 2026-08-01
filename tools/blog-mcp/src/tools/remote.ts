@@ -101,7 +101,7 @@ async function fetchAllReviewThreads(repoRoot: string, owner: string, repo: stri
 /**
  * Tier C: push, PR creation, and auto-merge. Only registered when
  * BLOG_MCP_ALLOW_REMOTE is set -- see server.ts. There is deliberately no
- * blog_merge_pr: the only merge path this server ever takes is arming
+ * blog_merge_pr: the only merge path this server ever takes is enabling
  * GitHub's own auto-merge against a validated head SHA, exactly as
  * AGENTS.md's publish workflow requires.
  */
@@ -182,9 +182,9 @@ export function registerRemoteTools(ctx: ToolContext): void {
   );
 
   server.registerTool(
-    'blog_arm_auto_merge',
+    'blog_auto_merge',
     {
-      title: 'Arm automatic squash merge',
+      title: 'Enable automatic squash merge',
       description:
         'Enables GitHub auto-merge (squash, matched to an exact head SHA) on a PR. Cross-checks the SHA against the PR\'s actual head and refuses on mismatch or if the PR is a draft. This is the only merge path this server ever takes -- there is no direct-merge tool.',
       inputSchema: {
@@ -192,23 +192,23 @@ export function registerRemoteTools(ctx: ToolContext): void {
         headSha: z.string().optional()
       }
     },
-    wrapMutatingTool(ctx, 'blog_arm_auto_merge', async (args: { pr: number; headSha?: string }) => {
+    wrapMutatingTool(ctx, 'blog_auto_merge', async (args: { pr: number; headSha?: string }) => {
       const headSha = args.headSha ?? (await gitHeadSha({ repoRoot }));
       const prView = await ghJson<PrViewJson>(['pr', 'view', String(args.pr), '--json', 'number,url,isDraft,headRefOid'], { repoRoot });
 
       if (prView.isDraft) {
-        return precondition(`PR #${args.pr} is a draft; cannot arm auto-merge.`);
+        return precondition(`PR #${args.pr} is a draft; cannot enable auto-merge.`);
       }
       if (prView.headRefOid !== headSha) {
         return precondition(
-          `Refusing to arm auto-merge: the validated SHA (${headSha}) does not match PR #${args.pr}'s actual head (${prView.headRefOid}). The PR moved since validation -- revalidate and retry.`
+          `Refusing to enable auto-merge: the validated SHA (${headSha}) does not match PR #${args.pr}'s actual head (${prView.headRefOid}). The PR moved since validation -- revalidate and retry.`
         );
       }
 
       // GitHub's branch protection (required_conversation_resolution) is the
-      // actual gate that stops an unsafe merge -- arming auto-merge on a PR
+      // actual gate that stops an unsafe merge -- enabling auto-merge on a PR
       // with unresolved threads cannot itself complete a merge early. But
-      // arming it anyway leaves the caller (a human, the UI, or the
+      // enabling it anyway leaves the caller (a human, the UI, or the
       // scheduler) waiting indefinitely with no explanation of why nothing
       // happens; refusing up front turns a silent stall into an immediate,
       // actionable message.
@@ -217,18 +217,18 @@ export function registerRemoteTools(ctx: ToolContext): void {
       const { nodes, truncated } = await fetchAllReviewThreads(repoRoot, owner, repo, args.pr);
       if (truncated) {
         throw new InfrastructureError(
-          `Could not fully enumerate review threads for PR #${args.pr}: pagination did not complete. Refusing to arm auto-merge on a possibly-incomplete unresolved-thread check.`
+          `Could not fully enumerate review threads for PR #${args.pr}: pagination did not complete. Refusing to enable auto-merge on a possibly-incomplete unresolved-thread check.`
         );
       }
       const unresolvedCount = nodes.filter((node) => !node.isResolved).length;
       if (unresolvedCount > 0) {
         return precondition(
-          `PR #${args.pr} has ${unresolvedCount} unresolved review thread(s); refusing to arm auto-merge. Resolve them (see blog_pr_comments) and retry.`
+          `PR #${args.pr} has ${unresolvedCount} unresolved review thread(s); refusing to enable auto-merge. Resolve them (see blog_pr_comments) and retry.`
         );
       }
 
       await ghOrThrow(['pr', 'merge', String(args.pr), '--auto', '--squash', '--match-head-commit', headSha], { repoRoot });
-      return ok(`Armed auto-merge on PR #${args.pr} for ${headSha.slice(0, 12)}`, { pr: args.pr, headSha });
+      return ok(`Enabled auto-merge on PR #${args.pr} for ${headSha.slice(0, 12)}`, { pr: args.pr, headSha });
     })
   );
 
