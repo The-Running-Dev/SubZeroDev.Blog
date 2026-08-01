@@ -1,6 +1,7 @@
 import type { CreateServerOptions } from '../server.js';
 import { callToolInProcess } from './client.js';
 import type { ToolResult } from '../result.js';
+import { MAX_PR_LIST_LIMIT } from '../tools/remote.js';
 
 export interface ApiResponse {
   status: number;
@@ -41,6 +42,23 @@ function queryNumber(url: URL, name: string): number | undefined {
   if (raw === null) return undefined;
   const n = Number(raw);
   return Number.isFinite(n) ? n : undefined;
+}
+
+/**
+ * For a query param a tool's own zod schema bounds with `.int().positive().max(max)`
+ * (currently only /api/prs's `limit`): absent -> `{ok:true, value:undefined}`,
+ * a non-integer/out-of-range value -> `{ok:false}` so the route can return a
+ * proper 400 itself, rather than forwarding it and letting the schema
+ * rejection surface as a misleading 502 (this route table's callTool() maps
+ * any thrown/infrastructure result to 502, which is correct for a genuine
+ * infra failure but wrong for "the client sent a bad number").
+ */
+function queryBoundedInt(url: URL, name: string, max: number): { ok: true; value: number | undefined } | { ok: false } {
+  const raw = url.searchParams.get(name);
+  if (raw === null) return { ok: true, value: undefined };
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1 || n > max) return { ok: false };
+  return { ok: true, value: n };
 }
 
 /** Body is whatever JSON the caller sent; the underlying tool's own zod schema is the real validator, so this just needs an object to spread fields from. */
@@ -102,8 +120,9 @@ export async function handleApiRequest(
     }
 
     if (pathname === '/api/prs') {
-      const limit = queryNumber(url, 'limit');
-      return callTool(serverOptions, 'blog_list_prs', { ...(limit !== undefined ? { limit } : {}) });
+      const limit = queryBoundedInt(url, 'limit', MAX_PR_LIST_LIMIT);
+      if (!limit.ok) return { status: 400, body: { error: `limit must be an integer between 1 and ${MAX_PR_LIST_LIMIT}.` } };
+      return callTool(serverOptions, 'blog_list_prs', { ...(limit.value !== undefined ? { limit: limit.value } : {}) });
     }
 
     const prMatch = /^\/api\/pr\/(\d+)$/.exec(pathname);
