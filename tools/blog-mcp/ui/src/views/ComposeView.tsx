@@ -92,6 +92,10 @@ export default function ComposeView() {
   const [exists, setExists] = useState(false);
   const [pr, setPr] = useState<number | null>(null);
   const [log, setLog] = useState<LogLine[]>([]);
+  // True for the duration of handlePublish's whole branch->...->auto-merge
+  // sequence -- disables the form so a double-click can't fire a second,
+  // overlapping publish pipeline against the same branch.
+  const [isPublishing, setIsPublishing] = useState(false);
   // On by default -- most publishes should just merge once checks pass,
   // without a separate manual step. Unchecking it leaves the PR open for a
   // manual review/merge instead.
@@ -326,6 +330,30 @@ export default function ComposeView() {
     if (trimmed && existingSlugs.includes(trimmed)) void loadExisting(trimmed);
   }
 
+  // Clears every input field back to a blank "ready for the next post" form
+  // after a successful publish. Deliberately leaves `log` and `pr` alone --
+  // the toast confirming what was just published (and the PR-watch state
+  // that follows it) is the whole point of not wiping the screen. If this
+  // view was reached via /compose/:slug, also drops the URL back to the
+  // bare /compose route so a refresh doesn't silently reload the
+  // just-published post (prefilledRef only guards against re-running the
+  // prefill effect within this same session, not across a reload).
+  function resetForm() {
+    setSlug('');
+    setSlugTouched(false);
+    setTitle('');
+    setDescription('');
+    setBody('');
+    setDate('');
+    setCheckedTagsState(new Set());
+    setTagsFallback('');
+    setPendingTags([]);
+    setTagsFilePath(null);
+    setExists(false);
+    setRawMarkdown('');
+    if (prefillSlug) navigate('/compose', { replace: true });
+  }
+
   async function handlePublish() {
     setLog([]);
     const trimmedSlug = slug.trim();
@@ -359,6 +387,7 @@ export default function ComposeView() {
       isoDate = new Date(parsed).toISOString().replace(/\.\d{3}Z$/, 'Z');
     }
 
+    setIsPublishing(true);
     try {
       logLine(`Creating/switching to branch 'blog/${trimmedSlug}'...`);
       const branchResult = await post<{ branch: string }>('/api/branch', { slug: trimmedSlug, kind: 'blog', checkoutExisting: true });
@@ -420,8 +449,12 @@ export default function ComposeView() {
         const autoMergeResult = await post<Record<string, never>>(`/api/pr/${newPr}/auto-merge`, { headSha: sha });
         logLine(`Auto-merge enabled: ${autoMergeResult.summary ?? ''}`);
       }
+
+      resetForm();
     } catch (err) {
       logError(err);
+    } finally {
+      setIsPublishing(false);
     }
   }
 
@@ -432,6 +465,7 @@ export default function ComposeView() {
           type="button"
           className={`view-header-toggle${mode === 'compose' ? ' active' : ''}`}
           onClick={() => setMode('compose')}
+          disabled={isPublishing}
           title="Fill in the slug/title/description/tags/body fields directly"
         >
           Compose
@@ -440,6 +474,7 @@ export default function ComposeView() {
           type="button"
           className={`view-header-toggle${mode === 'markdown' ? ' active' : ''}`}
           onClick={() => setMode('markdown')}
+          disabled={isPublishing}
           title="Paste a whole markdown file (front matter + body) and derive every field from it in one step"
         >
           Markdown
@@ -457,6 +492,7 @@ export default function ComposeView() {
           ))}
         </datalist>
 
+        <fieldset className="compose-fieldset" disabled={isPublishing}>
         {mode === 'compose' && (
           <>
             <div className="field">
@@ -581,7 +617,7 @@ export default function ComposeView() {
 
         <div className="compose-actions">
           <button type="button" className="primary" onClick={() => void handlePublish()}>
-            Create/update &amp; open PR
+            {isPublishing ? 'Publishing…' : 'Create/update & open PR'}
           </button>
           <label
             className="tag-chip"
@@ -596,6 +632,7 @@ export default function ComposeView() {
             </button>
           )}
         </div>
+        </fieldset>
       </div>
 
       <ul className="compose-log">
