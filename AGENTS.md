@@ -20,6 +20,41 @@ Before editing:
    output.
 4. Work on a focused branch; do not force-push or rewrite published history.
 
+## Task effort and model selection
+
+Match capability and reasoning effort to the task, not to the tool used to
+reach it. Use the smallest model and lowest reasoning effort that can still
+produce production-quality output; reserve the strongest available model and
+highest reasoning effort for genuinely ambiguous or architectural work.
+Reasoning budget should scale with task complexity, not task size.
+
+**Deep-reasoning tasks** — architecture, system design, specifications,
+technical proposals, API design, complex debugging, root-cause analysis,
+multi-step planning, large refactoring plans, comparing implementation
+approaches, security analysis, performance strategy. Default to the highest
+available reasoning effort; drop to a faster mode only when latency matters
+more than cost.
+
+**Implementation tasks** — writing code, implementing issues, tests,
+refactoring, bug fixes, API and UI implementation, infrastructure code
+(Docker, CI/CD, Terraform), SQL, and documentation tightly coupled to the
+implementation. Use high reasoning effort for significant features, large
+pull requests, difficult bugs, or complex refactors; use standard effort for
+small fixes, review-comment responses, isolated functions, and repetitive or
+mechanical generation. Avoid high effort when it adds no measurable value.
+
+**High-volume tasks** — summaries, changelogs, commit messages, PR
+descriptions, blog front matter, Markdown cleanup and formatting, issue
+triage, documentation polishing, code explanation, log or tool-output
+summarization, and notification or release-note drafting. Use the lightest
+available model at default effort.
+
+Escalate rather than guess: a high-volume task that surfaces an
+architectural question moves to the implementation tier; an implementation
+task that surfaces architectural uncertainty moves to the deep-reasoning
+tier. Do not continue implementation while that uncertainty remains
+unresolved.
+
 ## Layout and ownership
 
 - `README.md`: repository homepage rendered on GitHub.
