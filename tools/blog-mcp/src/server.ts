@@ -33,7 +33,7 @@ const SERVER_INSTRUCTIONS = [
     'blog_update_post, blog_delete_post, blog_add_tag, blog_add_hub_entry;',
     'local git -- blog_stage, blog_reset_stage, blog_commit,',
     'blog_create_branch, blog_sync_base, blog_diff; GitHub/remote --',
-    'blog_push, blog_create_pr, blog_pr_status, blog_pr_comments,',
+    'blog_push, blog_create_pr, blog_pr_status, blog_list_prs, blog_pr_comments,',
     'blog_auto_merge; CI and deploy monitoring -- blog_check_status,',
     'blog_wait_for_checks, blog_wait_for_merge, blog_deploy_status,',
     'blog_wait_for_deploy, blog_verify_published_url, blog_publish_report;',

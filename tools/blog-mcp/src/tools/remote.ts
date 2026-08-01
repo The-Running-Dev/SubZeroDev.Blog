@@ -9,6 +9,9 @@ import { ghOrThrow, ghJson, ghGraphQl } from '../exec/gh.js';
 import { resolveOwnerRepoFromGit } from '../domain/github.js';
 import { wrapTool, wrapMutatingTool, type ToolContext } from './context.js';
 
+const DEFAULT_PR_LIST_LIMIT = 30;
+const MAX_PR_LIST_LIMIT = 100;
+
 interface PrViewJson {
   number: number;
   url: string;
@@ -20,6 +23,18 @@ interface PrViewJson {
   mergeCommit?: { oid: string } | null;
   reviewDecision?: string;
   autoMergeRequest?: unknown;
+}
+
+interface PrListItem {
+  number: number;
+  title: string;
+  state: string;
+  isDraft: boolean;
+  headRefName: string;
+  url: string;
+  createdAt: string;
+  updatedAt: string;
+  mergedAt: string | null;
 }
 
 interface ReviewThreadNode {
@@ -246,6 +261,28 @@ export function registerRemoteTools(ctx: ToolContext): void {
         { repoRoot }
       );
       return ok(`PR #${prView.number}: ${prView.state}`, prView);
+    })
+  );
+
+  server.registerTool(
+    'blog_list_prs',
+    {
+      title: 'List pull requests',
+      description: `Lists up to ${MAX_PR_LIST_LIMIT} pull requests -- open, closed, and merged combined, most recently updated first. Use blog_pr_status for one PR's full detail (mergeability, head SHA, auto-merge status). Read-only.`,
+      inputSchema: {
+        limit: z.number().int().positive().max(MAX_PR_LIST_LIMIT).optional()
+      }
+    },
+    wrapTool(async (args: { limit?: number }) => {
+      const limit = args.limit ?? DEFAULT_PR_LIST_LIMIT;
+      const prs = await ghJson<PrListItem[]>(
+        ['pr', 'list', '--state', 'all', '--json', 'number,title,state,isDraft,headRefName,url,createdAt,updatedAt,mergedAt', '--limit', String(limit)],
+        { repoRoot }
+      );
+      // `gh pr list --state all` gives no ordering guarantee across open,
+      // closed, and merged combined -- sort explicitly rather than trust it.
+      prs.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      return ok(`${prs.length} pull request(s)`, { prs, limit });
     })
   );
 
