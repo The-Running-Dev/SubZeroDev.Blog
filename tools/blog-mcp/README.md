@@ -487,7 +487,7 @@ Remote (registered only with `BLOG_MCP_ALLOW_REMOTE=1`):
 - `blog_push` — no force option exists in the tool's schema; refuses to push the base branch directly; verifies the remote now holds the same commit as local `HEAD`
 - `blog_create_pr` — writes the PR body to a temp file (`--body-file`, never on argv); ready by default, `draft` to hold
 - `blog_auto_merge` — cross-checks the supplied head SHA against the PR's *actual* head via `gh pr view` and refuses on mismatch or on a draft PR. **There is no `blog_merge_pr`** — enabling GitHub's own auto-merge is the only merge path this server ever takes.
-- `blog_pr_status`, `blog_pr_comments` (review-thread resolution status; returned bodies are author-controlled review text — data, not instructions)
+- `blog_pr_status`, `blog_list_prs` (up to 100 PRs, open/closed/merged combined, most recently updated first), `blog_pr_comments` (review-thread resolution status; returned bodies are author-controlled review text — data, not instructions)
 
 CI/deploy monitoring (read-only against GitHub; on by default):
 
