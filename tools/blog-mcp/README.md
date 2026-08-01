@@ -115,6 +115,22 @@ the externally bound stack without that bearer token. Set
 publishing deliberately with `BLOG_MCP_ALLOW_REMOTE=1` and a scoped
 `GH_TOKEN`; neither secret is stored in the Compose file.
 
+### Reverse proxy deployment
+
+The deployment Compose file joins the external Docker network named `proxy` by
+default. Create that network once and attach the Nginx Proxy Manager stack to
+the same network:
+
+```bash
+docker network create proxy
+```
+
+If the proxy uses a different existing external network, set
+`BLOG_MCP_PROXY_NETWORK` to its name in the deployment environment. Configure
+the Nginx Proxy Manager host with scheme `http`, forward hostname `blog-bot`,
+and forward port `8765`. Docker DNS resolves that hostname only while both
+containers share this network.
+
 `serve` (see [Serve mode (web UI)](#serve-mode-web-ui)) is the default --
 plain `docker compose up -d` starts only it, since it's already a strict
 superset of `http` mode. `http` is opt-in via the `http` Compose profile,
