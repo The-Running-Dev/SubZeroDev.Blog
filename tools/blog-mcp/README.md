@@ -134,6 +134,12 @@ network. Configure the Nginx Proxy Manager host with scheme `http`, forward
 hostname `blog-bot`, and forward port `8765`. Docker DNS resolves that hostname
 only while both containers share this network.
 
+The image workflow calls the Portainer redeploy webhook as a `POST`. If its
+public proxy returns a canonical-URL redirect, the workflow follows it while
+preserving that method. The proxy must leave the `/api/stacks/webhooks/` path
+reachable without an interactive sign-in or an access-list challenge; otherwise
+the webhook cannot redeploy from GitHub Actions.
+
 `serve` (see [Serve mode (web UI)](#serve-mode-web-ui)) is the default --
 plain `docker compose up -d` starts only it, since it's already a strict
 superset of `http` mode. `http` is opt-in via the `http` Compose profile,
