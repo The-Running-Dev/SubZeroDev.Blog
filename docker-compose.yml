@@ -7,7 +7,8 @@
 # deliberately has `build: context: .` and is run from tools/blog-mcp with
 # `docker compose up -d --build`.
 #
-# `serve` is the default and includes /mcp, /healthz, and the optional web UI.
+# `blog-bot` is the default and includes /mcp, /healthz, and the optional web
+# UI. It runs the image's `serve` command.
 # `http` is a profile for a bare MCP endpoint. Do not run both against the same
 # named volume: one process at a time must own the cloned working tree.
 
@@ -46,9 +47,9 @@ x-blog-mcp-common: &blog-mcp-common
     - "${BLOG_MCP_WATCH_HOST_DIR:-/srv/blog-mcp/watch}:${BLOG_MCP_WATCH_DIR:-/watch}"
 
 services:
-  serve:
+  blog-bot:
     <<: *blog-mcp-common
-    container_name: blog-mcp-serve
+    container_name: blog-bot
     command: serve
 
   http:

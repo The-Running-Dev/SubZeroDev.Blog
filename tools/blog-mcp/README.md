@@ -104,7 +104,7 @@ through the deployment environment or a git-ignored root `.env` file:
 # required clone URL and Git identity before starting the stack.
 cp tools/blog-mcp/.env.example .env
 docker compose pull
-docker compose up -d                 # `serve`: /mcp + optional web UI
+docker compose up -d                 # `blog-bot`: /mcp + optional web UI
 docker compose --profile http up -d http  # bare /mcp, no UI
 ```
 
