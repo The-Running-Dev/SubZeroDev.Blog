@@ -21,7 +21,7 @@ export const UI_CAPABILITIES: Capabilities = {
 /**
  * The cron scheduler's own registration profile. The tick engine
  * (src/scheduler/engine.ts) only ever calls blog_pr_status and
- * blog_arm_auto_merge -- both Tier C, gated by `remote` alone (server.ts
+ * blog_auto_merge -- both Tier C, gated by `remote` alone (server.ts
  * registers Tier C independent of `write`) -- so `write` stays false here:
  * no blog_create_post, no blog_stage, and, per the milestone's per-consumer
  * profile table, no blog_add_tag. `writablePathPrefixes` is narrowed anyway
@@ -44,7 +44,7 @@ export const CRON_CAPABILITIES: Capabilities = {
  * Unlike the scheduler, the watcher genuinely needs write -- it calls
  * blog_create_post/blog_update_post/blog_stage/blog_commit as part of
  * publishing a dropped file, on top of the same blog_create_branch/
- * blog_push/blog_create_pr/blog_arm_auto_merge sequence the scheduler's
+ * blog_push/blog_create_pr/blog_auto_merge sequence the scheduler's
  * sibling tools already exercise. `writablePathPrefixes` gets the same
  * defense-in-depth narrowing as CRON_CAPABILITIES: an unattended actor
  * should never be able to touch workflows/config/build tooling, even by

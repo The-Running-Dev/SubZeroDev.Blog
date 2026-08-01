@@ -410,15 +410,15 @@ export default function ComposeView() {
       logLine(`Opened PR #${newPr}: ${prResult.data?.url}`);
 
       if (autoMerge && newPr && sha) {
-        logLine('Arming auto-merge...');
+        logLine('Enabling auto-merge...');
         // Deliberately the SHA this session itself just pushed, not whatever
         // /api/pr/:number currently reports -- fetching the "expected" value
         // from the same place the check validates against would make the
-        // cross-check tautological and defeat the reason blog_arm_auto_merge
+        // cross-check tautological and defeat the reason blog_auto_merge
         // takes an explicit headSha at all: to catch the branch having moved
-        // (someone else pushed) between the push above and arming here.
-        const armResult = await post<Record<string, never>>(`/api/pr/${newPr}/merge`, { headSha: sha });
-        logLine(`Auto-merge armed: ${armResult.summary ?? ''}`);
+        // (someone else pushed) between the push above and enabling it here.
+        const autoMergeResult = await post<Record<string, never>>(`/api/pr/${newPr}/auto-merge`, { headSha: sha });
+        logLine(`Auto-merge enabled: ${autoMergeResult.summary ?? ''}`);
       }
     } catch (err) {
       logError(err);
@@ -447,7 +447,7 @@ export default function ComposeView() {
       </div>
       <p className="muted">
         Create a new post or load an existing one by slug, then publish: branch → write → stage → commit → push → open PR. With
-        &quot;Auto-Merge&quot; checked, that PR is also armed to merge automatically once its required checks pass -- uncheck it to
+        &quot;Auto-Merge&quot; checked, that PR is also enabled to merge automatically once its required checks pass -- uncheck it to
         leave the PR open for a manual review/merge instead. Nothing merges before the PR is actually opened.
       </p>
       <div className="compose-form">

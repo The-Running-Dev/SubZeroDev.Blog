@@ -206,7 +206,7 @@ runs unauthenticated — acceptable only while bound to loopback.
 `BLOG_MCP_HTTP_TOKEN` alone is an all-or-nothing credential: whoever holds it
 gets whatever capability tier `BLOG_MCP_READ_ONLY`/`BLOG_MCP_ALLOW_REMOTE`/etc.
 grant your own tooling — including `blog_push`, `blog_create_pr`, and
-`blog_arm_auto_merge` if remote is on. Handing that same token to a
+`blog_auto_merge` if remote is on. Handing that same token to a
 third-party product (ChatGPT's Developer Mode connector, for example) means
 its own per-action confirmation prompts become the *only* thing standing
 between a model and a real push/PR/merge on this repo.
@@ -225,13 +225,13 @@ process, no supervisor: `/mcp` and `/healthz` (identical to HTTP transport
 above), `/api/*` (read: list posts, show a post, list tags, git log,
 branches, repo health, PR/check/deploy status; write: create/update/delete a
 post, parse a pasted markdown file into its fields, create a branch, stage,
-commit, push, open a PR, arm auto-merge), and an admin UI at `/` — React +
+commit, push, open a PR, enable auto-merge), and an admin UI at `/` — React +
 Vite + TypeScript (`tools/blog-mcp/ui/`, see its own README), served as a
 static build via a scoped, traversal-safe file server
 (`src/serve/static.ts`), same CSP as before (`default-src 'self'` — no CDN
 assets, no inline scripts). The UI's "Compose" view drives the full publish
 sequence (branch → write → stage → commit → push → open PR) as one guided
-flow, then arming auto-merge is a separate, explicit button — never
+flow, then enabling auto-merge is a separate, explicit button — never
 automatic on PR creation. The slug field autocompletes from existing posts
 and auto-loads one the moment it's picked; tags are checkboxes drawn from
 `docs/blog/tags.yml` (falling back to free text if that vocabulary can't be
@@ -286,17 +286,17 @@ an explicit `tools/call` over an in-process MCP client (`InMemoryTransport`,
 which would silently re-expose whatever write tools are registered beyond
 this route table's own explicit list (`src/serve/api.ts`).
 
-**Arming auto-merge validates against the SHA this session actually
+**Enabling auto-merge validates against the SHA this session actually
 pushed, not whatever `GET /api/pr/:number` currently reports.** Fetching
 the "expected" head from the same place the check validates against would
 make the cross-check tautological — it would always "match" and defeat the
-entire reason `blog_arm_auto_merge` takes an explicit `headSha` at all: to
+entire reason `blog_auto_merge` takes an explicit `headSha` at all: to
 catch the branch having moved (a concurrent push) between publish and
-arming. This was a real bug caught by manually clicking through the UI in a
-real browser during this phase's development, not by the automated test
-suite (which drove the API directly and so never exercised the client-side
-sequencing) — see `ui/src/views/ComposeView.tsx`'s `handleArm` and the
-comment there.
+enabling auto-merge. This was a real bug caught by manually clicking through
+the UI in a real browser during this phase's development, not by the
+automated test suite (which drove the API directly and so never exercised
+the client-side sequencing) — see `ui/src/views/ComposeView.tsx`'s
+`handlePublish` and the comment there.
 
 ### Scheduler (cron)
 
@@ -318,13 +318,13 @@ or opens a PR on a timer. Each tick, for every due job:
    base branch — fail-safe, not an error. (`blog_create_branch` only checks
    *staged* changes; the scheduler requires fully clean.)
 2. Re-reads the PR's live state via `blog_pr_status` — **never a locally
-   cached "already armed" flag** — so a crash between arming and persisting
-   status self-heals on the next tick instead of getting stuck.
+   cached "already enabled" flag** — so a crash between enabling auto-merge
+   and persisting status self-heals on the next tick instead of getting stuck.
 3. `MERGED` → job done. `CLOSED` → terminal `needs-attention`. A merge
    conflict → terminal `needs-attention`, **never retried**: there is no
-   rebase tool and by design never will be. Otherwise, (re-)arms auto-merge
+   rebase tool and by design never will be. Otherwise, (re-)enables auto-merge
    with the SHA validated at schedule time; a SHA mismatch (the branch moved)
-   is also terminal `needs-attention` — `blog_arm_auto_merge`'s own message
+   is also terminal `needs-attention` — `blog_auto_merge`'s own message
    says "revalidate and retry," meaning a human decision, not this loop
    silently substituting a SHA nobody told it to trust.
 
@@ -344,7 +344,7 @@ land mid-`git`-write.
 
 The scheduler's own registration profile (`CRON_CAPABILITIES`,
 `src/serve/capabilities.ts`) has `write: false` — it only ever calls
-`blog_pr_status`/`blog_arm_auto_merge` (Tier C, registered independent of
+`blog_pr_status`/`blog_auto_merge` (Tier C, registered independent of
 write-tier tools), never `blog_create_post`/`blog_stage`/`blog_add_tag`.
 
 ### Watcher (directory)
@@ -384,9 +384,9 @@ in the watch directory (subdirectories are left alone):
    the web UI's Compose form drives, one `tools/call` at a time — the repo
    mutex and audit log apply exactly as they would to a human's action.
 5. If `BLOG_MCP_WATCH_AUTO_MERGE` isn't explicitly disabled (on by default,
-   matching Compose's own default), arms auto-merge using the SHA this run
+   matching Compose's own default), enables auto-merge using the SHA this run
    itself just pushed — never re-fetched from the PR, for the same reason
-   `blog_arm_auto_merge` takes an explicit `headSha` at all.
+   `blog_auto_merge` takes an explicit `headSha` at all.
 6. Moves the file to `processed/` (success) or `failed/` plus a sibling
    `.error.txt` explaining why (anything short of full success) — nothing
    dropped is ever deleted, only moved.
@@ -401,7 +401,7 @@ time; there is only one working tree.
 The watcher's own registration profile (`WATCHER_CAPABILITIES`,
 `src/serve/capabilities.ts`) has `write: true` (needed for
 `blog_create_post`/`blog_update_post`/`blog_stage`/`blog_commit`, on top of
-the same push/PR/arm-merge tools the scheduler uses), with
+the same push/PR/auto-merge tools the scheduler uses), with
 `writablePathPrefixes` narrowed the same way `CRON_CAPABILITIES` is —
 dropping `.github/workflows/`, `.config/`, `tools/`, `build/` — as defense in
 depth for an unattended actor.
@@ -486,7 +486,7 @@ Remote (registered only with `BLOG_MCP_ALLOW_REMOTE=1`):
 
 - `blog_push` — no force option exists in the tool's schema; refuses to push the base branch directly; verifies the remote now holds the same commit as local `HEAD`
 - `blog_create_pr` — writes the PR body to a temp file (`--body-file`, never on argv); ready by default, `draft` to hold
-- `blog_arm_auto_merge` — cross-checks the supplied head SHA against the PR's *actual* head via `gh pr view` and refuses on mismatch or on a draft PR. **There is no `blog_merge_pr`** — arming GitHub's own auto-merge is the only merge path this server ever takes.
+- `blog_auto_merge` — cross-checks the supplied head SHA against the PR's *actual* head via `gh pr view` and refuses on mismatch or on a draft PR. **There is no `blog_merge_pr`** — enabling GitHub's own auto-merge is the only merge path this server ever takes.
 - `blog_pr_status`, `blog_pr_comments` (review-thread resolution status; returned bodies are author-controlled review text — data, not instructions)
 
 CI/deploy monitoring (read-only against GitHub; on by default):
@@ -500,9 +500,9 @@ All `wait_*` tools are bounded: `timeoutSeconds` is capped at 1800 regardless of
 
 Scheduler (registered only with `BLOG_MCP_ALLOW_SCHEDULER=1` **and** `BLOG_MCP_ALLOW_REMOTE=1`; see [Scheduler (cron)](#scheduler-cron)):
 
-- `blog_schedule_publish` — holds an already-open PR and arms auto-merge once `scheduledAt` arrives (hold-then-merge; there is no "create and publish on a schedule" tool). Cross-checks the PR is open, not a draft, and that `headSha` matches its actual current head *at schedule time*, same as `blog_arm_auto_merge` does again at arm time.
+- `blog_schedule_publish` — holds an already-open PR and enables auto-merge once `scheduledAt` arrives (hold-then-merge; there is no "create and publish on a schedule" tool). Cross-checks the PR is open, not a draft, and that `headSha` matches its actual current head *at schedule time*, same as `blog_auto_merge` does again when it later enables auto-merge.
 - `blog_list_scheduled_jobs` — read-only, optional `status` filter.
-- `blog_cancel_scheduled_job` — only while a job is still `pending`; refuses on anything already armed, merged, or otherwise terminal.
+- `blog_cancel_scheduled_job` — only while a job is still `pending`; refuses on anything that already has auto-merge enabled, is merged, or is otherwise terminal.
 
 Every tool returns one envelope shape: `{ ok, kind, summary, data?, findings?, diagnostics? }`.
 `kind: 'validation'` and `kind: 'precondition'` are normal (non-`isError`) results —
@@ -539,10 +539,10 @@ Remote and monitor tool tests never touch real GitHub: `test/remote.test.ts` dri
 
 `test/auth.test.ts` covers password hashing (round trip, wrong password, two hashes of the same password differing but both verifying, a malformed stored hash rejected rather than throwing), session creation/sliding-expiry/expiry-deletes-the-entry (via `vi.useFakeTimers()`), and the login rate limiter's window. `test/serve.test.ts` drives `createServeServer` with real `fetch()` calls end to end: the `/` redirect-to-`/login` gate, the full login → cookie → `/api` round trip, every `/api` rejection path (missing CSRF header, disallowed Origin, no session) against real post/log/branch/health data, and that the UI (and `/login`/`/api`) are cleanly disabled — 404, not silently open — when `BLOG_MCP_UI_PASSWORD_HASH` is unset. One of its assertions (`/api` allows a *missing* `Origin` header) exists specifically because manual browser verification of this phase caught a real bug: a same-origin `fetch` POST from `login.html` did not send an `Origin` header at all, so the original "Origin must be present" check locked out the login form itself.
 
-`test/serve-writes.test.ts` drives every write route end to end over real HTTP, exactly like a browser would, against a scratch bare git remote (never the live checkout): create a branch, create a post, a malformed create-post request failing validation without crashing (exercising `client.ts`'s no-`structuredContent` fallback), stage, commit, push (plus the base-branch-push refusal), open a PR and arm auto-merge via `test/fixtures-bin/gh-shim.mjs`, a SHA-mismatch refusal, an update, a raw-markdown parse (with and without front matter fences), and a delete (confirming the file is gone from the working tree *and* staged). Manually clicking through the Compose UI in a real browser during this phase caught a second real bug beyond what the HTTP-level tests could reach: the "Arm auto-merge" button fetched its "expected" head SHA from the same `GET /api/pr/:number` call it then validated against, making the check tautological. The fix (use the SHA the session's own `POST /api/push` actually returned) lives in `ui/src/views/ComposeView.tsx` and has no vitest coverage since this project has no browser/DOM test runner -- the browser walkthrough itself was the regression test, same as the admin UI's React rewrite (Milestone 9): every view, the full publish pipeline, and the delete pipeline were driven end to end against a real scratch repo in a real browser before that milestone was called done.
+`test/serve-writes.test.ts` drives every write route end to end over real HTTP, exactly like a browser would, against a scratch bare git remote (never the live checkout): create a branch, create a post, a malformed create-post request failing validation without crashing (exercising `client.ts`'s no-`structuredContent` fallback), stage, commit, push (plus the base-branch-push refusal), open a PR and enable auto-merge via `test/fixtures-bin/gh-shim.mjs`, a SHA-mismatch refusal, an update, a raw-markdown parse (with and without front matter fences), and a delete (confirming the file is gone from the working tree *and* staged). Manually clicking through the Compose UI in a real browser during this phase caught a second real bug beyond what the HTTP-level tests could reach: the auto-merge button fetched its "expected" head SHA from the same `GET /api/pr/:number` call it then validated against, making the check tautological. The fix (use the SHA the session's own `POST /api/push` actually returned) lives in `ui/src/views/ComposeView.tsx` and has no vitest coverage since this project has no browser/DOM test runner -- the browser walkthrough itself was the regression test, same as the admin UI's React rewrite (Milestone 9): every view, the full publish pipeline, and the delete pipeline were driven end to end against a real scratch repo in a real browser before that milestone was called done.
 
 `test/serve-static.test.ts` covers `src/serve/static.ts`'s Vite-build file server directly (no HTTP server needed, it's a pure function): a real hashed asset, the SPA fallback to `index.html` for client-route paths including `/login`, and -- the load-bearing case -- literal and percent-encoded `../` traversal attempts rejected outright rather than falling back to the SPA shell, plus a malformed percent-encoding and a NUL byte handled without crashing.
 
-`test/scheduler-store.test.ts` covers `schedule.json`'s atomic read/write: missing file, corrupted file, wrong top-level shape (all treated as empty, never thrown), no stray temp file left behind on success, and a second save fully replacing the first. `test/scheduler-engine.test.ts` drives `runTick` against a real scratch git repo and `gh-shim.mjs`: the dirty-tree and parked-off-base fail-safes, a not-yet-due job left untouched, a successful arm, `MERGED`/`CLOSED`/`CONFLICTING` all reaching terminal states correctly (the conflict case asserting it is never retried), a SHA-mismatch reaching `needs-attention` rather than substituting a new SHA, both `skip_if_older_than` and `catch_up` missed-tick policies, and a transient infrastructure failure leaving the job `pending` rather than a false terminal verdict. A separate `startScheduler` test (with an injectable `tickFn`) proves the in-flight guard actually prevents overlapping ticks and that `stop()` drains a tick already in progress rather than interrupting it. `test/tools-scheduler.test.ts` exercises `blog_schedule_publish`'s own up-front cross-checks (PR must be open, not a draft, and the supplied `headSha` must match) plus `blog_list_scheduled_jobs`'s status filter and `blog_cancel_scheduled_job`'s pending-only refusal, all via `test/helpers/fakeServer.ts`.
+`test/scheduler-store.test.ts` covers `schedule.json`'s atomic read/write: missing file, corrupted file, wrong top-level shape (all treated as empty, never thrown), no stray temp file left behind on success, and a second save fully replacing the first. `test/scheduler-engine.test.ts` drives `runTick` against a real scratch git repo and `gh-shim.mjs`: the dirty-tree and parked-off-base fail-safes, a not-yet-due job left untouched, auto-merge successfully enabled, `MERGED`/`CLOSED`/`CONFLICTING` all reaching terminal states correctly (the conflict case asserting it is never retried), a SHA-mismatch reaching `needs-attention` rather than substituting a new SHA, both `skip_if_older_than` and `catch_up` missed-tick policies, and a transient infrastructure failure leaving the job `pending` rather than a false terminal verdict. A separate `startScheduler` test (with an injectable `tickFn`) proves the in-flight guard actually prevents overlapping ticks and that `stop()` drains a tick already in progress rather than interrupting it. `test/tools-scheduler.test.ts` exercises `blog_schedule_publish`'s own up-front cross-checks (PR must be open, not a draft, and the supplied `headSha` must match) plus `blog_list_scheduled_jobs`'s status filter and `blog_cancel_scheduled_job`'s pending-only refusal, all via `test/helpers/fakeServer.ts`.
 
 `test/http-scheduler-wiring.test.ts` is a regression test for a real bug this phase's Docker verification caught and the unit tests above did not: `stateDir` was threaded into the scheduler *engine*'s own serverOptions (`serve-bin.ts`) but not into `createMcpRequestHandler`/`createHttpServer`/`createServeServer`'s serverOptions, so `blog_schedule_publish` failed with "no state directory configured" the moment it was called over a real `/mcp` request. The gap existed because `test/tools-scheduler.test.ts` builds a `ToolContext` by hand, with `stateDir` set directly -- it never exercises the option-threading path a real client actually goes through. This test does: `createHttpServer({ repoRoot, stateDir })` with env-derived capabilities (`BLOG_MCP_ALLOW_REMOTE=1` + `BLOG_MCP_ALLOW_SCHEDULER=1`, not an explicit override), then a real `initialize` → `tools/list` → `tools/call blog_schedule_publish` round trip over HTTP.

@@ -7,7 +7,7 @@ export interface TickDeps {
   repoRoot: string;
   baseBranch: string;
   stateDir: string;
-  /** Must carry the cron Capabilities profile (src/serve/capabilities.ts's CRON_CAPABILITIES) -- the engine only ever calls blog_pr_status and blog_arm_auto_merge. */
+  /** Must carry the cron Capabilities profile (src/serve/capabilities.ts's CRON_CAPABILITIES) -- the engine only ever calls blog_pr_status and blog_auto_merge. */
   serverOptions: CreateServerOptions;
   /** Injectable clock for tests; defaults to the real time. */
   now?: () => Date;
@@ -79,9 +79,9 @@ function applyMissedTickPolicy(job: ScheduledJob, now: Date): boolean {
 
 /**
  * Re-derives the job's next action from GitHub's current state every tick
- * -- never from a locally cached "already armed" flag -- so a crash between
- * arming and persisting that status self-heals on the next tick instead of
- * silently re-arming (idempotent) or getting stuck.
+ * -- never from a locally cached "already enabled" flag -- so a crash
+ * between enabling auto-merge and persisting that status self-heals on the
+ * next tick instead of silently re-enabling it (idempotent) or getting stuck.
  */
 async function processJob(deps: TickDeps, job: ScheduledJob, now: Date): Promise<boolean> {
   const statusResult = await callToolInProcess(deps.serverOptions, 'blog_pr_status', { pr: job.pr });
@@ -113,23 +113,22 @@ async function processJob(deps: TickDeps, job: ScheduledJob, now: Date): Promise
     return true;
   }
 
-  const armResult = await callToolInProcess(deps.serverOptions, 'blog_arm_auto_merge', { pr: job.pr, headSha: job.headSha });
-  if (armResult.ok) {
-    job.status = 'armed';
+  const autoMergeResult = await callToolInProcess(deps.serverOptions, 'blog_auto_merge', { pr: job.pr, headSha: job.headSha });
+  if (autoMergeResult.ok) {
+    job.status = 'auto-merge-enabled';
     job.updatedAt = now.toISOString();
     return true;
   }
-  if (armResult.kind === 'precondition') {
-    // A SHA mismatch (the branch moved) or a draft PR. blog_arm_auto_merge's
-    // own message says "revalidate and retry" -- that means a human
-    // decision, not this loop silently substituting a SHA nobody told it to
-    // trust.
+  if (autoMergeResult.kind === 'precondition') {
+    // A SHA mismatch (the branch moved) or a draft PR. blog_auto_merge's own
+    // message says "revalidate and retry" -- that means a human decision,
+    // not this loop silently substituting a SHA nobody told it to trust.
     job.status = 'needs-attention';
-    job.reason = armResult.summary;
+    job.reason = autoMergeResult.summary;
     job.updatedAt = now.toISOString();
     return true;
   }
-  // Infrastructure failure arming -- leave pending, retry next tick.
+  // Infrastructure failure enabling auto-merge -- leave pending, retry next tick.
   return false;
 }
 

@@ -34,7 +34,7 @@ const SERVER_INSTRUCTIONS = [
     'local git -- blog_stage, blog_reset_stage, blog_commit,',
     'blog_create_branch, blog_sync_base, blog_diff; GitHub/remote --',
     'blog_push, blog_create_pr, blog_pr_status, blog_pr_comments,',
-    'blog_arm_auto_merge; CI and deploy monitoring -- blog_check_status,',
+    'blog_auto_merge; CI and deploy monitoring -- blog_check_status,',
     'blog_wait_for_checks, blog_wait_for_merge, blog_deploy_status,',
     'blog_wait_for_deploy, blog_verify_published_url, blog_publish_report;',
     'and cron scheduling -- blog_schedule_publish, blog_list_scheduled_jobs,',
@@ -97,7 +97,7 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
     registerLocalGitTools(ctx);
   }
   // Independent of capabilities.write: the cron scheduler profile needs
-  // Tier C (blog_pr_status/blog_arm_auto_merge) without any local-write
+  // Tier C (blog_pr_status/blog_auto_merge) without any local-write
   // tool. For env-derived defaultCapabilities(), `remote` is still only
   // ever true when `write` is too (preserving BLOG_MCP_ALLOW_REMOTE's
   // documented "ignored if BLOG_MCP_READ_ONLY is set" behavior) -- this

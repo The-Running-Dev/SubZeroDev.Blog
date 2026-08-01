@@ -169,9 +169,9 @@ export async function handleApiRequest(
       return callTool(serverOptions, 'blog_create_pr', args);
     }
 
-    const armMergeMatch = /^\/api\/pr\/(\d+)\/merge$/.exec(pathname);
-    if (armMergeMatch) {
-      return callTool(serverOptions, 'blog_arm_auto_merge', { ...args, pr: Number(armMergeMatch[1]) });
+    const autoMergeMatch = /^\/api\/pr\/(\d+)\/auto-merge$/.exec(pathname);
+    if (autoMergeMatch) {
+      return callTool(serverOptions, 'blog_auto_merge', { ...args, pr: Number(autoMergeMatch[1]) });
     }
 
     return undefined;

@@ -155,7 +155,7 @@ Push `<branch-name>` to the remote repository. Verify that the remote branch con
 - **Tool:** `blog_stage({ paths: [...] })` (never `-A`/`.`), `blog_commit({ type: "feat", scope: "blog", summary: "..." })`, `blog_push({})` (verifies the remote now matches local `HEAD` after pushing). `blog_push` and `blog_stage`/`blog_commit` require `BLOG_MCP_ALLOW_REMOTE=1` and default (non-read-only) mode respectively.
 - **Fallback:** `git add -- <explicit paths>`, `git commit -m "<commit-message>"`, `git push -u origin <branch-name>`.
 
-### 7. Open a ready PR and arm automatic merge
+### 7. Open a ready PR and enable automatic merge
 
 Open a ready PR from `<branch-name>` into `main`. Use `<pr-title>` as the PR
 title. Use a draft only when the user explicitly asks to hold publication, keep
@@ -185,7 +185,7 @@ $headSha = git rev-parse HEAD
 gh pr merge <pr-url-or-number> --auto --squash --match-head-commit $headSha
 ```
 
-- **Tool:** `blog_arm_auto_merge({ pr, headSha: $headSha })` — cross-checks `headSha` against the PR's actual head via `gh pr view` and refuses on mismatch or on a draft PR.
+- **Tool:** `blog_auto_merge({ pr, headSha: $headSha })` — cross-checks `headSha` against the PR's actual head via `gh pr view` and refuses on mismatch or on a draft PR.
 
 This does not bypass repository protection: GitHub merges only after all
 required checks pass, the branch is current when required, and all review
@@ -197,7 +197,7 @@ deployment, and publication outcomes.
 
 ### 8. Monitor CI, merge, and deployment
 
-After auto-merge is armed:
+After auto-merge is enabled:
 
 1. Monitor `Documentation links and terminology` and `Verify Documentation
    Build` for the exact head SHA and report their final outcome.
@@ -220,8 +220,8 @@ If CI fails, review feedback arrives before merge, or the deployment fails:
 2. Make only the changes required to fix the valid finding.
 3. Re-run all relevant local validation.
 4. Commit and push the correction.
-5. Capture the replacement head SHA and arm auto-merge again with that SHA.
-   - If `gh pr merge`/`blog_arm_auto_merge` returns a `502` or `"Merge
+5. Capture the replacement head SHA and enable auto-merge again with that SHA.
+   - If `gh pr merge`/`blog_auto_merge` returns a `502` or `"Merge
      already in progress"` error, that is not necessarily a real conflict:
      in [PR #35](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/35)
      both occurred back to back on an otherwise-mergeable PR and cleared on
@@ -248,8 +248,8 @@ When review findings arrive:
 5. Commit and push the corrections.
 6. Resolve a thread only when the validated fix directly satisfies it; leave
    ambiguous findings unresolved and report them.
-7. Re-arm auto-merge against the replacement validated head SHA.
-8. Report which findings were addressed and whether auto-merge is armed.
+7. Re-enable auto-merge against the replacement validated head SHA.
+8. Report which findings were addressed and whether auto-merge is enabled.
 
 - **Tool:** `blog_pr_comments({ pr, unresolvedOnly: true })` to list open threads — check this even when `gh pr view --json reviewRequests,latestReviews` shows nothing: a bot-posted review (this repository has `qodo-code-review` configured) leaves unresolved conversation threads without appearing as a requested reviewer, and `required_conversation_resolution` blocks the merge on them regardless. There is no `blog_resolve_review_thread` tool yet; resolve via `gh api graphql -f query='mutation($id:ID!){resolveReviewThread(input:{threadId:$id}){thread{isResolved}}}' -f id=<threadId>`.
 - **Fallback:** the GraphQL `reviewThreads` query in `.agents/workflows/publish-change.md` §3.
@@ -259,7 +259,7 @@ Do not post a review reply unless explicitly requested.
 ### 10. Confirm automatic publication
 
 Report publication proactively after the deployment and HTTPS route check are
-successful. Do not require a user to click Merge, authorize an already armed
+successful. Do not require a user to click Merge, authorize an already enabled
 merge, or ask separately for the public URL. If deployment or route validation
 fails, report the failure and do not present a post URL as published.
 

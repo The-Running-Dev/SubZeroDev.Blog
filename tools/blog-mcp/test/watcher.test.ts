@@ -58,7 +58,7 @@ describe('watcher engine: runWatchTick', () => {
     await gitOrThrow(['config', 'user.email', 'test@example.test'], { repoRoot: seed });
     await gitOrThrow(['config', 'user.name', 'Test'], { repoRoot: seed });
     fs.writeFileSync(path.join(seed, 'README.md'), '# seed\n');
-    // clone_url is a GitHub-shaped URL so blog_arm_auto_merge's review-thread
+    // clone_url is a GitHub-shaped URL so blog_auto_merge's review-thread
     // check can resolve owner/repo -- the real git remote below is a local
     // bare path (needed for real push testing), which cannot resolve to one.
     fs.mkdirSync(path.join(seed, '.config'));
@@ -97,8 +97,8 @@ describe('watcher engine: runWatchTick', () => {
     delete process.env.GH_SHIM_HEAD_SHA;
     delete process.env.GH_SHIM_REPO_ROOT;
     // The shim's default thread list includes one unresolved thread;
-    // blog_arm_auto_merge refuses to arm while any are unresolved, so tests
-    // that expect a successful arm must opt into a clean list.
+    // blog_auto_merge refuses to enable auto-merge while any are unresolved,
+    // so tests that expect it to succeed must opt into a clean list.
     process.env.GH_SHIM_THREADS_JSON = '[]';
   });
 
@@ -119,7 +119,7 @@ describe('watcher engine: runWatchTick', () => {
       .map((line) => JSON.parse(line) as string[]);
   }
 
-  it('publishes a complete file end to end: branch, commit, push, PR opened, auto-merge armed', async () => {
+  it('publishes a complete file end to end: branch, commit, push, PR opened, auto-merge enabled', async () => {
     dropFile('post.md', VALID_POST);
     process.env.GH_SHIM_HEAD_SHA = 'GIT_HEAD';
     process.env.GH_SHIM_REPO_ROOT = clone;
@@ -232,7 +232,7 @@ describe('watcher engine: runWatchTick', () => {
     expect(content).toContain('Existing, Updated');
   });
 
-  it('opens the PR but does not arm auto-merge when autoMerge is false', async () => {
+  it('opens the PR but does not enable auto-merge when autoMerge is false', async () => {
     const post = ['---', 'title: "No Auto Merge"', 'description: "desc"', 'slug: no-auto-merge', 'tags:', '  - test', '---', '', 'Body.'].join('\n');
     dropFile('no-auto-merge.md', post);
 

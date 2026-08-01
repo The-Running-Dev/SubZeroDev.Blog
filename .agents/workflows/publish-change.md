@@ -77,11 +77,11 @@ $headSha = git rev-parse HEAD
 ### Post-only changes
 
 For a post, tag, author, or other editorial-only change that the user supplied
-or approved, arm automatic merge immediately after the ready PR is created.
+or approved, enable automatic merge immediately after the ready PR is created.
 
 ### Code, styling, configuration, and workflow changes
 
-Check for automated review findings before arming auto-merge — and check by
+Check for automated review findings before enabling auto-merge — and check by
 **review thread**, not just requested reviewers: a bot-posted review (this
 repository has `qodo-code-review` configured) leaves unresolved conversation
 threads without necessarily appearing as a requested reviewer or a formal
@@ -121,15 +121,15 @@ Address valid findings, re-run validation, push the correction, refresh
 that fact in the PR handoff; do not invent a human approval requirement that
 the repository does not enforce.
 
-## 4. Arm automatic squash merge
+## 4. Enable automatic squash merge
 
 Use the repository's allowed squash strategy and bind it to the exact validated
 head commit:
 
-- **Tool:** `blog_arm_auto_merge({ pr, headSha: $headSha })` (cross-checks
+- **Tool:** `blog_auto_merge({ pr, headSha: $headSha })` (cross-checks
   `headSha` against the PR's actual head via `gh pr view` and refuses on
-  mismatch or on a draft PR, rather than silently arming the wrong commit;
-  requires `BLOG_MCP_ALLOW_REMOTE=1`).
+  mismatch or on a draft PR, rather than silently enabling it on the wrong
+  commit; requires `BLOG_MCP_ALLOW_REMOTE=1`).
 - **Fallback:**
   ```powershell
   gh pr merge <pr-url-or-number> --auto --squash --match-head-commit $headSha
@@ -137,7 +137,7 @@ head commit:
 
 GitHub keeps the PR open until every protected-branch requirement passes. Do
 not merge directly or bypass protection — **there is no direct-merge tool in
-`tools/blog-mcp`; arming auto-merge is the only merge path either way.**
+`tools/blog-mcp`; enabling auto-merge is the only merge path either way.**
 Monitor the required checks for the exact head SHA, then confirm the merge
 and the `Docs Deploy` workflow for its merge commit. The repository removes
 the remote branch automatically after the merge.
@@ -160,7 +160,7 @@ If a required check fails, a review thread blocks the PR, or the head changes:
      `gh api graphql -f query='mutation($id:ID!){
      resolveReviewThread(input:{threadId:$id}){thread{isResolved}}}' -f
      id=<threadId>` (the thread `id`s come from the query in §3).
-5. Recompute `$headSha` and arm auto-merge again.
+5. Recompute `$headSha` and enable auto-merge again.
    - If `gh pr merge` returns a `502` or `"Merge already in progress"`
      error, that is not necessarily a real conflict: in
      [PR #35](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/35)

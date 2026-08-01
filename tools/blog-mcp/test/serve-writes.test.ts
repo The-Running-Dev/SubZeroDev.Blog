@@ -54,7 +54,7 @@ describe('serve mode write routes', () => {
     await gitOrThrow(['config', 'user.name', 'Test'], { repoRoot: seed });
     fs.writeFileSync(path.join(seed, 'README.md'), '# seed\n');
     fs.mkdirSync(path.join(seed, '.config'));
-    // clone_url is a GitHub-shaped URL so blog_arm_auto_merge's review-thread
+    // clone_url is a GitHub-shaped URL so blog_auto_merge's review-thread
     // check can resolve owner/repo -- the real git remote below is a local
     // bare path (needed for real push testing), which cannot resolve to one.
     fs.writeFileSync(path.join(seed, '.config', 'blog.json'), JSON.stringify({ base_branch: 'main', clone_url: 'https://github.com/test-owner/test-repo.git' }));
@@ -261,12 +261,12 @@ describe('serve mode write routes', () => {
     expect(createCall?.join(' ')).not.toContain('Opened by the Phase 5 write-path test.');
   });
 
-  it('POST /api/pr/:number/merge arms auto-merge once the head SHA matches and there are no unresolved review threads', async () => {
+  it('POST /api/pr/:number/auto-merge enables auto-merge once the head SHA matches and there are no unresolved review threads', async () => {
     const localSha = await gitHeadSha({ repoRoot: clone });
     process.env.GH_SHIM_HEAD_SHA = localSha;
     process.env.GH_SHIM_THREADS_JSON = '[]';
 
-    const { status, envelope } = await post<{ pr: number }>('/api/pr/99/merge', { headSha: localSha });
+    const { status, envelope } = await post<{ pr: number }>('/api/pr/99/auto-merge', { headSha: localSha });
     delete process.env.GH_SHIM_THREADS_JSON;
     expect(status).toBe(200);
     expect(envelope.ok).toBe(true);
@@ -281,9 +281,9 @@ describe('serve mode write routes', () => {
     expect(mergeCall).toEqual(['pr', 'merge', '99', '--auto', '--squash', '--match-head-commit', localSha]);
   });
 
-  it('POST /api/pr/:number/merge refuses when the supplied SHA does not match the PR head', async () => {
+  it('POST /api/pr/:number/auto-merge refuses when the supplied SHA does not match the PR head', async () => {
     process.env.GH_SHIM_HEAD_SHA = 'a'.repeat(40);
-    const { status, envelope } = await post('/api/pr/99/merge', { headSha: 'b'.repeat(40) });
+    const { status, envelope } = await post('/api/pr/99/auto-merge', { headSha: 'b'.repeat(40) });
     expect(status).toBe(200);
     expect(envelope.ok).toBe(false);
     expect(envelope.kind).toBe('precondition');

@@ -58,7 +58,7 @@ export function isSchedulerEnabled(): boolean {
   return process.env.BLOG_MCP_ALLOW_SCHEDULER === '1' || process.env.BLOG_MCP_ALLOW_SCHEDULER === 'true';
 }
 
-/** Gates the directory watcher subsystem (src/watcher/engine.ts). Requires BLOG_MCP_ALLOW_REMOTE too, same reasoning as the scheduler -- publishing a dropped file needs push/PR/arm-merge, not just a local write. */
+/** Gates the directory watcher subsystem (src/watcher/engine.ts). Requires BLOG_MCP_ALLOW_REMOTE too, same reasoning as the scheduler -- publishing a dropped file needs push/PR/auto-merge, not just a local write. */
 export function isWatcherEnabled(): boolean {
   return process.env.BLOG_MCP_ALLOW_WATCHER === '1' || process.env.BLOG_MCP_ALLOW_WATCHER === 'true';
 }
@@ -76,7 +76,7 @@ export function isWatchAutoMergeEnabled(): boolean {
  * `if (!isReadOnly()) { ...; if (isRemoteEnabled()) ... }` shape) --
  * unchanged from before this field existed. `scheduler` is new in Phase 6
  * and deliberately NOT tied to write: the scheduler only ever needs
- * blog_pr_status/blog_arm_auto_merge (Tier C, gated by `remote`), never a
+ * blog_pr_status/blog_auto_merge (Tier C, gated by `remote`), never a
  * local-write tool, so requiring `BLOG_MCP_ALLOW_SCHEDULER=1` +
  * `BLOG_MCP_ALLOW_REMOTE=1` is both necessary and sufficient -- exactly what
  * the milestone plan specifies.
@@ -89,7 +89,7 @@ export function defaultCapabilities(): Capabilities {
     monitor: isMonitorEnabled(),
     // Deliberately isRemoteEnabled() directly, not the `remote` field above:
     // blog_schedule_publish/_list/_cancel only ever need Tier C
-    // (blog_pr_status/blog_arm_auto_merge), never a local-write tool, so
+    // (blog_pr_status/blog_auto_merge), never a local-write tool, so
     // gating scheduler behind `write` too would block the useful
     // "read-only content session, but this one can still enqueue a merge"
     // combination for no reason tied to what these tools actually touch.

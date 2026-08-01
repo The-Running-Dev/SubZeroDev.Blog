@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-export type JobStatus = 'pending' | 'armed' | 'merged' | 'skipped' | 'cancelled' | 'needs-attention';
+export type JobStatus = 'pending' | 'auto-merge-enabled' | 'merged' | 'skipped' | 'cancelled' | 'needs-attention';
 
 /**
  * Explicit per-job missed-tick policy -- never an implicit default. A job
@@ -14,7 +14,7 @@ export type MissedTickPolicy = { mode: 'catch_up' } | { mode: 'skip_if_older_tha
 export interface ScheduledJob {
   id: string;
   pr: number;
-  /** The commit SHA validated at schedule time -- never re-derived from whatever GitHub reports later, since that would make the arm-time cross-check tautological (see src/serve/api.ts's Compose-UI equivalent bug). */
+  /** The commit SHA validated at schedule time -- never re-derived from whatever GitHub reports later, since that would make the enable-time cross-check tautological (see src/serve/api.ts's Compose-UI equivalent bug). */
   headSha: string;
   /** ISO 8601, UTC, `Z` suffix -- same contract as post frontmatter dates (src/domain/validate.ts's DATE_PATTERN_Z). */
   scheduledAt: string;
@@ -40,7 +40,14 @@ export function loadSchedule(stateDir: string): ScheduleFile {
   if (!fs.existsSync(file)) return { jobs: [] };
   try {
     const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as Partial<ScheduleFile>;
-    return { jobs: Array.isArray(parsed.jobs) ? parsed.jobs : [] };
+    const jobs = Array.isArray(parsed.jobs) ? parsed.jobs : [];
+    // Back-compat: a schedule.json written before the 'armed' -> 'auto-merge-enabled'
+    // rename still has the old status on disk. Normalize on read so old and new
+    // files behave identically; saveSchedule only ever writes the new value.
+    for (const job of jobs) {
+      if ((job.status as string) === 'armed') job.status = 'auto-merge-enabled';
+    }
+    return { jobs };
   } catch {
     return { jobs: [] };
   }
