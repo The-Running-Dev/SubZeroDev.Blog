@@ -10,6 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const PASSWORD = 'correct horse battery staple';
 const REDIRECT_URI = 'https://claude.ai/api/mcp/auth_callback';
+const FUTURE_REDIRECT_URI = 'https://claude.com/api/mcp/auth_callback';
 const VERIFIER = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~abc';
 
 function cookieFrom(res: Response): string {
@@ -36,8 +37,8 @@ async function registerClient(baseUrl: string): Promise<string> {
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       client_name: 'Claude test client',
-      redirect_uris: [REDIRECT_URI],
-      grant_types: ['authorization_code'],
+      redirect_uris: [REDIRECT_URI, FUTURE_REDIRECT_URI],
+      grant_types: ['authorization_code', 'refresh_token'],
       response_types: ['code'],
       token_endpoint_auth_method: 'none'
     })
@@ -135,7 +136,7 @@ describe('OAuth remote MCP authorization', () => {
     expect(mcp.headers.get('www-authenticate')).toContain('resource_metadata="http://127.0.0.1/.well-known/oauth-protected-resource/mcp"');
   });
 
-  it('uses dynamic registration, PKCE, and an operator login to issue a scoped token', async () => {
+  it('uses Claude-compatible dynamic registration, PKCE, and an operator login to issue a scoped token', async () => {
     const clientId = await registerClient(baseUrl);
     const authorization = await authorize(baseUrl, clientId);
     expect(authorization.code).toBeTruthy();
