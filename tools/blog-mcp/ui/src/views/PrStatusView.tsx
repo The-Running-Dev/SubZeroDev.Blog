@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import Table from '../lib/Table';
 import { formatDate } from '../lib/formatDate';
+import { usePrWatcher } from '../lib/usePrWatcher';
 
 interface PrDetails {
   state: string;
@@ -21,6 +22,11 @@ interface PrListItem {
   updatedAt: string;
 }
 
+interface LogLine {
+  text: string;
+  isError: boolean;
+}
+
 export default function PrStatusView() {
   const [searchParams] = useSearchParams();
   const [prNumber, setPrNumber] = useState(searchParams.get('pr') ?? '');
@@ -28,6 +34,20 @@ export default function PrStatusView() {
   const [error, setError] = useState<string | null>(null);
   const [prs, setPrs] = useState<PrListItem[] | null>(null);
   const [listError, setListError] = useState<string | null>(null);
+  const [watchedPr, setWatchedPr] = useState<number | null>(null);
+  const [log, setLog] = useState<LogLine[]>([]);
+
+  const logLine = useCallback((text: string, isError = false) => {
+    setLog((prev) => [...prev, { text, isError }]);
+  }, []);
+
+  const dismissLog = useCallback((index: number) => {
+    setLog((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // Starts watching whichever PR was last successfully looked up, until it
+  // merges or closes. Per-page, like Compose's -- navigating away stops it.
+  usePrWatcher(watchedPr, logLine);
 
   async function lookup(pr: string) {
     setError(null);
@@ -36,6 +56,7 @@ export default function PrStatusView() {
     try {
       const data = await api<PrDetails>(`/api/pr/${encodeURIComponent(pr)}`);
       setDetails(data.data ?? null);
+      setWatchedPr(Number(pr));
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
@@ -99,6 +120,17 @@ export default function PrStatusView() {
           </>
         )}
       </div>
+
+      <ul className="compose-log">
+        {log.map((line, i) => (
+          <li key={i} className={line.isError ? 'error' : undefined}>
+            <span className="toast-text">{line.text}</span>
+            <button type="button" className="toast-dismiss" aria-label="Dismiss" onClick={() => dismissLog(i)}>
+              &times;
+            </button>
+          </li>
+        ))}
+      </ul>
     </>
   );
 }

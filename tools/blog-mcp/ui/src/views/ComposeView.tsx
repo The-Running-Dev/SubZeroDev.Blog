@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api, post, ApiError } from '../lib/api';
 import { isoToDatetimeLocal } from '../lib/formatDate';
+import { usePrWatcher } from '../lib/usePrWatcher';
 
 interface Tag {
   key: string;
@@ -110,6 +111,10 @@ export default function ComposeView() {
   const logLine = useCallback((text: string, isError = false) => {
     setLog((prev) => [...prev, { text, isError }]);
   }, []);
+
+  // Starts watching the PR the moment `pr` is set (right after Publish opens
+  // one) and posts a toast on every state change until it merges or closes.
+  usePrWatcher(pr, logLine);
 
   // Toasts stack in a fixed corner (position: fixed, not part of document
   // flow), so unlike an inline log they never clear themselves -- each one
