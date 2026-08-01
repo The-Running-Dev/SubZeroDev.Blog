@@ -18,6 +18,10 @@ The proposed contract-driven successor architecture and its staged migration
 are specified in [MCP Next implementation plan](MCP-NEXT.md). That document is
 a plan, not a claim about current runtime behavior.
 
+The publishing defects exposed by the GitOps post, together with their
+evidence-backed fix sequence, are tracked in
+[Blog-Bot publishing integrity bugs and implementation plan](TODO-NEXT.md).
+
 ## Why a container with no Docker inside it
 
 The image ships PowerShell 7, git, and the GitHub CLI, but not Docker. It
