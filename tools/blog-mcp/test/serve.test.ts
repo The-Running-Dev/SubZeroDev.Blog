@@ -297,12 +297,15 @@ describe('serve mode', () => {
       process.env.GH_SHIM_PR_LIST_JSON = JSON.stringify([
         { number: 5, title: 'Fixture PR', state: 'OPEN', isDraft: false, headRefName: 'blog/fixture', url: 'https://github.com/test-owner/test-repo/pull/5', createdAt: '2026-01-01T00:00:00Z', updatedAt: '2026-01-01T00:00:00Z', mergedAt: null }
       ]);
-      const res = await fetch(`${baseUrl}/api/prs`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
-      expect(res.status).toBe(200);
-      const body = (await res.json()) as { data: { prs: Array<{ number: number }>; limit: number } };
-      expect(body.data.prs.map((p) => p.number)).toEqual([5]);
-      expect(body.data.limit).toBe(30);
-      delete process.env.GH_SHIM_PR_LIST_JSON;
+      try {
+        const res = await fetch(`${baseUrl}/api/prs`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+        expect(res.status).toBe(200);
+        const body = (await res.json()) as { data: { prs: Array<{ number: number }>; limit: number } };
+        expect(body.data.prs.map((p) => p.number)).toEqual([5]);
+        expect(body.data.limit).toBe(30);
+      } finally {
+        delete process.env.GH_SHIM_PR_LIST_JSON;
+      }
     });
 
     it('GET /api/prs with an out-of-range limit is a 400, not a misclassified 502', async () => {
