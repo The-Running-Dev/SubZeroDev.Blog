@@ -14,6 +14,10 @@ actions (push, PR creation, auto-merge) are opt-in and off by default — see
 [Capability tiers](#capability-tiers). Both stdio (default) and HTTP
 transports are available; see [Running](#running).
 
+The proposed contract-driven successor architecture and its staged migration
+are specified in [MCP Next implementation plan](MCP-NEXT.md). That document is
+a plan, not a claim about current runtime behavior.
+
 ## Why a container with no Docker inside it
 
 The image ships PowerShell 7, git, and the GitHub CLI, but not Docker. It
