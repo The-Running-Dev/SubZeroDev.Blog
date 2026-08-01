@@ -57,7 +57,7 @@ Substitute `ghcr.io/the-running-dev/subzerodev-blog-mcp:latest` for
 `subzerodev-blog-mcp` in any `docker run` command below to run the
 published image instead of one built locally. For Compose, use the form that
 matches the environment: `tools/blog-mcp/docker-compose.yml` is for local
-builds, while the repository-root [`docker-compose.yml`](../../docker-compose.yml)
+builds, while the repository-root [`docker-compose.yml`](https://github.com/The-Running-Dev/SubZeroDev.Blog/blob/main/docker-compose.yml)
 pulls the published GHCR image for an always-on deployment.
 
 Run with only env vars and a named volume — no bind mount anywhere
@@ -109,9 +109,10 @@ docker compose --profile http up -d http  # bare /mcp, no UI
 ```
 
 The deployment form requires `BLOG_MCP_CLONE_URL`, `BLOG_MCP_GIT_USER_NAME`,
-and `BLOG_MCP_GIT_USER_EMAIL`. Set `BLOG_MCP_HTTP_TOKEN` before exposing
-`/mcp`, and set `BLOG_MCP_UI_PASSWORD_HASH` before enabling the web UI. Enable
-remote publishing deliberately with `BLOG_MCP_ALLOW_REMOTE=1` and a scoped
+`BLOG_MCP_GIT_USER_EMAIL`, and `BLOG_MCP_HTTP_TOKEN`; Compose refuses to start
+the externally bound stack without that bearer token. Set
+`BLOG_MCP_UI_PASSWORD_HASH` before enabling the web UI. Enable remote
+publishing deliberately with `BLOG_MCP_ALLOW_REMOTE=1` and a scoped
 `GH_TOKEN`; neither secret is stored in the Compose file.
 
 `serve` (see [Serve mode (web UI)](#serve-mode-web-ui)) is the default --

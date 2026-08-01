@@ -25,7 +25,10 @@ x-blog-mcp-common: &blog-mcp-common
     BLOG_MCP_WORKSPACE: "${BLOG_MCP_WORKSPACE:-/workspace}"
     BLOG_MCP_HTTP_HOST: 0.0.0.0
     BLOG_MCP_HTTP_PORT: "${BLOG_MCP_HTTP_PORT:-8765}"
-    BLOG_MCP_HTTP_TOKEN: "${BLOG_MCP_HTTP_TOKEN:-}"
+    # This deployment publishes a non-loopback port, so the primary MCP
+    # bearer token is mandatory. BLOG_MCP_HTTP_READONLY_TOKEN may additionally
+    # be supplied for restricted third-party clients.
+    BLOG_MCP_HTTP_TOKEN: "${BLOG_MCP_HTTP_TOKEN:?Set BLOG_MCP_HTTP_TOKEN before exposing the deployment service}"
     BLOG_MCP_HTTP_READONLY_TOKEN: "${BLOG_MCP_HTTP_READONLY_TOKEN:-}"
     BLOG_MCP_HTTP_ALLOWED_ORIGINS: "${BLOG_MCP_HTTP_ALLOWED_ORIGINS:-}"
     BLOG_MCP_HTTP_MAX_SESSIONS: "${BLOG_MCP_HTTP_MAX_SESSIONS:-}"
