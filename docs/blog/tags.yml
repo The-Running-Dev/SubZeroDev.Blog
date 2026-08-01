@@ -37,3 +37,23 @@ stories:
   label: Stories
   permalink: /stories
   description: Personal narratives, incidents, and fictionalized observations.
+
+ai:
+  label: Ai
+  permalink: /ai
+  description: Posts related to Ai.
+
+llm:
+  label: Llm
+  permalink: /llm
+  description: Posts related to Llm.
+
+development:
+  label: Development
+  permalink: /development
+  description: Posts related to Development.
+
+productivity:
+  label: Productivity
+  permalink: /productivity
+  description: Posts related to Productivity.
