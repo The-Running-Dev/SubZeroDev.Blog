@@ -4,6 +4,8 @@ import { handleApiRequest } from './serve/api.js';
 import { resolveStaticFile } from './serve/static.js';
 import { UI_CAPABILITIES } from './serve/capabilities.js';
 import { verifyPassword, isLoginRateLimited, recordFailedLogin, clearLoginAttempts, createSession, touchSession, sessionTtlSeconds, destroySession } from './serve/auth.js';
+import { defaultCapabilities, READONLY_CAPABILITIES } from './tools/context.js';
+import { OAuthService, OAUTH_SCOPES, type OAuthLoginResult } from './serve/oauth.js';
 import type { CreateServerOptions } from './server.js';
 
 export interface ServeServerOptions {
@@ -23,6 +25,8 @@ export interface ServeServerOptions {
   mcpMaxSessions?: number;
   /** scrypt hash (see src/serve/auth.ts's hashPassword) required for /login. Unset means the UI and /api are entirely disabled -- see the startup warning. */
   uiPasswordHash?: string;
+  /** Public HTTPS origin used as the OAuth issuer. OAuth is disabled when this or uiPasswordHash is unset. */
+  oauthIssuer?: string;
 }
 
 const DEFAULT_HOST = '127.0.0.1';
@@ -61,8 +65,8 @@ function parseCookies(header: string | undefined): Record<string, string> {
   return cookies;
 }
 
-function sessionCookieHeader(id: string, maxAgeSeconds: number): string {
-  return `${SESSION_COOKIE}=${id}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAgeSeconds}`;
+function sessionCookieHeader(id: string, maxAgeSeconds: number, secure = false): string {
+  return `${SESSION_COOKIE}=${id}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAgeSeconds}${secure ? '; Secure' : ''}`;
 }
 
 function clearedSessionCookieHeader(): string {
@@ -104,6 +108,7 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
   const port = options.port ?? DEFAULT_PORT;
   const allowedOrigins = options.mcpAllowedOrigins ?? defaultAllowedOrigins(host, port);
   const uiPasswordHash = options.uiPasswordHash;
+  const secureSessionCookie = options.oauthIssuer?.startsWith('https://') ?? false;
   const serverOptions: CreateServerOptions = {
     ...(options.repoRoot ? { repoRoot: options.repoRoot } : {}),
     ...(options.auditLogPath ? { auditLogPath: options.auditLogPath } : {}),
@@ -111,10 +116,32 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
     capabilities: UI_CAPABILITIES
   };
 
+  function loginWithPassword(password: string, remember = false): OAuthLoginResult {
+    if (isLoginRateLimited()) return { ok: false, status: 429, error: 'Too many failed login attempts. Try again later.' };
+    if (!verifyPassword(password, uiPasswordHash ?? '')) {
+      recordFailedLogin();
+      return { ok: false, status: 401, error: 'Incorrect password.' };
+    }
+    clearLoginAttempts();
+    const sessionId = createSession(remember);
+    return { ok: true, cookie: sessionCookieHeader(sessionId, sessionTtlSeconds(sessionId) ?? SESSION_TTL_SECONDS, secureSessionCookie) };
+  }
+
+  const oauth = options.oauthIssuer && uiPasswordHash
+    ? new OAuthService({
+        issuer: options.oauthIssuer,
+        login: (password) => loginWithPassword(password),
+        hasSession: (req) => touchSession(parseCookies(req.headers.cookie)[SESSION_COOKIE])
+      })
+    : undefined;
+
   if (!uiPasswordHash) {
     process.stderr.write(
       'blog-mcp serve: BLOG_MCP_UI_PASSWORD_HASH is not set -- /login, the UI, and /api are all disabled. /mcp and /healthz still work.\n'
     );
+  }
+  if (options.oauthIssuer && !uiPasswordHash) {
+    process.stderr.write('blog-mcp serve: BLOG_MCP_OAUTH_ISSUER is set but BLOG_MCP_UI_PASSWORD_HASH is not; OAuth is disabled because there is no operator sign-in.\n');
   }
 
   const { handler: mcpHandler, close: closeMcp } = createMcpRequestHandler({
@@ -126,7 +153,17 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
     ...(options.mcpToken ? { token: options.mcpToken } : {}),
     ...(options.mcpReadOnlyToken ? { readOnlyToken: options.mcpReadOnlyToken } : {}),
     ...(options.mcpMaxSessions !== undefined ? { maxSessions: options.mcpMaxSessions } : {}),
-    allowedOrigins
+    allowedOrigins,
+    ...(oauth
+      ? {
+          authorize: (authorizationHeader: string | undefined) => {
+            const scopes = oauth.authenticate(authorizationHeader);
+            if (!scopes) return undefined;
+            return { capabilities: scopes.includes(OAUTH_SCOPES.write) ? defaultCapabilities() : READONLY_CAPABILITIES };
+          },
+          unauthorizedHeaders: () => ({ 'www-authenticate': oauth.wwwAuthenticate() })
+        }
+      : {})
   });
 
   async function handleLogin(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -143,11 +180,6 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
       sendJson(res, 403, { error: `Origin '${req.headers.origin ?? '(none)'}' is not allowed.` });
       return;
     }
-    if (isLoginRateLimited()) {
-      sendJson(res, 429, { error: 'Too many failed login attempts. Try again later.' });
-      return;
-    }
-
     let password: unknown;
     let remember: unknown;
     try {
@@ -160,15 +192,12 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
       return;
     }
 
-    if (typeof password !== 'string' || !verifyPassword(password, uiPasswordHash)) {
-      recordFailedLogin();
-      sendJson(res, 401, { error: 'Incorrect password.' });
+    const result = typeof password === 'string' ? loginWithPassword(password, remember === true) : { ok: false, status: 401, error: 'Incorrect password.' };
+    if (!result.ok) {
+      sendJson(res, result.status ?? 401, { error: result.error ?? 'Incorrect password.' });
       return;
     }
-
-    clearLoginAttempts();
-    const sessionId = createSession(remember === true);
-    sendJson(res, 200, { ok: true }, { 'set-cookie': sessionCookieHeader(sessionId, sessionTtlSeconds(sessionId) ?? SESSION_TTL_SECONDS) });
+    sendJson(res, 200, { ok: true }, result.cookie ? { 'set-cookie': result.cookie } : {});
   }
 
   function handleLogout(req: IncomingMessage, res: ServerResponse): void {
@@ -201,7 +230,7 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
     // silently drop the cookie before this session's own TTL (30 minutes, or
     // 30 days if "remember me" was checked) regardless of continued
     // activity, even though the server still considers the session valid.
-    const refreshedCookie = sessionCookieHeader(sessionId, sessionTtlSeconds(sessionId) ?? SESSION_TTL_SECONDS);
+    const refreshedCookie = sessionCookieHeader(sessionId, sessionTtlSeconds(sessionId) ?? SESSION_TTL_SECONDS, secureSessionCookie);
 
     let parsedBody: unknown;
     if (req.method === 'POST') {
@@ -244,6 +273,10 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
       try {
         const url = new URL(req.url ?? '/', `http://${req.headers.host ?? `${host}:${port}`}`);
 
+        if (oauth && await oauth.handle(req, res, url)) {
+          return;
+        }
+
         if (url.pathname === '/mcp' || url.pathname === '/healthz') {
           await mcpHandler(req, res);
           return;
@@ -276,7 +309,7 @@ export function createServeServer(options: ServeServerOptions = {}): http.Server
           // only ever reloads '/' (never hitting /api) would still get
           // logged out client-side after this session's TTL despite staying
           // active.
-          res.setHeader('set-cookie', sessionCookieHeader(sessionId, sessionTtlSeconds(sessionId) ?? SESSION_TTL_SECONDS));
+          res.setHeader('set-cookie', sessionCookieHeader(sessionId, sessionTtlSeconds(sessionId) ?? SESSION_TTL_SECONDS, secureSessionCookie));
         }
         if (handleStatic(req, res, url.pathname)) {
           return;
