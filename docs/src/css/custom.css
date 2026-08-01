@@ -73,8 +73,7 @@ body {
   background: var(--sz-accent-soft);
 }
 
-main h1,
-.blog-post-page main h1[class*='title_'] {
+main h1 {
   font-size: clamp(1.875rem, 3vw, 2.5rem);
   letter-spacing: -0.045em;
   line-height: 1.15;
