@@ -70,7 +70,12 @@ export function toCallToolResult(result: ToolResult): {
 function renderText(result: ToolResult): string {
   const lines = [result.summary];
   if (result.data !== undefined) {
-    lines.push(JSON.stringify(result.data, null, 2));
+    try {
+      lines.push(JSON.stringify(result.data, null, 2));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      lines.push(`[data omitted: not JSON-serializable -- ${message}]`);
+    }
   }
   if (result.findings && result.findings.length > 0) {
     for (const f of result.findings) {
