@@ -21,6 +21,7 @@ const MAX_PENDING_AUTHORIZATIONS = 500;
 const READ_SCOPE = 'blog-mcp:read';
 const WRITE_SCOPE = 'blog-mcp:write';
 const SUPPORTED_SCOPES = new Set([READ_SCOPE, WRITE_SCOPE]);
+const SUPPORTED_GRANT_TYPES = new Set(['authorization_code', 'refresh_token']);
 
 export type OAuthScope = typeof READ_SCOPE | typeof WRITE_SCOPE;
 
@@ -277,7 +278,9 @@ export class OAuthService {
       sendJson(res, 400, { error: 'invalid_redirect_uri' });
       return;
     }
-    if ((grantTypes !== undefined && (!Array.isArray(grantTypes) || grantTypes.some((grant) => grant !== 'authorization_code'))) ||
+    const validGrantTypes = grantTypes === undefined ||
+      (Array.isArray(grantTypes) && grantTypes.includes('authorization_code') && grantTypes.every((grant) => SUPPORTED_GRANT_TYPES.has(grant)));
+    if (!validGrantTypes ||
         (responseTypes !== undefined && (!Array.isArray(responseTypes) || responseTypes.some((response) => response !== 'code'))) ||
         (tokenAuth !== undefined && tokenAuth !== 'none')) {
       sendJson(res, 400, { error: 'invalid_client_metadata' });
