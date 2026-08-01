@@ -32,7 +32,9 @@ x-blog-mcp-common: &blog-mcp-common
     # be supplied for restricted third-party clients.
     BLOG_MCP_HTTP_TOKEN: "${BLOG_MCP_HTTP_TOKEN:?Set BLOG_MCP_HTTP_TOKEN before exposing the deployment service}"
     BLOG_MCP_HTTP_READONLY_TOKEN: "${BLOG_MCP_HTTP_READONLY_TOKEN:-}"
-    BLOG_MCP_HTTP_ALLOWED_ORIGINS: "${BLOG_MCP_HTTP_ALLOWED_ORIGINS:-}"
+    # The public Nginx Proxy Manager host. Override this comma-separated
+    # allowlist when deploying the stack behind a different browser origin.
+    BLOG_MCP_HTTP_ALLOWED_ORIGINS: "${BLOG_MCP_HTTP_ALLOWED_ORIGINS:-https://blogging.subzerodev.com}"
     BLOG_MCP_HTTP_MAX_SESSIONS: "${BLOG_MCP_HTTP_MAX_SESSIONS:-}"
     BLOG_MCP_UI_PASSWORD_HASH: "${BLOG_MCP_UI_PASSWORD_HASH:-}"
     BLOG_MCP_READ_ONLY: "${BLOG_MCP_READ_ONLY:-}"
