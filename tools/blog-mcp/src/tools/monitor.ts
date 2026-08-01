@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { ok, precondition, type Finding } from '../result.js';
 import { PreconditionError } from '../errors.js';
-import { headSha as gitHeadSha, remoteUrl } from '../exec/git.js';
+import { headSha as gitHeadSha } from '../exec/git.js';
 import { ghJson } from '../exec/gh.js';
-import { resolveOwnerRepo } from '../domain/github.js';
+import { resolveOwnerRepoFromGit } from '../domain/github.js';
 import { listPostFiles, loadPost } from '../domain/validate.js';
 import { canonicalUrl } from '../domain/post.js';
 import { wrapTool, type ToolContext } from './context.js';
@@ -91,8 +91,7 @@ async function deployStatus(ctx: ToolContext, mergeCommitSha: string): Promise<{
 }
 
 async function resolveRepo(ctx: ToolContext): Promise<{ owner: string; repo: string }> {
-  const remote = await remoteUrl({ repoRoot: ctx.repoRoot }).catch(() => undefined);
-  return resolveOwnerRepo(ctx.config.cloneUrl, remote);
+  return resolveOwnerRepoFromGit(ctx.repoRoot, ctx.config.cloneUrl);
 }
 
 /**

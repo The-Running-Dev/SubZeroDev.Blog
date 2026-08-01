@@ -18,7 +18,7 @@ export default function Layout() {
           <NavLink to="/health">Repo Health</NavLink>
           <NavLink to="/pr">PR Status</NavLink>
           <button type="button" id="logout" onClick={() => void handleLogout()}>
-            Sign out
+            Sign Out
           </button>
         </nav>
       </header>

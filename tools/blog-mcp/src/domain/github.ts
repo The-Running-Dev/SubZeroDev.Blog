@@ -1,4 +1,5 @@
 import { PreconditionError } from '../errors.js';
+import { remoteUrl } from '../exec/git.js';
 
 export interface OwnerRepo {
   owner: string;
@@ -55,4 +56,17 @@ export function resolveOwnerRepo(configuredCloneUrl: string, actualRemoteUrl: st
   if (configured) return configured;
 
   throw new PreconditionError('Could not resolve owner/repo from either .config/blog.json or the git remote.');
+}
+
+/**
+ * `resolveOwnerRepo`, but reading the actual git remote itself first --
+ * the one call every tool needing owner/repo (remote.ts, monitor.ts,
+ * authoring.ts's blog_repo_status) otherwise duplicated locally. A repo
+ * with no `origin` remote at all (freshly `git init`, no push yet) is
+ * treated the same as a remote that fails to resolve -- `actualRemoteUrl`
+ * simply stays undefined, falling through to `configuredCloneUrl` alone.
+ */
+export async function resolveOwnerRepoFromGit(repoRoot: string, configuredCloneUrl: string): Promise<OwnerRepo> {
+  const actualRemoteUrl = await remoteUrl({ repoRoot }).catch(() => undefined);
+  return resolveOwnerRepo(configuredCloneUrl, actualRemoteUrl);
 }

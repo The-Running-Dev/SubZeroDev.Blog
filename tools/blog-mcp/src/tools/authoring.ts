@@ -13,6 +13,7 @@ import { insertHubEntry, assertStillParses, type HubEntry } from '../domain/hubs
 import { listPostFiles, loadPost, validateAllPosts, validateHubs, type HubValidationContext } from '../domain/validate.js';
 import { checkAllowedPath } from '../domain/paths.js';
 import { currentBranch, status, remoteUrl, gitOrThrow } from '../exec/git.js';
+import { resolveOwnerRepo } from '../domain/github.js';
 import { isReadOnly, isRemoteEnabled, wrapTool, wrapMutatingTool, type ToolContext } from './context.js';
 
 async function toolVersions(repoRoot: string): Promise<Record<string, string>> {
@@ -51,7 +52,7 @@ export function registerAuthoringTools(ctx: ToolContext): void {
     {
       title: 'Repository status',
       description:
-        'Read-only snapshot of the repository root, current branch, working-tree cleanliness, remote URL, and available tool versions.',
+        'Read-only snapshot of the repository root, current branch, working-tree cleanliness, remote URL, owner/repo, and available tool versions.',
       inputSchema: {}
     },
     wrapTool(async () => {
@@ -59,6 +60,17 @@ export function registerAuthoringTools(ctx: ToolContext): void {
       const entries = await status({ repoRoot });
       const remote = await remoteUrl({ repoRoot }).catch(() => undefined);
       const versions = await toolVersions(repoRoot);
+      // Best-effort: a checkout whose remote (and configured clone_url)
+      // aren't GitHub-shaped -- a local bare path, as in this package's own
+      // scratch-remote tests -- must not turn an otherwise-healthy status
+      // check into a failure just because the UI's "link to GitHub" feature
+      // can't resolve owner/repo here.
+      let ownerRepo: { owner: string; repo: string } | undefined;
+      try {
+        ownerRepo = resolveOwnerRepo(config.cloneUrl, remote);
+      } catch {
+        ownerRepo = undefined;
+      }
       return ok('Repository status', {
         repoRoot,
         branch,
@@ -66,6 +78,8 @@ export function registerAuthoringTools(ctx: ToolContext): void {
         dirty: entries.length > 0,
         changedPaths: entries.map((e) => e.path),
         remoteUrl: remote,
+        owner: ownerRepo?.owner,
+        repo: ownerRepo?.repo,
         capabilities: { readOnly: isReadOnly(), remoteEnabled: isRemoteEnabled() },
         versions
       });
