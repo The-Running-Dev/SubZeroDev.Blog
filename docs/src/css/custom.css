@@ -425,6 +425,25 @@ a[class*='tagRegular'],
   --ifm-col-width: calc(9 / 12 * 100%);
 }
 
+/*
+ * Infima caps .container at a flat 1140px (1320px past its own 1440px
+ * breakpoint) regardless of how much wider the viewport actually is, which
+ * on any modern laptop/desktop leaves large, equal, genuinely empty margins
+ * on both sides -- both variables exist specifically to be overridden.
+ * Scoped to >=1440px (Infima's own xl breakpoint) so every narrower
+ * viewport, including the ~1140-1439px range where Infima was already
+ * using its non-xl 1140px value, is completely unaffected -- this only
+ * widens the case that was already hard-capped with room to spare.
+ * min(96vw, 1600px) keeps a small, deliberate gutter at the viewport edges
+ * while still capping at 1600px so a line of body text doesn't become
+ * unreadably long on an ultra-wide monitor.
+ */
+@media (min-width: 1440px) {
+  :root {
+    --ifm-container-width-xl: min(96vw, 1600px);
+  }
+}
+
 a:focus-visible,
 button:focus-visible,
 input:focus-visible {
