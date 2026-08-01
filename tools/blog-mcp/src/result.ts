@@ -69,6 +69,9 @@ export function toCallToolResult(result: ToolResult): {
 
 function renderText(result: ToolResult): string {
   const lines = [result.summary];
+  if (result.data !== undefined) {
+    lines.push(JSON.stringify(result.data, null, 2));
+  }
   if (result.findings && result.findings.length > 0) {
     for (const f of result.findings) {
       const loc = f.path ? `${f.path}${f.line ? `:${f.line}${f.column ? `:${f.column}` : ''}` : ''}` : '';
