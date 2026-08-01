@@ -1,6 +1,13 @@
 ---
 title: Getting Started with Docker on Windows 11
-sidebar_position: 7
+description: A zero-to-running-containers walkthrough for Docker Desktop, WSL2, and Portainer on Windows 11.
+slug: getting-started-with-docker-on-windows-11
+authors:
+  - subzerodev
+date: 2026-08-01T14:00:00Z
+tags:
+  - development
+  - docker
 ---
 
 # Getting Started with Docker on Windows 11
@@ -14,6 +21,8 @@ We’ll cover:
 - Running your first container
 - Using Portainer as a visual UI
 - Core concepts you actually need
+
+<!-- truncate -->
 
 ---
 

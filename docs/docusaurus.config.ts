@@ -49,7 +49,13 @@ const config: Config = {
             title: 'SubZeroDev Blog',
             description: 'Notes on building and maintaining SubZeroDev projects.',
             copyright: `Copyright © ${new Date().getFullYear()} SubZeroDev`,
-            language: 'en'
+            language: 'en',
+            // Docusaurus defaults this to the 20 most recent posts. A one-day
+            // batch of new posts (like a content migration) can push an older
+            // post past that cutoff even though it's still a live route --
+            // unlimited keeps the feed a complete index rather than a
+            // moving window that silently drops posts as the blog grows.
+            limit: false
           },
           showReadingTime: true,
           blogSidebarCount: 20

@@ -1,6 +1,12 @@
 ---
 title: Chocolate Mint Shisha — 50g Batch
-sidebar_position: 1
+description: A 50g batch recipe for chocolate mint shisha, ratios and all.
+slug: chocolate-mint-shisha-50g-batch
+authors:
+  - subzerodev
+date: 2026-08-01T17:20:00Z
+tags:
+  - recipes
 ---
 
 # Chocolate Mint Shisha — 50g Batch
@@ -16,6 +22,8 @@ sidebar_position: 1
 | Mint extract       | 0.5–1 tsp               |
 
 Chocolate is the dominant flavour, mint is the cool finish — ratio reflects that.
+
+<!-- truncate -->
 
 ---
 

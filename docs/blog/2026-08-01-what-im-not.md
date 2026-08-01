@@ -1,6 +1,13 @@
 ---
 title: What I'm Not
-sidebar_position: 13
+description: A pre-emptive filter -- read this first to save us both time.
+slug: what-im-not
+authors:
+  - subzerodev
+date: 2026-08-01T16:00:00Z
+tags:
+  - philosophy
+  - ahead-of-the-rubric
 ---
 
 # What I’m Not  
@@ -9,6 +16,8 @@ sidebar_position: 13
 > This page exists to save us both time.
 
 If you’re still reading after this, we’re probably fine.
+
+<!-- truncate -->
 
 ---
 

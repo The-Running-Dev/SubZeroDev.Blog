@@ -57,3 +57,23 @@ productivity:
   label: Productivity
   permalink: /productivity
   description: Posts related to Productivity.
+
+docker:
+  label: Docker
+  permalink: /docker
+  description: Containers, images, and the tooling around running things in Docker.
+
+ahead-of-the-rubric:
+  label: Ahead of the Rubric
+  permalink: /ahead-of-the-rubric
+  description: The recurring pattern of building things before the systems around them are ready to grade them.
+
+reading-list:
+  label: Reading List
+  permalink: /reading-list
+  description: Books and audiobooks worth a first listen or a repeat one.
+
+recipes:
+  label: Recipes
+  permalink: /recipes
+  description: Recipes worth writing down before they're forgotten.
