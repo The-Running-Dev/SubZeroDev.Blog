@@ -2,8 +2,8 @@
 // A fake `gh` used only by tests: logs every invocation's argv to
 // GH_SHIM_LOG (one JSON array per line) and returns canned responses shaped
 // like the real CLI, so blog_push/blog_create_pr/blog_auto_merge/
-// blog_pr_status/blog_pr_comments can be exercised end to end without ever
-// touching a real GitHub repository.
+// blog_pr_status/blog_list_prs/blog_pr_comments/blog_repo_health can be
+// exercised end to end without ever touching a real GitHub repository.
 import fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 
@@ -66,6 +66,15 @@ if (group === 'pr' && action === 'merge') {
     fail('gh-shim: pr merge failed (forced by GH_SHIM_MERGE_FAIL)');
   }
   process.stdout.write(`Auto-merge enabled for pull request #${prNumber}\n`);
+  process.exit(0);
+}
+
+if (group === 'pr' && action === 'list') {
+  // Covers both blog_list_prs (--state all) and blog_repo_health's open-PR
+  // count (--state open) -- the shim doesn't need to filter by state itself,
+  // it just returns whatever the test configured.
+  const prs = process.env.GH_SHIM_PR_LIST_JSON ? JSON.parse(process.env.GH_SHIM_PR_LIST_JSON) : [];
+  process.stdout.write(JSON.stringify(prs) + '\n');
   process.exit(0);
 }
 

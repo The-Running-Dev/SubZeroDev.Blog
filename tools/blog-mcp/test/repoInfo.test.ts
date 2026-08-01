@@ -132,15 +132,36 @@ describe('repoInfo and blog_sync_base against a scratch bare remote', () => {
     expect(await currentBranch({ repoRoot: clone })).toBe('blog/fixture');
   });
 
-  it('blog_repo_health reports parked and clean while on the feature branch', async () => {
+  it('blog_repo_health reports parked and clean while on the feature branch, with local activity fields and a null GitHub group', async () => {
     const result = await call(server, 'blog_repo_health', {});
     expect(result.ok).toBe(true);
-    const data = result.data as { branch: string; baseBranch: string; dirty: boolean; parked: boolean; ahead: number; behind: number };
+    const data = result.data as {
+      branch: string;
+      baseBranch: string;
+      dirty: boolean;
+      parked: boolean;
+      ahead: number;
+      behind: number;
+      commitsLast7Days: number;
+      daysSinceLastCommit: number | null;
+      staleBranches: { count: number; names: string[] };
+      github: unknown;
+      githubNote?: string;
+    };
     expect(data.branch).toBe('blog/fixture');
     expect(data.baseBranch).toBe('main');
     expect(data.parked).toBe(true);
     expect(data.dirty).toBe(false);
     expect(data.ahead).toBeGreaterThanOrEqual(1);
+    // The seed commit was just made moments ago by this test's own setup.
+    expect(data.commitsLast7Days).toBeGreaterThanOrEqual(1);
+    expect(data.daysSinceLastCommit).toBe(0);
+    expect(data.staleBranches).toEqual({ count: 0, names: [] });
+    // This test's ToolContext has no `capabilities` at all (see beforeAll) --
+    // the GitHub-derived block must degrade to null silently, never throw or
+    // block the local fields above from being returned.
+    expect(data.github).toBeNull();
+    expect(data.githubNote).toBeUndefined();
   });
 
   it('blog_repo_health reports dirty when the working tree has uncommitted changes', async () => {
