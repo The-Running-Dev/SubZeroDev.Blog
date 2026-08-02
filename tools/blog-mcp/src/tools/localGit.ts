@@ -177,7 +177,7 @@ export function registerLocalGitTools(ctx: ToolContext): void {
 
       if (!(await isClean({ repoRoot }))) {
         return precondition(
-          'Refusing to prepare a publish branch with uncommitted changes present (staged, unstaged, or untracked); commit, stash, or discard them first -- branch preparation never moves uncommitted work implicitly.'
+          "Refusing to prepare a publish branch with uncommitted changes present (staged, unstaged, or untracked); commit, stash, or discard them first -- branch preparation never moves uncommitted work implicitly. blog_restore_paths can discard tracked-file modifications back to a known ref; it cannot remove an untracked file (use the owning authoring tool, such as blog_delete_post, when one provides a scoped deletion path)."
         );
       }
 
@@ -392,6 +392,67 @@ export function registerLocalGitTools(ctx: ToolContext): void {
     wrapMutatingTool(ctx, 'blog_reset_stage', async (args: { paths: string[] }) => {
       await gitOrThrow(['restore', '--staged', '--', ...args.paths], { repoRoot });
       return ok(`Unstaged ${args.paths.length} path(s)`, { paths: args.paths });
+    })
+  );
+
+  server.registerTool(
+    'blog_restore_paths',
+    {
+      title: 'Discard working-tree changes to specific paths',
+      description:
+        "Restores an explicit, non-empty list of repo-relative paths to their content at source (defaults to origin/<base>), discarding uncommitted working-tree modifications via git restore. Never accepts -A, --all, or '.'; every path is checked against the publishing-path allowlist. Refuses staged paths (use blog_reset_stage first), cannot delete untracked files, and never rewrites history.",
+      inputSchema: {
+        paths: z.array(z.string()).min(1),
+        source: z.string().optional()
+      }
+    },
+    wrapMutatingTool(ctx, 'blog_restore_paths', async (args: { paths: string[]; source?: string }) => {
+      const check = checkAllowedPaths(repoRoot, args.paths, ctx.capabilities?.writablePathPrefixes);
+      if (!check.ok) return precondition(check.reason ?? 'One or more paths are not allowed.');
+
+      const normalizedPaths = args.paths.map((relativePath) => relativePath.replace(/\\/g, '/'));
+      const entries = await status({ repoRoot });
+      const staged = new Set(entries.filter((entry) => entry.staged).map((entry) => entry.path.replace(/\\/g, '/')));
+      const stagedRequested = normalizedPaths.filter((relativePath) => staged.has(relativePath));
+      if (stagedRequested.length > 0) {
+        return precondition(
+          `Refusing: ${stagedRequested.join(', ')} ${stagedRequested.length === 1 ? 'is' : 'are'} staged. Unstage with blog_reset_stage first.`
+        );
+      }
+
+      const source = args.source ?? `origin/${config.baseBranch}`;
+      const sourceCommand = ['git', 'rev-parse', '--verify', `${source}^{tree}`];
+      const sourceResult = await git(sourceCommand.slice(1), { repoRoot });
+      if (sourceResult.exitCode !== 0) {
+        return infrastructureFailure(`Could not resolve restore source '${source}'.`, {
+          command: sourceCommand,
+          exitCode: sourceResult.exitCode,
+          stdout: sourceResult.stdout,
+          stderr: sourceResult.stderr
+        });
+      }
+
+      const sourceTree = sourceResult.stdout.trim();
+      for (const relativePath of normalizedPaths) {
+        const atSource = await git(['cat-file', '-e', `${sourceTree}:${relativePath}`], { repoRoot });
+        if (atSource.exitCode !== 0) {
+          return precondition(
+            `'${relativePath}' does not exist at '${source}'; blog_restore_paths cannot delete an untracked file or restore content the source does not contain.`
+          );
+        }
+      }
+
+      const command = ['git', 'restore', '--source', source, '--worktree', '--', ...normalizedPaths];
+      const result = await git(command.slice(1), { repoRoot });
+      if (result.exitCode !== 0) {
+        return infrastructureFailure('git restore failed', {
+          command,
+          exitCode: result.exitCode,
+          stdout: result.stdout,
+          stderr: result.stderr
+        });
+      }
+      return ok(`Restored ${normalizedPaths.length} path(s) to their content at '${source}'`, { paths: normalizedPaths, source });
     })
   );
 }

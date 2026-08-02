@@ -626,6 +626,11 @@ Local filesystem writes:
 - Prefer `blog_prepare_publish_branch` over `blog_create_branch` when starting a
   publish. `prepare` preserves a clean local-only commit and only rebases when the
   base branch is behind origin.
+- Run `blog_prepare_publish_branch` before any authoring write. If an earlier
+  write already left the tree dirty, remove a newly-created post with
+  `blog_delete_post` when appropriate, unstage tracked paths with
+  `blog_reset_stage`, then use `blog_restore_paths` for the explicit tracked
+  paths that should return to a known ref.
 - `blog_commit` now refuses to run on the base branch; callers must commit from a
   feature branch.
 - `blog_sync_base({ ffOnly: true })` reports a blocked fast-forward as a
@@ -637,6 +642,7 @@ Local git:
 - `blog_sync_base` — `git fetch --prune origin <base>`; pass `ffOnly` to also fast-forward the local base branch, but only when it's the one currently checked out and the tree is clean (never switches branches, never touches a feature branch); reports a precondition, not `ok:true`, when a fast-forward is genuinely attempted and refused
 - `blog_prepare_publish_branch` — the preferred way to start a publish. Resolves local-vs-remote-base ancestry before any write: base already in sync with origin -> branch straight from it; base purely behind -> fast-forward it, then branch; base has a clean local-only commit origin doesn't -> preserve it on the new branch and rebase onto the latest origin instead of abandoning it (a genuine rebase conflict aborts safely, leaving the original commit reachable from the untouched branch). A branch that already exists locally or on origin is switched to as-is and never rebased. `blog_create_branch` (same inputs, simpler behavior: always branches straight from `origin/<base>`) stays registered for any caller that already depends on it, but no longer abandons a local-only commit is the whole reason to prefer the newer tool.
 - `blog_stage`, `blog_commit` (refuses while the base branch is checked out), `blog_diff`, `blog_reset_stage`
+- `blog_restore_paths` — discards working-tree modifications for an explicit allowlisted path list back to `origin/<base>` (or an explicit source ref); refuses staged paths and cannot delete untracked files
 
 Every tool that mutates the working tree, git state, or a PR/merge — every tool above except `blog_diff` and the read-only tiers — is serialized behind an in-process mutex (`src/exec/repoLock.ts`) and appends a scrubbed, best-effort line to `${BLOG_MCP_WORKSPACE}/state/audit.log` (`src/exec/auditLog.ts`) once it completes. The mutex exists because `serve` mode (a later phase) will have multiple actors — an external MCP client, a web UI, a scheduler tick — sharing one working tree and one `HEAD`; without it, two concurrent branch/stage/commit calls would race. The audit log is a no-op (never throws, never blocks) when no workspace path is available, which is the case for every unit test.
 

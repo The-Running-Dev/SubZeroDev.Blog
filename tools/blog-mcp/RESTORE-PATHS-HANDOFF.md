@@ -5,11 +5,9 @@
 chat history that produced it. Everything you need to verify a claim is a
 file path or a command you can run yourself.
 
-**Status:** not started. This is a plan only — no code has been written for
-this specific fix yet. It is independent of, and can be done before, during,
-or after, `tools/blog-mcp/PHASE7-HANDOFF.md` (Milestone 11's final phase) —
-read that document separately if you're also picking that up; the two do
-not conflict but touch some of the same test-helper conventions.
+**Status:** implemented under [issue #104](https://github.com/The-Running-Dev/SubZeroDev.Blog/issues/104).
+This document remains the design and safety-boundary record; the current
+source, tests, and tool descriptions are authoritative.
 
 ## 1. The problem, verified against current `main`
 

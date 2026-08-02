@@ -62,6 +62,7 @@ describe('createServer with an explicit capabilities override', () => {
       expect(names).toContain('blog_log');
       expect(names).toContain('blog_check_status');
       expect(names).not.toContain('blog_create_post');
+      expect(names).not.toContain('blog_restore_paths');
       expect(names).not.toContain('blog_push');
     });
   });
@@ -74,6 +75,7 @@ describe('createServer with an explicit capabilities override', () => {
       });
       const names = registeredToolNames(server);
       expect(names).toContain('blog_create_post');
+      expect(names).toContain('blog_restore_paths');
       expect(names).toContain('blog_push');
       expect(names).not.toContain('blog_check_status');
     });
