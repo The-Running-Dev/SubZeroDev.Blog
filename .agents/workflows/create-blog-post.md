@@ -72,7 +72,7 @@ Update the local view of the target branch, then create:
 
 The branch must be based on the latest available `main`. Do not overwrite unrelated local changes.
 
-- **Tool:** `blog_create_branch({ name: "<branch-name>" })` (or `{ slug, kind: "blog" }` to derive `blog/<slug>`, matching this repository's convention for post branches). Fetches `origin/main` first; refuses if anything is already staged.
+- **Tool:** `blog_prepare_publish_branch({ name: "<branch-name>" })` (or `{ slug, kind: "blog" }` to derive `blog/<slug>`, matching this repository's convention for post branches). Fetches `origin/main` first, then creates the branch from the latest `origin/main` -- but if the local `main` already has a clean commit that never got pushed, that commit is preserved on the new branch (rebased onto the latest remote state) instead of being abandoned, which is what `blog_create_branch` used to do and is the exact incident Milestone 11 was built to fix. Never rewrites a branch that already exists locally or on origin.
 - **Fallback:** `git fetch origin main && git switch -c <branch-name> origin/main`.
 
 ### 4. Create the blog post
@@ -96,20 +96,15 @@ tags:
 ---
 ```
 
-The author must reference a valid author defined by the repository. Every tag must reference a key already declared in `docs/blog/tags.yml`.
+An `authors`/`tags` key that isn't declared yet is not an error: `blog_create_post`/`blog_update_post` create it automatically, atomically with the post itself, using a deterministic minimal entry (title-cased name/label, `/<key>` permalink for a tag) unless an explicit `authorDefinitions`/`tagDefinitions` entry is supplied for that key. Omitting `authors` entirely uses the repository's configured default author -- the result's `defaultAuthorUsed` field reports when that happened, so it's never silent.
 
-- **Tool:** `blog_create_post({ title, description, slug, body, tags, date, authors })`. Validates before writing — nothing is written if any error-severity finding is reported (missing fields, bad slug/date shape, unknown tag/author, missing or duplicate truncate marker, more than one top-level heading before the marker, a leftover template placeholder). If it refuses, the returned `findings` name the exact rule that failed; fix and retry rather than writing the file by hand.
+- **Tool:** `blog_create_post({ title, description, slug, body, tags, date, authors, authorDefinitions?, tagDefinitions? })`. Validates before writing — nothing is written if any error-severity finding is reported (missing fields, bad slug/date shape, missing or duplicate truncate marker, more than one top-level heading before the marker, a leftover template placeholder). If it refuses, the returned `findings` name the exact rule that failed; fix and retry rather than writing the file by hand. The result's `changedPaths` lists every file the call actually touched (the post, plus `authors.yml`/`tags.yml` only if a key was auto-created) -- stage from that list, not by guessing.
 - **Fallback:** copy `docs/blog/_post-template.md` to the target path and fill it in by hand.
 
-If the supplied post needs new tags:
+To register a tag or author explicitly (a custom label/description rather than the deterministic default, or independent of any specific post):
 
-1. Add the required keys to `docs/blog/tags.yml`.
-2. Follow the existing tag structure and permalink conventions.
-3. Ensure tag permalinks remain unique.
-4. Do not add unnecessary tags.
-
-- **Tool:** `blog_add_tag({ key, label, description, permalink? })` — refuses a duplicate key or permalink before writing, and validates the result against the exact regexes `build/Test-DocumentationArtifact.ps1` uses so a tag this adds can never fail CI's tag-integrity check.
-- **Fallback:** edit `docs/blog/tags.yml` by hand, matching the existing blank-line-separated entry shape.
+- **Tool:** `blog_add_tag({ key, label, description, permalink? })` / `blog_add_author({ key, name, url?, imageUrl? })` — each refuses a duplicate key (or, for tags, a duplicate permalink) before writing, and `blog_add_tag`'s result validates against the exact regexes `build/Test-DocumentationArtifact.ps1` uses so a tag this adds can never fail CI's tag-integrity check.
+- **Fallback:** edit `docs/blog/tags.yml`/`docs/blog/authors.yml` by hand, matching the existing blank-line-separated entry shape.
 
 Preserve the supplied article wording exactly unless changes are required for Markdown validity or the user explicitly requests editing.
 
@@ -152,7 +147,7 @@ Commit all intended changes with:
 
 Push `<branch-name>` to the remote repository. Verify that the remote branch contains the same commit/tree as the validated local changes.
 
-- **Tool:** `blog_stage({ paths: [...] })` (never `-A`/`.`), `blog_commit({ type: "feat", scope: "blog", summary: "..." })`, `blog_push({})` (verifies the remote now matches local `HEAD` after pushing). `blog_push` and `blog_stage`/`blog_commit` require `BLOG_MCP_ALLOW_REMOTE=1` and default (non-read-only) mode respectively.
+- **Tool:** `blog_stage({ paths: [...] })` (never `-A`/`.`) -- pass `blog_create_post`/`blog_update_post`'s own `changedPaths` from step 4, not a hand-assembled list, so an auto-created `authors.yml`/`tags.yml` change is never left uncommitted. Then `blog_commit({ type: "feat", scope: "blog", summary: "..." })`, `blog_push({})` (verifies the remote now matches local `HEAD` after pushing). `blog_push` and `blog_stage`/`blog_commit` require `BLOG_MCP_ALLOW_REMOTE=1` and default (non-read-only) mode respectively.
 - **Fallback:** `git add -- <explicit paths>`, `git commit -m "<commit-message>"`, `git push -u origin <branch-name>`.
 
 ### 7. Open a ready PR and enable automatic merge

@@ -185,22 +185,25 @@ async function publishFile(deps: WatchTickDeps, filePath: string, originalName: 
   const fields = extractRequiredFields(parsed.frontMatter);
   if (typeof fields === 'string') return { ok: false, kind: 'precondition', summary: fields };
 
-  // blog_create_branch runs BEFORE the exists check, not after: the watcher
-  // is deliberately allowed to sit parked on a previous file's feature
-  // branch between ticks (see runWatchTick's doc comment), and
+  // blog_prepare_publish_branch runs BEFORE the exists check, not after: the
+  // watcher is deliberately allowed to sit parked on a previous file's
+  // feature branch between ticks (see runWatchTick's doc comment), and
   // blog_list_posts reads whatever's currently checked out. Checking
   // existence first would answer "does this slug exist on whatever
   // unrelated branch we happened to be parked on", not "does it exist for
   // the slug this file is actually about" -- switching to blog/<slug>
   // first (freshly based on origin/<base>, unless that branch already
-  // exists locally, in which case blog_create_branch reuses it) makes the
-  // exists check scoped to the right branch before it ever runs.
-  const branchResult = await callToolInProcess(deps.serverOptions, 'blog_create_branch', {
+  // exists locally, in which case it's reused) makes the exists check
+  // scoped to the right branch before it ever runs. blog_prepare_publish_branch
+  // (Milestone 11 Phase 4), not blog_create_branch: preserves a clean
+  // local-only commit already on the base branch by rebasing it onto the
+  // feature branch instead of abandoning it.
+  const branchResult = await callToolInProcess(deps.serverOptions, 'blog_prepare_publish_branch', {
     slug: fields.slug,
     kind: 'blog',
     checkoutExisting: true
   });
-  if (!branchResult.ok) return { ok: false, kind: branchResult.kind, summary: `blog_create_branch failed: ${branchResult.summary}` };
+  if (!branchResult.ok) return { ok: false, kind: branchResult.kind, summary: `blog_prepare_publish_branch failed: ${branchResult.summary}` };
   const branch = (branchResult.data as { branch: string }).branch;
 
   const listResult = await callToolInProcess(deps.serverOptions, 'blog_list_posts', {});
@@ -240,9 +243,17 @@ async function publishFile(deps: WatchTickDeps, filePath: string, originalName: 
       });
   const writeTool = exists ? 'blog_update_post' : 'blog_create_post';
   if (!writeResult.ok) return { ok: false, kind: writeResult.kind, summary: `${writeTool} failed: ${writeResult.summary}` };
-  const writtenPath = (writeResult.data as { path: string }).path;
+  const writeData = writeResult.data as { path: string; changedPaths?: string[] };
+  const writtenPath = writeData.path;
 
-  const stageResult = await callToolInProcess(deps.serverOptions, 'blog_stage', { paths: [writtenPath] });
+  // changedPaths (Milestone 11 Phase 2/3), not just [writtenPath]: a dropped
+  // file naming a brand-new tag/author gets it auto-created server-side as
+  // part of the same write, and that generated authors.yml/tags.yml change
+  // needs staging too -- otherwise it's silently left uncommitted, and the
+  // pushed post ends up referencing metadata that was never actually
+  // published. Falls back to [writtenPath] only if a result somehow lacks
+  // changedPaths (defensive; every real PostWriteResult has it).
+  const stageResult = await callToolInProcess(deps.serverOptions, 'blog_stage', { paths: writeData.changedPaths ?? [writtenPath] });
   if (!stageResult.ok) return { ok: false, kind: stageResult.kind, summary: `blog_stage failed: ${stageResult.summary}` };
 
   const commitResult = await callToolInProcess(deps.serverOptions, 'blog_commit', {
