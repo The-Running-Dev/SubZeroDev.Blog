@@ -31,8 +31,9 @@ const SERVER_INSTRUCTIONS = [
     'the validators); read-only repo/git introspection -- blog_branches,',
     'blog_log, blog_repo_health; local-write authoring -- blog_create_post,',
     'blog_update_post, blog_delete_post, blog_add_tag, blog_add_hub_entry;',
-    'local git -- blog_stage, blog_reset_stage, blog_commit,',
-    'blog_create_branch, blog_sync_base, blog_diff; GitHub/remote --',
+    'local git -- blog_prepare_publish_branch, blog_stage, blog_reset_stage,',
+    'blog_restore_paths, blog_commit, blog_create_branch, blog_sync_base,',
+    'blog_diff; GitHub/remote --',
     'blog_push, blog_create_pr, blog_pr_status, blog_list_prs, blog_pr_comments,',
     'blog_auto_merge; CI and deploy monitoring -- blog_check_status,',
     'blog_wait_for_checks, blog_wait_for_merge, blog_deploy_status,',
@@ -42,7 +43,8 @@ const SERVER_INSTRUCTIONS = [
   ].join(' '),
   [
     'Publishing pipeline, in order: blog_preflight (read-only sanity check) ->',
-    'blog_create_post -> blog_stage -> blog_commit -> blog_push -> blog_create_pr ->',
+    'blog_prepare_publish_branch -> blog_create_post -> blog_stage ->',
+    'blog_commit -> blog_push -> blog_create_pr ->',
     'blog_wait_for_checks -> blog_wait_for_merge -> blog_wait_for_deploy ->',
     'blog_verify_published_url.'
   ].join(' '),
