@@ -2,13 +2,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
 import { ok, validationFailure, precondition, hasBlockingFindings, type Finding } from '../result.js';
-import { PreconditionError } from '../errors.js';
+import { PreconditionError, InfrastructureError } from '../errors.js';
 import { run } from '../exec/run.js';
 import { runPwshScript } from '../exec/pwsh.js';
 import { parseMarkdown, assemblePost, type PostFrontMatter } from '../domain/frontmatter.js';
-import { buildFilename, canonicalUrl, insertTruncateMarker } from '../domain/post.js';
-import { loadAuthors } from '../domain/authors.js';
-import { loadTags, appendTagEntry, tagsYmlPath } from '../domain/tags.js';
+import { buildFilename, canonicalUrl, insertTruncateMarker, type PostWriteResult } from '../domain/post.js';
+import { loadAuthors, authorsYmlPath, appendAuthorEntry, checkAuthorsYmlIntegrity, resolveAuthors, type AuthorEntry } from '../domain/authors.js';
+import { loadTags, appendTagEntry, tagsYmlPath, checkTagsYmlIntegrity, resolveTags, type TagEntry } from '../domain/tags.js';
+import { writeFilesAtomically, type AtomicWriteFile } from '../domain/atomicWrite.js';
 import { insertHubEntry, assertStillParses, type HubEntry } from '../domain/hubs.js';
 import { listPostFiles, loadPost, validateAllPosts, validateHubs, type HubValidationContext } from '../domain/validate.js';
 import { checkAllowedPath } from '../domain/paths.js';
@@ -31,6 +32,49 @@ async function toolVersions(repoRoot: string): Promise<Record<string, string>> {
     }
   }
   return versions;
+}
+
+/**
+ * Serializes any newly-resolved author/tag entries into candidate
+ * authors.yml/tags.yml content, ready to hand to writeFilesAtomically
+ * alongside the post file -- shared by blog_create_post and
+ * blog_update_post so both go through the identical atomic-metadata path
+ * (TODO-NEXT.md sec3.2/sec9). Runs the same integrity checks
+ * blog_add_tag/blog_add_author run on their own candidate writes, so a
+ * malformed generated entry is caught before anything is written rather than
+ * only by a later blog_validate_posts call.
+ */
+function metadataWrites(
+  repoRoot: string,
+  blogDir: string,
+  createdAuthors: AuthorEntry[],
+  createdTags: TagEntry[]
+): { writes: AtomicWriteFile[]; changedPaths: string[]; findings: Finding[] } {
+  const writes: AtomicWriteFile[] = [];
+  const changedPaths: string[] = [];
+  const findings: Finding[] = [];
+
+  if (createdAuthors.length > 0) {
+    const absolutePath = authorsYmlPath(repoRoot, blogDir);
+    const relativePath = path.relative(repoRoot, absolutePath).split(path.sep).join('/');
+    let content = fs.existsSync(absolutePath) ? fs.readFileSync(absolutePath, 'utf8') : '';
+    for (const entry of createdAuthors) content = appendAuthorEntry(content, entry);
+    findings.push(...checkAuthorsYmlIntegrity(content, relativePath));
+    writes.push({ absolutePath, content });
+    changedPaths.push(relativePath);
+  }
+
+  if (createdTags.length > 0) {
+    const absolutePath = tagsYmlPath(repoRoot, blogDir);
+    const relativePath = path.relative(repoRoot, absolutePath).split(path.sep).join('/');
+    let content = fs.existsSync(absolutePath) ? fs.readFileSync(absolutePath, 'utf8') : '';
+    for (const entry of createdTags) content = appendTagEntry(content, entry);
+    findings.push(...checkTagsYmlIntegrity(content, relativePath));
+    writes.push({ absolutePath, content });
+    changedPaths.push(relativePath);
+  }
+
+  return { writes, changedPaths, findings };
 }
 
 function postsForHubContext(repoRoot: string, blogDir: string): HubValidationContext[] {
@@ -335,12 +379,25 @@ export function registerAuthoringTools(ctx: ToolContext): void {
 export function registerAuthoringWriteTools(ctx: ToolContext): void {
   const { server, repoRoot, config } = ctx;
 
+  const authorDefinitionSchema = z.object({
+    key: z.string(),
+    name: z.string().optional(),
+    url: z.string().optional(),
+    imageUrl: z.string().optional()
+  });
+  const tagDefinitionSchema = z.object({
+    key: z.string(),
+    label: z.string().optional(),
+    permalink: z.string().optional(),
+    description: z.string().optional()
+  });
+
   server.registerTool(
     'blog_create_post',
     {
       title: 'Create a blog post',
       description:
-        'Writes a new post file under docs/blog with validated front matter and a truncate marker. Nothing is written if validation reports any error-severity finding.',
+        "Writes a new post file under docs/blog with validated front matter and a truncate marker. A requested author or tag key not yet declared in authors.yml/tags.yml is created automatically as part of the same write (use authorDefinitions/tagDefinitions to control the generated name/url/label/permalink/description; otherwise a deterministic minimal entry is generated). Omitting authors entirely uses the configured default author, reported back via defaultAuthorUsed. Nothing is written if validation reports any error-severity finding -- the post and any newly-created metadata are written atomically, all or nothing.",
       inputSchema: {
         title: z.string(),
         description: z.string(),
@@ -349,13 +406,14 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
         tags: z.array(z.string()).min(1),
         date: z.string().optional(),
         authors: z.array(z.string()).optional(),
+        authorDefinitions: z.array(authorDefinitionSchema).optional(),
+        tagDefinitions: z.array(tagDefinitionSchema).optional(),
         truncateAfter: z.string().optional(),
         overwrite: z.boolean().optional()
       }
     },
     wrapMutatingTool(ctx, 'blog_create_post', async (args) => {
       const date = args.date ?? new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
-      const authors = args.authors ?? [config.authorId];
       const filename = buildFilename(date, args.slug);
       const relativePath = `${config.blogDir}/${filename}`;
       const absolutePath = path.join(repoRoot, relativePath);
@@ -364,8 +422,27 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
         return precondition(`'${relativePath}' already exists; pass overwrite to replace it.`);
       }
 
+      const existingAuthors = loadAuthors(repoRoot, config.blogDir);
+      const existingTags = loadTags(repoRoot, config.blogDir);
+
+      const authorResolution = resolveAuthors(existingAuthors, args.authors, args.authorDefinitions, {
+        authorId: config.authorId,
+        canonicalUrl: config.canonicalUrl
+      });
+      if (!authorResolution.ok) return precondition(authorResolution.reason);
+
+      const tagResolution = resolveTags(existingTags, args.tags, args.tagDefinitions);
+      if (!tagResolution.ok) return precondition(tagResolution.reason);
+
       const body = insertTruncateMarker(args.body, args.truncateAfter ?? '');
-      const fm: PostFrontMatter = { title: args.title, description: args.description, slug: args.slug, authors, date, tags: args.tags };
+      const fm: PostFrontMatter = {
+        title: args.title,
+        description: args.description,
+        slug: args.slug,
+        authors: authorResolution.authors,
+        date,
+        tags: tagResolution.tags
+      };
       const content = assemblePost(fm, body);
 
       const parsed = parseMarkdown(content);
@@ -378,8 +455,8 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
         frontMatterPresent: parsed.frontMatterPresent,
         body: parsed.body
       };
-      const authorKeys = new Set(loadAuthors(repoRoot, config.blogDir).map((a) => a.key));
-      const tagKeys = new Set(loadTags(repoRoot, config.blogDir).map((t) => t.key));
+      const authorKeys = new Set([...existingAuthors.map((a) => a.key), ...authorResolution.created.map((a) => a.key)]);
+      const tagKeys = new Set([...existingTags.map((t) => t.key), ...tagResolution.created.map((t) => t.key)]);
       const { validatePost } = await import('../domain/validate.js');
       const findings = await validatePost(repoRoot, loaded, authorKeys, tagKeys);
       const existingSlugs = postsForHubContext(repoRoot, config.blogDir).map((p) => p.slug);
@@ -387,13 +464,27 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
         findings.push({ path: relativePath, severity: 'error', rule: 'SlugUnique', message: `Slug '${args.slug}' is already used by another post.` });
       }
 
+      const metadata = metadataWrites(repoRoot, config.blogDir, authorResolution.created, tagResolution.created);
+      findings.push(...metadata.findings);
+
       if (hasBlockingFindings(findings)) {
         return validationFailure(`Not written: ${relativePath}`, findings);
       }
 
-      fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
-      fs.writeFileSync(absolutePath, content, 'utf8');
-      return ok(`Created ${relativePath}`, { path: relativePath, canonicalUrl: canonicalUrl(config.canonicalUrl, args.slug) }, findings);
+      writeFilesAtomically([{ absolutePath, content }, ...metadata.writes]);
+
+      const result: PostWriteResult = {
+        path: relativePath,
+        changedPaths: [relativePath, ...metadata.changedPaths],
+        canonicalDate: date,
+        authors: authorResolution.authors,
+        tags: tagResolution.tags,
+        createdAuthors: authorResolution.created,
+        createdTags: tagResolution.created,
+        defaultAuthorUsed: authorResolution.defaultAuthorUsed,
+        canonicalUrl: canonicalUrl(config.canonicalUrl, args.slug)
+      };
+      return ok(`Created ${relativePath}`, result, findings);
     })
   );
 
@@ -401,7 +492,8 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
     'blog_update_post',
     {
       title: 'Update a blog post',
-      description: 'Updates an existing post’s body and/or front matter. Refuses to change the slug unless allowSlugChange and compatibilityRouteAdded are both true.',
+      description:
+        "Updates an existing post's body and/or front matter. Refuses to change the slug unless allowSlugChange and compatibilityRouteAdded are both true. When authors or tags are supplied in frontMatter, any key not yet declared in authors.yml/tags.yml is created automatically as part of the same atomic write, the same as blog_create_post -- fields left out of frontMatter are unaffected and never trigger creation.",
       inputSchema: {
         slug: z.string(),
         body: z.string().optional(),
@@ -415,6 +507,8 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
             slug: z.string().optional()
           })
           .optional(),
+        authorDefinitions: z.array(authorDefinitionSchema).optional(),
+        tagDefinitions: z.array(tagDefinitionSchema).optional(),
         allowSlugChange: z.boolean().optional(),
         compatibilityRouteAdded: z.boolean().optional()
       }
@@ -434,12 +528,36 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
       }
 
       const currentFm = match.frontMatter;
+      const existingAuthors = loadAuthors(repoRoot, config.blogDir);
+      const existingTags = loadTags(repoRoot, config.blogDir);
+
+      let mergedAuthors: unknown = currentFm.authors;
+      let createdAuthors: AuthorEntry[] = [];
+      let defaultAuthorUsed = false;
+      if (args.frontMatter?.authors !== undefined) {
+        const authorResolution = resolveAuthors(existingAuthors, args.frontMatter.authors, args.authorDefinitions, {
+          authorId: config.authorId,
+          canonicalUrl: config.canonicalUrl
+        });
+        if (!authorResolution.ok) return precondition(authorResolution.reason);
+        mergedAuthors = authorResolution.authors;
+        createdAuthors = authorResolution.created;
+        defaultAuthorUsed = authorResolution.defaultAuthorUsed;
+      }
+
+      let mergedTags: unknown = currentFm.tags;
+      let createdTags: TagEntry[] = [];
+      if (args.frontMatter?.tags !== undefined) {
+        const tagResolution = resolveTags(existingTags, args.frontMatter.tags, args.tagDefinitions);
+        if (!tagResolution.ok) return precondition(tagResolution.reason);
+        mergedTags = tagResolution.tags;
+        createdTags = tagResolution.created;
+      }
+
       const mergedTitle = args.frontMatter?.title ?? currentFm.title;
       const mergedDescription = args.frontMatter?.description ?? currentFm.description;
       const mergedSlug = newSlug ?? currentFm.slug;
-      const mergedAuthors = args.frontMatter?.authors ?? currentFm.authors;
       const mergedDate = args.frontMatter?.date ?? currentFm.date;
-      const mergedTags = args.frontMatter?.tags ?? currentFm.tags;
 
       // The existing file on disk isn't guaranteed to satisfy REQUIRED_FIELDS
       // (validate.ts) -- it may predate validation or have been hand-edited.
@@ -485,17 +603,32 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
         frontMatterPresent: parsed.frontMatterPresent,
         body: parsed.body
       };
-      const authorKeys = new Set(loadAuthors(repoRoot, config.blogDir).map((a) => a.key));
-      const tagKeys = new Set(loadTags(repoRoot, config.blogDir).map((t) => t.key));
+      const authorKeys = new Set([...existingAuthors.map((a) => a.key), ...createdAuthors.map((a) => a.key)]);
+      const tagKeys = new Set([...existingTags.map((t) => t.key), ...createdTags.map((t) => t.key)]);
       const { validatePost } = await import('../domain/validate.js');
       const findings = await validatePost(repoRoot, loaded, authorKeys, tagKeys, { allowSlugChange: args.allowSlugChange ?? false });
+
+      const metadata = metadataWrites(repoRoot, config.blogDir, createdAuthors, createdTags);
+      findings.push(...metadata.findings);
 
       if (hasBlockingFindings(findings)) {
         return validationFailure(`Not updated: ${match.relativePath}`, findings);
       }
 
-      fs.writeFileSync(match.absolutePath, content, 'utf8');
-      return ok(`Updated ${match.relativePath}`, { path: match.relativePath }, findings);
+      writeFilesAtomically([{ absolutePath: match.absolutePath, content }, ...metadata.writes]);
+
+      const result: PostWriteResult = {
+        path: match.relativePath,
+        changedPaths: [match.relativePath, ...metadata.changedPaths],
+        canonicalDate: mergedDate as string,
+        authors: mergedAuthors as string[],
+        tags: mergedTags as string[],
+        createdAuthors,
+        createdTags,
+        defaultAuthorUsed,
+        canonicalUrl: canonicalUrl(config.canonicalUrl, mergedSlug as string)
+      };
+      return ok(`Updated ${match.relativePath}`, result, findings);
     })
   );
 
@@ -542,7 +675,8 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
     'blog_add_tag',
     {
       title: 'Add a controlled tag',
-      description: 'Appends a new tag entry to docs/blog/tags.yml in the file’s existing shape.',
+      description:
+        "Appends a new tag entry to docs/blog/tags.yml in the file's existing shape. Refuses if the key already exists -- for auto-creating a tag as part of writing a post, use blog_create_post/blog_update_post's tagDefinitions instead, which reuse an existing key rather than refusing.",
       inputSchema: {
         key: z.string().regex(/^[a-z0-9][a-z0-9-]*$/),
         label: z.string(),
@@ -551,27 +685,70 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
       }
     },
     wrapMutatingTool(ctx, 'blog_add_tag', async (args) => {
-      const filePath = tagsYmlPath(repoRoot, config.blogDir);
-      const relativePath = path.relative(repoRoot, filePath).split(path.sep).join('/');
       const existing = loadTags(repoRoot, config.blogDir);
       if (existing.some((t) => t.key === args.key)) {
         return precondition(`Tag key '${args.key}' already exists.`);
       }
-      const permalink = args.permalink ?? `/${args.key}`;
-      if (existing.some((t) => t.permalink === permalink)) {
-        return precondition(`Permalink '${permalink}' is already used by another tag.`);
+
+      const resolution = resolveTags(existing, [args.key], [
+        { key: args.key, label: args.label, permalink: args.permalink, description: args.description }
+      ]);
+      if (!resolution.ok) return precondition(resolution.reason);
+
+      const created = resolution.created.find((t) => t.key === args.key);
+      if (!created) throw new InfrastructureError(`resolveTags did not produce an entry for '${args.key}'.`);
+
+      const metadata = metadataWrites(repoRoot, config.blogDir, [], resolution.created);
+      if (hasBlockingFindings(metadata.findings)) {
+        return validationFailure(`Not written: ${tagsYmlPath(repoRoot, config.blogDir)}`, metadata.findings);
       }
 
-      const content = fs.readFileSync(filePath, 'utf8');
-      const updated = appendTagEntry(content, { key: args.key, label: args.label, permalink, description: args.description });
-      const { checkTagsYmlIntegrity } = await import('../domain/tags.js');
-      const findings = checkTagsYmlIntegrity(updated, relativePath);
-      if (hasBlockingFindings(findings)) {
-        return validationFailure(`Not written: ${relativePath}`, findings);
+      writeFilesAtomically(metadata.writes);
+      const relativePath = metadata.changedPaths[0] ?? path.relative(repoRoot, tagsYmlPath(repoRoot, config.blogDir)).split(path.sep).join('/');
+      return ok(`Added tag '${created.key}' to ${relativePath}`, { key: created.key, permalink: created.permalink, path: relativePath }, metadata.findings);
+    })
+  );
+
+  server.registerTool(
+    'blog_add_author',
+    {
+      title: 'Add an author',
+      description:
+        "Appends a new author entry to docs/blog/authors.yml in the file's existing shape. Refuses if the key already exists -- for auto-creating an author as part of writing a post, use blog_create_post/blog_update_post's authorDefinitions instead, which reuse an existing key rather than refusing.",
+      inputSchema: {
+        key: z.string().regex(/^[a-z0-9][a-z0-9-]*$/),
+        name: z.string(),
+        url: z.string().optional(),
+        imageUrl: z.string().optional()
+      }
+    },
+    wrapMutatingTool(ctx, 'blog_add_author', async (args) => {
+      const existing = loadAuthors(repoRoot, config.blogDir);
+      if (existing.some((a) => a.key === args.key)) {
+        return precondition(`Author key '${args.key}' already exists.`);
       }
 
-      fs.writeFileSync(filePath, updated, 'utf8');
-      return ok(`Added tag '${args.key}' to ${relativePath}`, { key: args.key, permalink, path: relativePath });
+      const resolution = resolveAuthors(existing, [args.key], [{ key: args.key, name: args.name, url: args.url, imageUrl: args.imageUrl }], {
+        authorId: config.authorId,
+        canonicalUrl: config.canonicalUrl
+      });
+      if (!resolution.ok) return precondition(resolution.reason);
+
+      const created = resolution.created.find((a) => a.key === args.key);
+      if (!created) throw new InfrastructureError(`resolveAuthors did not produce an entry for '${args.key}'.`);
+
+      const metadata = metadataWrites(repoRoot, config.blogDir, resolution.created, []);
+      if (hasBlockingFindings(metadata.findings)) {
+        return validationFailure(`Not written: ${authorsYmlPath(repoRoot, config.blogDir)}`, metadata.findings);
+      }
+
+      writeFilesAtomically(metadata.writes);
+      const relativePath = metadata.changedPaths[0] ?? path.relative(repoRoot, authorsYmlPath(repoRoot, config.blogDir)).split(path.sep).join('/');
+      return ok(
+        `Added author '${created.key}' to ${relativePath}`,
+        { key: created.key, name: created.name, url: created.url, path: relativePath },
+        metadata.findings
+      );
     })
   );
 

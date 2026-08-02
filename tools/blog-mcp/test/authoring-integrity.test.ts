@@ -8,12 +8,16 @@ import { parseMarkdown } from '../src/domain/frontmatter.js';
 
 /**
  * Regression fixtures for Milestone 11's four documented publishing-integrity
- * defects (TODO-NEXT.md sec1-14) as they manifest in blog_create_post. Every
- * `it.fails` body asserts the DESIRED, post-fix behavior against today's
- * still-buggy handler -- see the Milestone 11 Phase 1 plan for why this
- * shape (not a skipped test, not a pre-passing one) is deliberate: it keeps
- * the suite green today and turns into a hard "remove .fails, this one's
- * fixed" build failure the moment a later phase actually fixes each bug.
+ * defects (TODO-NEXT.md sec1-14) as they manifest in blog_create_post.
+ * Originally all five were `it.fails` -- each body asserted the DESIRED,
+ * post-fix behavior against the then-still-buggy handler, so the suite
+ * stayed green while the defect was pinned (see the Milestone 11 Phase 1
+ * plan). Phase 2 (atomic metadata resolution) fixed the first three -- the
+ * unknown-author, omitted-authors, and unknown-tag cases -- so their
+ * `.fails` was removed once they started genuinely passing; leaving `.fails`
+ * on them after the fix would have made the suite fail on an "unexpected
+ * pass" instead. The two date-normalization fixtures remain `it.fails` for
+ * Phase 3.
  *
  * Uses callToolInProcess (the same seam authoring-writes.test.ts uses for
  * this exact tool), not FakeServer -- these fixtures care about real zod
@@ -53,7 +57,7 @@ describe('blog_create_post: publishing integrity (Milestone 11)', () => {
     return fs.readFileSync(path.join(repoRoot, 'docs', 'blog', 'tags.yml'), 'utf8');
   }
 
-  it.fails('creating a post with an unknown author key creates the author instead of failing validation', async () => {
+  it('creating a post with an unknown author key creates the author instead of failing validation', async () => {
     const result = await callToolInProcess({ repoRoot }, 'blog_create_post', {
       title: 'A Post By A New Author',
       description: 'Exercises author auto-creation.',
@@ -63,10 +67,6 @@ describe('blog_create_post: publishing integrity (Milestone 11)', () => {
       authors: ['ben']
     });
 
-    // Today: validationFailure with an 'Authors' finding, nothing written.
-    // Desired: ok:true, docs/blog/authors.yml gains a 'ben' entry, and the
-    // result reports what it created rather than leaving the caller to
-    // diff authors.yml themselves.
     expect(result.ok).toBe(true);
     expect(result.kind).toBe('success');
     expect(readAuthorsYml()).toMatch(/^ben:/m);
@@ -74,7 +74,7 @@ describe('blog_create_post: publishing integrity (Milestone 11)', () => {
     expect(data?.createdAuthors?.some((a) => a.key === 'ben')).toBe(true);
   });
 
-  it.fails('omitting authors reports that the configured default was used', async () => {
+  it('omitting authors reports that the configured default was used', async () => {
     const result = await callToolInProcess({ repoRoot }, 'blog_create_post', {
       title: 'A Post With No Authors Field',
       description: 'Exercises the default-author fallback, shaped exactly like Compose\'s create request.',
@@ -84,16 +84,13 @@ describe('blog_create_post: publishing integrity (Milestone 11)', () => {
       // No `authors` field at all -- this is exactly the shape Compose's UI sends.
     });
 
-    // Today: ok:true, silently falls back to config.authorId ('subzerodev')
-    // with no signal a default was substituted. Desired: still ok:true and
-    // still defaults to 'subzerodev', but the result says so explicitly.
     expect(result.ok).toBe(true);
     const data = result.data as { defaultAuthorUsed?: boolean; authors?: string[] } | undefined;
     expect(data?.defaultAuthorUsed).toBe(true);
     expect(data?.authors).toEqual(['subzerodev']);
   });
 
-  it.fails('creating a post with an unknown tag key creates the tag instead of failing validation', async () => {
+  it('creating a post with an unknown tag key creates the tag instead of failing validation', async () => {
     const result = await callToolInProcess({ repoRoot }, 'blog_create_post', {
       title: 'A Post About A New Topic',
       description: 'Exercises tag auto-creation.',
@@ -103,9 +100,6 @@ describe('blog_create_post: publishing integrity (Milestone 11)', () => {
       authors: ['subzerodev']
     });
 
-    // Today: validationFailure with a 'Tags' finding, nothing written.
-    // Desired: ok:true, docs/blog/tags.yml gains a deterministic minimal
-    // entry (title-cased label, '/new-topic' permalink), result reports it.
     expect(result.ok).toBe(true);
     expect(result.kind).toBe('success');
     const tagsYml = readTagsYml();
