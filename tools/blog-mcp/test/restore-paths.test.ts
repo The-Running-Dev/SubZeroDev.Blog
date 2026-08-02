@@ -59,6 +59,37 @@ describe('blog_restore_paths', () => {
     }
   });
 
+  it('restores a tracked file deleted from the working tree', async () => {
+    const { remote, server } = await setUp('restore-deleted');
+    try {
+      fs.rmSync(path.join(remote.clone, 'README.md'));
+
+      const result = await call(server, 'blog_restore_paths', { paths: ['README.md'] });
+
+      expect(result.ok).toBe(true);
+      expect(readNormalized(path.join(remote.clone, 'README.md'))).toBe('# seed\n');
+      expect(await isClean({ repoRoot: remote.clone })).toBe(true);
+    } finally {
+      removeScratchRemote(remote);
+    }
+  });
+
+  it('rejects an unknown source ref as a caller precondition', async () => {
+    const { remote, server } = await setUp('restore-unknown-source');
+    try {
+      fs.writeFileSync(path.join(remote.clone, 'README.md'), '# unwanted change\n');
+
+      const result = await call(server, 'blog_restore_paths', { paths: ['README.md'], source: 'does-not-exist' });
+
+      expect(result.ok).toBe(false);
+      expect(result.kind).toBe('precondition');
+      expect(result.summary).toContain("Could not resolve restore source 'does-not-exist'");
+      expect(fs.readFileSync(path.join(remote.clone, 'README.md'), 'utf8')).toBe('# unwanted change\n');
+    } finally {
+      removeScratchRemote(remote);
+    }
+  });
+
   it('rejects paths outside the publishing allowlist', async () => {
     const { remote, server } = await setUp('restore-allowlist');
     try {

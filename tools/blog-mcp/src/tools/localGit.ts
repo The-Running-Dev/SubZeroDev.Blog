@@ -407,7 +407,7 @@ export function registerLocalGitTools(ctx: ToolContext): void {
       }
     },
     wrapMutatingTool(ctx, 'blog_restore_paths', async (args: { paths: string[]; source?: string }) => {
-      const check = checkAllowedPaths(repoRoot, args.paths, ctx.capabilities?.writablePathPrefixes);
+      const check = checkAllowedPaths(repoRoot, args.paths, ctx.capabilities?.writablePathPrefixes, { allowMissing: true });
       if (!check.ok) return precondition(check.reason ?? 'One or more paths are not allowed.');
 
       const normalizedPaths = args.paths.map((relativePath) => relativePath.replace(/\\/g, '/'));
@@ -421,15 +421,10 @@ export function registerLocalGitTools(ctx: ToolContext): void {
       }
 
       const source = args.source ?? `origin/${config.baseBranch}`;
-      const sourceCommand = ['git', 'rev-parse', '--verify', `${source}^{tree}`];
+      const sourceCommand = ['git', 'rev-parse', '--verify', '--quiet', `${source}^{tree}`];
       const sourceResult = await git(sourceCommand.slice(1), { repoRoot });
       if (sourceResult.exitCode !== 0) {
-        return infrastructureFailure(`Could not resolve restore source '${source}'.`, {
-          command: sourceCommand,
-          exitCode: sourceResult.exitCode,
-          stdout: sourceResult.stdout,
-          stderr: sourceResult.stderr
-        });
+        return precondition(`Could not resolve restore source '${source}'.`);
       }
 
       const sourceTree = sourceResult.stdout.trim();
