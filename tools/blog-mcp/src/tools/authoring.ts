@@ -10,6 +10,7 @@ import { buildFilename, canonicalUrl, insertTruncateMarker, type PostWriteResult
 import { loadAuthors, authorsYmlPath, appendAuthorEntry, checkAuthorsYmlIntegrity, resolveAuthors, type AuthorEntry } from '../domain/authors.js';
 import { loadTags, appendTagEntry, tagsYmlPath, checkTagsYmlIntegrity, resolveTags, type TagEntry } from '../domain/tags.js';
 import { writeFilesAtomically, type AtomicWriteFile } from '../domain/atomicWrite.js';
+import { normalizeDate, resolveDateNormalizationOptions } from '../domain/dateService.js';
 import { insertHubEntry, assertStillParses, type HubEntry } from '../domain/hubs.js';
 import { listPostFiles, loadPost, validateAllPosts, validateHubs, type HubValidationContext } from '../domain/validate.js';
 import { checkAllowedPath } from '../domain/paths.js';
@@ -413,7 +414,10 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
       }
     },
     wrapMutatingTool(ctx, 'blog_create_post', async (args) => {
-      const date = args.date ?? new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+      const requestNow = (ctx.clock ?? (() => new Date()))();
+      const dateResult = normalizeDate(args.date, resolveDateNormalizationOptions(), requestNow);
+      if (!dateResult.ok) return precondition(dateResult.reason);
+      const date = dateResult.canonical;
       const filename = buildFilename(date, args.slug);
       const relativePath = `${config.blogDir}/${filename}`;
       const absolutePath = path.join(repoRoot, relativePath);
@@ -557,7 +561,14 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
       const mergedTitle = args.frontMatter?.title ?? currentFm.title;
       const mergedDescription = args.frontMatter?.description ?? currentFm.description;
       const mergedSlug = newSlug ?? currentFm.slug;
-      const mergedDate = args.frontMatter?.date ?? currentFm.date;
+
+      let mergedDate: unknown = currentFm.date;
+      if (args.frontMatter?.date !== undefined) {
+        const requestNow = (ctx.clock ?? (() => new Date()))();
+        const dateResult = normalizeDate(args.frontMatter.date, resolveDateNormalizationOptions(), requestNow);
+        if (!dateResult.ok) return precondition(dateResult.reason);
+        mergedDate = dateResult.canonical;
+      }
 
       // The existing file on disk isn't guaranteed to satisfy REQUIRED_FIELDS
       // (validate.ts) -- it may predate validation or have been hand-edited.
@@ -582,6 +593,30 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
         ]);
       }
 
+      // A date change that moves the canonical UTC day requires renaming the
+      // file to keep its YYYY-MM-DD-<slug>.md prefix matching (TODO-NEXT.md
+      // sec6.4) -- compared against the current filename's own date prefix,
+      // not currentFm.date, so this also self-heals a filename that was
+      // already out of sync with its front matter. Only ever triggered when
+      // the caller actually supplied a new date; body/title/tag-only updates
+      // never touch the filename.
+      let targetAbsolutePath = match.absolutePath;
+      let targetRelativePath = match.relativePath;
+      let targetFilename = match.filename;
+      let previousPath: string | undefined;
+      if (args.frontMatter?.date !== undefined && (mergedDate as string).slice(0, 10) !== match.filename.slice(0, 10)) {
+        const newFilename = buildFilename(mergedDate as string, mergedSlug as string);
+        const newRelativePath = `${config.blogDir}/${newFilename}`;
+        const newAbsolutePath = path.join(repoRoot, newRelativePath);
+        if (fs.existsSync(newAbsolutePath)) {
+          return precondition(`'${newRelativePath}' already exists; the date change would rename '${match.relativePath}' onto an existing file.`);
+        }
+        previousPath = match.relativePath;
+        targetAbsolutePath = newAbsolutePath;
+        targetRelativePath = newRelativePath;
+        targetFilename = newFilename;
+      }
+
       const fm: PostFrontMatter = {
         title: mergedTitle as string,
         description: mergedDescription as string,
@@ -595,9 +630,9 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
 
       const parsed = parseMarkdown(content);
       const loaded = {
-        absolutePath: match.absolutePath,
-        relativePath: match.relativePath,
-        filename: match.filename,
+        absolutePath: targetAbsolutePath,
+        relativePath: targetRelativePath,
+        filename: targetFilename,
         content,
         frontMatter: parsed.frontMatter,
         frontMatterPresent: parsed.frontMatterPresent,
@@ -615,11 +650,16 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
         return validationFailure(`Not updated: ${match.relativePath}`, findings);
       }
 
-      writeFilesAtomically([{ absolutePath: match.absolutePath, content }, ...metadata.writes]);
+      writeFilesAtomically([{ absolutePath: targetAbsolutePath, content }, ...metadata.writes]);
+      // Write-new-before-delete-old: a crash between these two steps leaves
+      // both files present (recoverable, surfaced by SlugUnique/dirty-tree
+      // checks) rather than neither (data loss).
+      if (previousPath) fs.rmSync(match.absolutePath, { force: true });
 
       const result: PostWriteResult = {
-        path: match.relativePath,
-        changedPaths: [match.relativePath, ...metadata.changedPaths],
+        path: targetRelativePath,
+        ...(previousPath ? { previousPath } : {}),
+        changedPaths: [targetRelativePath, ...(previousPath ? [previousPath] : []), ...metadata.changedPaths],
         canonicalDate: mergedDate as string,
         authors: mergedAuthors as string[],
         tags: mergedTags as string[],
@@ -628,7 +668,7 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
         defaultAuthorUsed,
         canonicalUrl: canonicalUrl(config.canonicalUrl, mergedSlug as string)
       };
-      return ok(`Updated ${match.relativePath}`, result, findings);
+      return ok(`Updated ${targetRelativePath}${previousPath ? ` (renamed from ${previousPath})` : ''}`, result, findings);
     })
   );
 

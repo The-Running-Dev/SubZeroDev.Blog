@@ -400,8 +400,9 @@ Phases:
 ## Milestone 11: Publishing integrity — in progress
 
 Specified in `tools/blog-mcp/TODO-NEXT.md` sections 1-14. Phase 1 (regression
-fixtures and domain contracts) and Phase 2 (atomic metadata resolution) are
-delivered; Phases 3-7 below are not implemented.
+fixtures and domain contracts), Phase 2 (atomic metadata resolution), and
+Phase 3 (canonical date service) are delivered; Phases 4-7 below are not
+implemented.
 
 Publishing
 [GitOps Isn't Just for Infrastructure Anymore](https://blog.subzerodev.com/gitops-isnt-just-for-infrastructure-anymore/)
@@ -419,9 +420,9 @@ equivalent tag gap.
 2. Missing controlled tags require a separate `blog_add_tag` call the caller
    must anticipate; the watcher has no metadata-creation step and therefore
    fails outright on a new tag.
-3. Date handling is split across callers -- the tool passes a supplied string
-   through unchanged while Compose runs its own `Date.parse` -- so which
-   inputs are accepted depends on the calling interface and the JavaScript
+3. Date handling was split across callers -- the tool passed a supplied string
+   through unchanged while Compose ran its own `Date.parse` -- so which
+   inputs were accepted depended on the calling interface and the JavaScript
    runtime.
 4. A content commit was created on protected `main`. `blog_push` correctly
    refused it, but only after the unsafe commit already existed, and the
@@ -443,21 +444,35 @@ Phases:
   defects against the pre-fix behavior; adds `AuthorDefinition`,
   `TagDefinition`, `PostWriteResult`, and an injectable `ToolContext.clock`.
   No production behavior changed.
-- Phase 2 (delivered): atomic metadata resolution. `resolveAuthors`/
-  `resolveTags` (pure, no fs), an author serializer and `checkAuthorsYmlIntegrity`
-  (`src/domain/authors.ts`), a new `blog_add_author` tool mirroring
-  `blog_add_tag`, and a write-temp-then-rename `writeFilesAtomically`
-  (`src/domain/atomicWrite.ts`) generalizing the pattern `scheduler/store.ts`
-  already used for `schedule.json`. `blog_create_post`/`blog_update_post` now
-  auto-create a requested author or tag key absent from `authors.yml`/
-  `tags.yml` instead of rejecting it or silently substituting the configured
-  default, and return the full `PostWriteResult` (`changedPaths`,
-  `createdAuthors`, `createdTags`, `defaultAuthorUsed`). A validation failure
-  at any stage still leaves every source file untouched. `blog_add_tag` keeps
-  its existing refuse-on-duplicate-key contract exactly.
-- Phase 3: the canonical date service (deterministic parser, explicit
-  `BLOG_MCP_DATE_ORDER` and timezone policy, safe filename rename when the
-  canonical day changes).
+- Phase 2 (delivered, [#92](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/92)):
+  atomic metadata resolution. `resolveAuthors`/`resolveTags` (pure, no fs), an
+  author serializer and `checkAuthorsYmlIntegrity` (`src/domain/authors.ts`),
+  a new `blog_add_author` tool mirroring `blog_add_tag`, and a
+  write-temp-then-rename `writeFilesAtomically` (`src/domain/atomicWrite.ts`)
+  generalizing the pattern `scheduler/store.ts` already used for
+  `schedule.json`. `blog_create_post`/`blog_update_post` now auto-create a
+  requested author or tag key absent from `authors.yml`/`tags.yml` instead of
+  rejecting it or silently substituting the configured default, and return the
+  full `PostWriteResult` (`changedPaths`, `createdAuthors`, `createdTags`,
+  `defaultAuthorUsed`). A validation failure at any stage still leaves every
+  source file untouched. `blog_add_tag` keeps its existing
+  refuse-on-duplicate-key contract exactly.
+- Phase 3 (delivered): the canonical date service. A hand-rolled deterministic
+  parser (`src/domain/dateService.ts`, no new dependency -- Node's built-in
+  ICU already carries the IANA timezone database) accepts ISO 8601 (with or
+  without offset/seconds/milliseconds), date-only, RFC 2822, English
+  month-name dates, and numeric dates resolved via the explicit
+  `BLOG_MCP_DATE_ORDER` (default `MDY`) rather than guessed; timezone-free
+  values resolve through `BLOG_MCP_DEFAULT_TIME_ZONE` (default `UTC`).
+  `blog_create_post`/`blog_update_post` capture `ToolContext.clock` once per
+  call (wiring in the injectable clock added in Phase 1) and normalize every
+  date through it; a `blog_update_post` date change that moves the canonical
+  UTC day safely renames the file (destination-exists collision refuses
+  without touching either file) and reports `previousPath` in the result.
+  Compose's own client-side `Date.parse`-based validation was deleted --
+  it now just forwards the raw field value and lets the server's
+  precondition failure (listing accepted formats) surface through the same
+  path every other tool rejection already used.
 - Phase 4: protected branch preparation (`blog_prepare_publish_branch`,
   preserving clean local-only base commits by rebasing them onto the branch
   rather than abandoning them).
