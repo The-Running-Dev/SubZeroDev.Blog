@@ -82,3 +82,23 @@ recipes:
   label: Recipes
   permalink: /recipes
   description: Recipes worth writing down before they're forgotten.
+
+gitops:
+  label: GitOps
+  permalink: /gitops
+  description: Git as the source of truth for code, content, and configuration, with automation built around the repository.
+
+mcp:
+  label: MCP
+  permalink: /mcp
+  description: Building and using Model Context Protocol servers as the interface between AI clients and real systems.
+
+markdown:
+  label: Markdown
+  permalink: /markdown
+  description: Markdown as a durable, plain-text format for notes, documentation, and published content.
+
+knowledge-management:
+  label: Knowledge Management
+  permalink: /knowledge-management
+  description: Capturing, organizing, and searching personal notes, ideas, and decisions.
