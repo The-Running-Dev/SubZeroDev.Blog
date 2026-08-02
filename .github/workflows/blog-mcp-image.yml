@@ -1,38 +1,261 @@
 name: blog-mcp Image
 
 # Builds and publishes the blog-mcp MCP server's Docker image
-# (tools/blog-mcp/Dockerfile) to ghcr.io. A brand-new capability: nothing in
-# this repo currently runs blog-mcp's own test suite, and nothing publishes
-# this image anywhere -- every user has had to build it themselves from
-# source. This is intentionally its own file, never a job added to
-# docs-ci.yml/docs-deploy.yml -- see AGENTS.md's "installer-owned build and
-# delivery files" section; those two carry load-bearing markers and a
-# documented single consumer-inserted step, nothing else.
+# (tools/blog-mcp/Dockerfile) to ghcr.io. This is intentionally its own file,
+# never a job added to docs-ci.yml/docs-deploy.yml -- see AGENTS.md's
+# "installer-owned build and delivery files" section; those two carry
+# load-bearing markers and a documented single consumer-inserted step,
+# nothing else.
 #
-# Path-filtered on purpose (unlike the docs required checks, which
-# deliberately avoid path filters so a required check that never runs can't
-# permanently block a PR) -- this workflow is not a required status check,
-# so filtering to actual blog-mcp changes is correct here.
+# Not a required status check, so it's free to be more aggressively gated
+# than the docs workflows: a `changes` job (build/WorkflowChangeAreas.psm1,
+# Milestone 10 Phase A) classifies every run into blog_mcp_test/
+# blog_mcp_image/blog_mcp_compose, and every other job below gates on those
+# outputs. The `paths:` filter on `on:` is belt-and-braces with that
+# classifier, not redundant with it: `paths:` stops a run from being created
+# at all (the property that makes "a planning-document change creates no
+# workflow run" true), while the classifier splits jobs *within* a created
+# run (the property that makes "a test-only change never builds or
+# publishes an image" true). Losing either one reopens a real, previously
+# observed failure mode: PR #83 changed only two Markdown files under
+# tools/blog-mcp/ and still ran the full package suite and a Docker build
+# twice, then on merge published `latest` and called the Portainer redeploy
+# webhook.
 
 "on":
     push:
         branches:
             - main
-        paths:
-            - "tools/blog-mcp/**"
+        paths: &blog-mcp-path
+            # blog_mcp_image inputs
+            - "tools/blog-mcp/Dockerfile"
+            - "tools/blog-mcp/.dockerignore"
+            - "tools/blog-mcp/docker-entrypoint.sh"
+            - "tools/blog-mcp/package.json"
+            - "tools/blog-mcp/package-lock.json"
+            - "tools/blog-mcp/tsconfig.json"
+            - "tools/blog-mcp/src/**"
+            - "tools/blog-mcp/ui/package.json"
+            - "tools/blog-mcp/ui/package-lock.json"
+            - "tools/blog-mcp/ui/tsconfig*.json"
+            - "tools/blog-mcp/ui/vite.config.ts"
+            - "tools/blog-mcp/ui/index.html"
+            - "tools/blog-mcp/ui/public/**"
+            - "tools/blog-mcp/ui/src/**"
+            # blog_mcp_test-only inputs
+            - "tools/blog-mcp/test/**"
+            - "tools/blog-mcp/vitest.config.*"
+            # blog_mcp_compose inputs
+            - "docker-compose.yml"
+            - "tools/blog-mcp/docker-compose.yml"
+            - "tools/blog-mcp/.env.example"
+            - "tools/blog-mcp/.env.ci"
+            # the classifier and this workflow's own definition
+            - "build/WorkflowChangeAreas.psm1"
+            - "build/Get-WorkflowChangeArea.ps1"
+            - "build/Test-WorkflowChangeAreas.ps1"
+            - "build/Test-BlogMcpImageContract.ps1"
             - ".github/workflows/blog-mcp-image.yml"
     pull_request:
-        paths:
-            - "tools/blog-mcp/**"
-            - ".github/workflows/blog-mcp-image.yml"
+        paths: *blog-mcp-path
     workflow_dispatch:
+        inputs:
+            redeploy:
+                description: "Also call the stack redeploy webhook (main only)."
+                type: boolean
+                default: true
 
 permissions:
     contents: read
 
+# Scoped so that only pull-request runs cancel their own stale predecessors.
+# Deliberately NOT a blanket cancel-in-progress: true -- that would apply to
+# the publish job too, and this repository's stated CI audit requires
+# production publishing to stay serialized until it's proven that cancelling
+# or superseding a run can't let an older image redeploy after a newer one.
+#
+# github.event_name is part of the group key so a main push can never share a
+# group with (and therefore never be cancelled by) a pull-request run. For
+# push and workflow_dispatch, cancel-in-progress is false, so concurrent runs
+# queue instead: an in-flight publish always finishes, and if a third merge
+# lands while a second is still queued, the third cancels the pending second
+# and takes its place -- so the newest merge is always what ends up
+# published, without ever cancelling an in-flight one.
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+    changes:
+        name: Classify change areas
+        runs-on: ubuntu-latest
+        outputs:
+            blog_mcp_test: ${{ steps.classify.outputs.blog_mcp_test }}
+            blog_mcp_image: ${{ steps.classify.outputs.blog_mcp_image }}
+            blog_mcp_compose: ${{ steps.classify.outputs.blog_mcp_compose }}
+            forced: ${{ steps.classify.outputs.forced }}
+        steps:
+            # fetch-depth: 0 -- Get-WorkflowChangePath computes
+            # `git merge-base` between the base ref and HEAD, and a shallow
+            # single-ref checkout (actions/checkout's fetch-depth: 1 default)
+            # has neither the base commit nor any common ancestor, so the
+            # classifier throws its "fetch full history" error and this job
+            # fails closed. This also creates the origin/* tracking refs a
+            # pull_request's base ref resolves through.
+            - name: Check out repository
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            # Every dynamic value arrives through env:, never interpolated
+            # into the script body -- github.base_ref is attacker-influenced
+            # on a fork PR, and `${{ }}` inside a run: block is textual
+            # substitution before PowerShell ever parses the script.
+            - name: Classify changed paths
+              id: classify
+              shell: pwsh
+              env:
+                  EVENT_NAME: ${{ github.event_name }}
+                  PR_BASE_REF: ${{ github.base_ref }}
+                  PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+                  PUSH_BEFORE: ${{ github.event.before }}
+              run: |
+                  Set-StrictMode -Version 3.0
+                  $ErrorActionPreference = 'Stop'
+                  # PowerShell 7.4+ (what ubuntu-latest's shell: pwsh gives)
+                  # defaults this to $true, which turns any non-zero native
+                  # exit code into a terminating error under 'Stop'. The
+                  # base-ref probe below deliberately runs `git rev-parse`
+                  # expecting it to fail for an unresolvable candidate, so
+                  # that has to be off here.
+                  $PSNativeCommandUseErrorActionPreference = $false
+
+                  $areaName = @('blog_mcp_test', 'blog_mcp_image', 'blog_mcp_compose')
+
+                  function Write-JobOutput {
+                      param (
+                          [Parameter(Mandatory)] [string] $Name,
+                          [Parameter(Mandatory)] [AllowEmptyString()] [string] $Value
+                      )
+                      if ($Value.Contains("`n") -or $Value.Contains("`r")) {
+                          throw "Refusing to write a multi-line value to GITHUB_OUTPUT for '$Name'."
+                      }
+                      Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value "$Name=$Value" -Encoding utf8
+                  }
+
+                  # --- workflow_dispatch: forced, no git comparison ----------
+                  # A manual run has no meaningful two-ref range to classify
+                  # (it's the documented recovery/republish escape hatch, not
+                  # a reaction to a diff), so it forces every area true rather
+                  # than being fed a single ref the classifier can't diff.
+                  if ($env:EVENT_NAME -eq 'workflow_dispatch') {
+                      Write-Host 'workflow_dispatch: forcing every blog-mcp change area true.'
+                      foreach ($name in $areaName) {
+                          Write-JobOutput -Name $name -Value 'true'
+                      }
+                      Write-JobOutput -Name 'forced' -Value 'true'
+                      Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value @'
+                  ### Change areas
+
+                  Manual dispatch: **forced** -- every blog-mcp change area treated as applicable.
+                  '@
+                      exit 0
+                  }
+
+                  # --- base ref candidates -----------------------------------
+                  $candidateBase = [System.Collections.Generic.List[string]]::new()
+                  switch ($env:EVENT_NAME) {
+                      'pull_request' {
+                          if (-not [string]::IsNullOrWhiteSpace($env:PR_BASE_REF)) {
+                              $candidateBase.Add("origin/$($env:PR_BASE_REF)")
+                          }
+                          # Exact base SHA as recorded when the PR last synced
+                          # -- a fallback for a base branch renamed or deleted
+                          # mid-review, where origin/<base_ref> no longer exists.
+                          if (-not [string]::IsNullOrWhiteSpace($env:PR_BASE_SHA)) {
+                              $candidateBase.Add($env:PR_BASE_SHA)
+                          }
+                      }
+                      'push' {
+                          $zeroSha = '0' * 40
+                          if (-not [string]::IsNullOrWhiteSpace($env:PUSH_BEFORE) -and $env:PUSH_BEFORE -ne $zeroSha) {
+                              $candidateBase.Add($env:PUSH_BEFORE)
+                          }
+                          # Covers what github.event.before can't describe: a
+                          # branch-creation push (all-zero 'before') and a
+                          # force-push whose recorded old tip is no longer
+                          # reachable in this clone. HEAD^ is main's own first
+                          # parent, which for both a merge commit and a
+                          # squash-merge commit is the previous tip.
+                          $candidateBase.Add('HEAD^')
+                      }
+                      default {
+                          throw "Unsupported event '$($env:EVENT_NAME)' for change-area classification."
+                      }
+                  }
+
+                  $base = $null
+                  foreach ($candidate in $candidateBase) {
+                      git rev-parse --verify --quiet "$candidate^{commit}" *> $null
+                      if ($LASTEXITCODE -eq 0) { $base = $candidate; break }
+                      Write-Host "::warning::Base ref candidate '$candidate' does not resolve in this checkout; trying the next."
+                  }
+                  if (-not $base) {
+                      # Fail closed. A main push whose range can't be
+                      # established must not publish or redeploy on a guess;
+                      # workflow_dispatch is the recorded, forced recovery path.
+                      throw "None of the base ref candidates [$($candidateBase -join ', ')] resolved to a commit. Confirm actions/checkout used fetch-depth: 0, or re-run this workflow manually (workflow_dispatch) to force a full build."
+                  }
+                  Write-Host "Classifying '$base'...'HEAD' for event '$($env:EVENT_NAME)'."
+
+                  # --- classify ---------------------------------------------
+                  # -JsonPath rather than capturing stdout: as a child
+                  # process, the wrapper's Write-Host summary and Write-Output
+                  # JSON share one stream, so a file is the only unambiguous
+                  # channel. It also keeps $LASTEXITCODE meaningful, which
+                  # `& script.ps1` in-session would not.
+                  $jsonPath = Join-Path $env:RUNNER_TEMP 'workflow-change-areas.json'
+                  $wrapper = Join-Path $env:GITHUB_WORKSPACE 'build/Get-WorkflowChangeArea.ps1'
+                  pwsh -NoProfile -File $wrapper -Base $base -Head 'HEAD' -JsonPath $jsonPath | Write-Host
+                  if ($LASTEXITCODE -ne 0) {
+                      throw "build/Get-WorkflowChangeArea.ps1 failed with exit code $LASTEXITCODE."
+                  }
+
+                  $result = Get-Content -LiteralPath $jsonPath -Raw | ConvertFrom-Json
+                  if ($result.Schema -ne 'workflow-change-areas/v1') {
+                      throw "Unexpected classifier schema '$($result.Schema)'; this job understands 'workflow-change-areas/v1' only."
+                  }
+
+                  # --- outputs ----------------------------------------------
+                  # Job outputs are always strings, so downstream `if:`
+                  # conditions compare against the literal 'true'/'false'.
+                  $summaryLine = [System.Collections.Generic.List[string]]::new()
+                  $summaryLine.Add('### Change areas')
+                  $summaryLine.Add('')
+                  $summaryLine.Add("Range: ``$base``...``HEAD`` -- $($result.ChangedPathCount) changed path(s).")
+                  $summaryLine.Add('')
+                  $summaryLine.Add('| Area | Applicable | Matched paths |')
+                  $summaryLine.Add('| --- | --- | --- |')
+
+                  foreach ($name in $areaName) {
+                      $isTrue = [bool] $result.Area.$name
+                      $value = if ($isTrue) { 'true' } else { 'false' }
+                      Write-Host "  $($name.PadRight(18)) = $value"
+                      Write-JobOutput -Name $name -Value $value
+
+                      $matched = @($result.MatchedPath.$name)
+                      $shown = if ($matched.Count -eq 0) { '--' } else { ($matched | Select-Object -First 10 | ForEach-Object { "``$_``" }) -join '<br>' }
+                      if ($matched.Count -gt 10) { $shown += "<br>... and $($matched.Count - 10) more" }
+                      $summaryLine.Add("| ``$name`` | $value | $shown |")
+                  }
+
+                  Write-JobOutput -Name 'forced' -Value 'false'
+                  Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Value ($summaryLine -join "`n")
+
     test:
         name: Test blog-mcp
+        needs: changes
+        if: needs.changes.outputs.blog_mcp_test == 'true'
         runs-on: ubuntu-latest
         defaults:
             run:
@@ -76,14 +299,90 @@ jobs:
             - name: Run test suite
               run: npm test
 
-    build-and-push:
-        name: Build and publish image
-        needs: test
+            # Both gates below run from the repository root, overriding this
+            # job's tools/blog-mcp working-directory default -- their paths
+            # are repo-relative and both self-locate their own repository
+            # root regardless, but running them from the root keeps that
+            # explicit rather than relying on the self-location fallback.
+            # pwsh is preinstalled on ubuntu-latest.
+            - name: Run change-area classifier fixtures
+              run: pwsh -NoProfile -File ./build/Test-WorkflowChangeAreas.ps1
+              working-directory: ${{ github.workspace }}
+
+            - name: Verify image contract (Dockerfile / .dockerignore / classifier parity)
+              run: pwsh -NoProfile -File ./build/Test-BlogMcpImageContract.ps1
+              working-directory: ${{ github.workspace }}
+
+    image-pr:
+        name: Verify image build (pull request)
+        needs: [changes, test]
+        # always() so a skipped `test` can't skip this job by needs
+        # inheritance -- this job must still prove the image builds on a PR
+        # that touches image inputs. Today blog_mcp_test is a strict
+        # superset of blog_mcp_image (see WorkflowChangeAreas.psm1's
+        # $AreaDefinition), so `test` is only ever skipped when
+        # blog_mcp_image is already false and always() is belt-and-braces;
+        # the explicit result guards below are what stop always() from also
+        # running after a test failure or a cancellation.
+        if: >-
+            always()
+            && github.event_name == 'pull_request'
+            && needs.changes.outputs.blog_mcp_image == 'true'
+            && needs.test.result != 'failure'
+            && needs.test.result != 'cancelled'
         runs-on: ubuntu-latest
-        # packages: write only on this job, not at workflow level -- the
-        # test job (and every pull_request run of this job, which never
-        # pushes) has no use for a write-capable token, so it shouldn't get
-        # one just because publishing needs it somewhere in the workflow.
+        # No packages: write and no registry login on any pull_request path.
+        permissions:
+            contents: read
+        steps:
+            - name: Check out repository
+              uses: actions/checkout@v7
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            # Deliberately a near-duplicate of the publish job's build step
+            # rather than a shared composite action: the two differ in push,
+            # cache-to, and tags, and factoring ~10 lines into a composite
+            # action would buy indirection, not safety. Keep the two in sync
+            # by hand; the differences below are each intentional.
+            #
+            #   push: false    -- no PR event may ever publish.
+            #   no cache-to    -- a PR build reads the shared GitHub Actions
+            #                     cache but never writes it, so it can't
+            #                     spend or evict main's cache budget.
+            #   local-only tag -- docker/metadata-action's registry-shaped
+            #                     tags have no meaning for a build that's
+            #                     never pushed or loaded.
+            - name: Build image (never pushed)
+              uses: docker/build-push-action@v6
+              with:
+                  context: tools/blog-mcp
+                  push: false
+                  tags: subzerodev-blog-mcp:pr-${{ github.event.pull_request.number }}
+                  cache-from: type=gha
+
+    publish:
+        name: Publish image (ghcr.io)
+        needs: [changes, test]
+        # No always() and no result guards on purpose: plain `needs`
+        # semantics already mean this only runs if both dependencies
+        # succeeded, which is exactly "after applicable tests pass". `test`
+        # can't be skipped on any path that reaches here -- a qualifying
+        # main push needs blog_mcp_image, which structurally implies
+        # blog_mcp_test, and a manual dispatch forces every area true.
+        if: >-
+            github.event_name != 'pull_request'
+            && (
+                (github.event_name == 'push'
+                    && github.ref == 'refs/heads/main'
+                    && needs.changes.outputs.blog_mcp_image == 'true')
+                || github.event_name == 'workflow_dispatch'
+            )
+        runs-on: ubuntu-latest
+        # packages: write only on this job, not at workflow level and never
+        # on image-pr -- no pull-request-reachable job in this workflow ever
+        # gets a write-capable token.
         permissions:
             contents: read
             packages: write
@@ -94,15 +393,13 @@ jobs:
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
 
-            # Skipped on pull_request runs only -- a PR only needs to prove
-            # the image still builds, never to push, so it never needs (or
-            # gets) a credential. workflow_dispatch DOES log in: it's the
-            # manual "publish now" escape hatch (e.g. republishing without a
-            # tools/blog-mcp/** change to trigger it otherwise), so it must
-            # actually push too -- see the push: condition below, which
-            # matches this one exactly rather than only covering `push`.
+            # Unconditional here: no pull_request event can reach this job at
+            # all (see the job-level if: above), so the guard that used to
+            # live on this step moved up a level. workflow_dispatch still
+            # logs in and pushes -- it's the manual "publish now" escape
+            # hatch (e.g. republishing without an image-input change to
+            # trigger it otherwise).
             - name: Log in to ghcr.io
-              if: github.event_name != 'pull_request'
               uses: docker/login-action@v3
               with:
                   registry: ghcr.io
@@ -123,11 +420,11 @@ jobs:
                       type=raw,value=latest,enable={{is_default_branch}}
                       type=sha,prefix=sha-,format=short
 
-            - name: Build (and push except on pull_request)
+            - name: Build and push
               uses: docker/build-push-action@v6
               with:
                   context: tools/blog-mcp
-                  push: ${{ github.event_name != 'pull_request' }}
+                  push: true
                   tags: ${{ steps.meta.outputs.tags }}
                   labels: ${{ steps.meta.outputs.labels }}
                   cache-from: type=gha
@@ -135,10 +432,15 @@ jobs:
 
             # The deployment stack pulls the floating `latest` tag, so only
             # trigger it after a successful publish from main. A manual run
-            # against another ref publishes its SHA tag but must not redeploy
-            # the production stack.
+            # against another ref publishes its SHA tag but must not
+            # redeploy the production stack -- and a manual run against main
+            # redeploys only when its `redeploy` input says so, which also
+            # records a manual redeploy as a deliberate, forced act. `inputs`
+            # is empty (falsy) on a push event, hence the event_name arm.
             - name: Redeploy blog-mcp stack
-              if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+              if: >-
+                  github.ref == 'refs/heads/main'
+                  && (github.event_name == 'push' || inputs.redeploy)
               env:
                   BLOG_MCP_REDEPLOY_WEBHOOK_URL: ${{ secrets.BLOG_MCP_REDEPLOY_WEBHOOK_URL }}
               run: |
@@ -155,3 +457,58 @@ jobs:
                     --retry 3 --retry-delay 5 --retry-max-time 120 \
                     --request POST \
                     "$BLOG_MCP_REDEPLOY_WEBHOOK_URL"
+
+    compose:
+        name: Validate Compose files
+        needs: changes
+        if: needs.changes.outputs.blog_mcp_compose == 'true'
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+        steps:
+            # Default fetch-depth: 1 is correct here -- this job needs the
+            # working tree, never git history.
+            - name: Check out repository
+              uses: actions/checkout@v7
+
+            - name: Record Compose version
+              run: docker compose version
+
+            # tools/blog-mcp/docker-compose.yml declares `env_file: - .env`,
+            # and .env is git-ignored (it holds real credentials on a
+            # developer machine), so it never exists on a runner. `docker
+            # compose config` treats a missing env_file target as a hard
+            # error, not a warning, so seed one from the checked-in
+            # non-secret fixture. Doing it here rather than marking the
+            # env_file `required: false` in the Compose file keeps
+            # local-development behavior unchanged: a developer who forgets
+            # to create .env still gets Compose's own clear error instead of
+            # a container that starts and then fails on missing configuration.
+            - name: Seed the local Compose env file from the CI fixture
+              run: cp tools/blog-mcp/.env.ci tools/blog-mcp/.env
+
+            # --profile http so the profiled second service is expanded too
+            # -- `config` otherwise only resolves services in active
+            # profiles, leaving half of each file unvalidated. Safe to print
+            # the resolved config unquieted: every value in play comes from
+            # the fixture file, never a real secret.
+            - name: Validate deployment Compose file
+              run: >-
+                  docker compose
+                  --env-file tools/blog-mcp/.env.ci
+                  --profile http
+                  config
+
+            # -f is explicit rather than relying on --project-directory alone
+            # to also select the file: --project-directory sets the base
+            # path that `build: context: .`, `env_file: .env`, and the
+            # ./watch bind mount resolve against, but Compose's file
+            # discovery still starts from the current directory.
+            - name: Validate local-development Compose file
+              run: >-
+                  docker compose
+                  -f tools/blog-mcp/docker-compose.yml
+                  --project-directory tools/blog-mcp
+                  --env-file tools/blog-mcp/.env.ci
+                  --profile http
+                  config

@@ -2,6 +2,9 @@
 .env
 .env.*
 !.env.example
+# Committed on purpose: a non-secret Compose validation fixture whose every
+# value is an invalid placeholder. See tools/blog-mcp/.env.ci's own header.
+!.env.ci
 *.pem
 *.key
 

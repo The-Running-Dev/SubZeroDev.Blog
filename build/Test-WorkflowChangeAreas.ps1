@@ -282,6 +282,7 @@ $matrixFixture = @(
     @{ Name = 'matrix/server-readme-only'; Path = @('tools/blog-mcp/README.md'); Expect = @('markdown_gate') }
     @{ Name = 'matrix/mcp-next-only'; Path = @('tools/blog-mcp/MCP-NEXT.md'); Expect = @('markdown_gate') }
     @{ Name = 'matrix/test-only'; Path = @('tools/blog-mcp/test/post.test.ts'); Expect = @('blog_mcp_test') }
+    @{ Name = 'matrix/image-contract-test-only'; Path = @('build/Test-BlogMcpImageContract.ps1'); Expect = @('blog_mcp_test') }
     @{ Name = 'matrix/ui-src'; Path = @('tools/blog-mcp/ui/src/views/Posts.tsx'); Expect = @('blog_mcp_test', 'blog_mcp_image') }
     @{ Name = 'matrix/ui-index-html'; Path = @('tools/blog-mcp/ui/index.html'); Expect = @('blog_mcp_test', 'blog_mcp_image') }
     @{ Name = 'matrix/ui-public-asset'; Path = @('tools/blog-mcp/ui/public/favicon.svg'); Expect = @('blog_mcp_test', 'blog_mcp_image') }
