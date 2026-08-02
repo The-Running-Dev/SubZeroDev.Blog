@@ -327,3 +327,191 @@ directly into the new UI rather than built twice.
   the server ever sees it (confirmed safe by inspecting the response body:
   the SPA shell, never leaked file content) -- both paths verified, neither
   is a real vulnerability.
+
+## Milestone 10: CI and workflow correctness — planned
+
+Specified in `tools/blog-mcp/TODO-NEXT.md` sections 15-22. Nothing below is
+implemented.
+
+There is no executable contract between what a commit changes and what CI
+runs; the path assumptions live only in YAML comments. Confirmed by direct
+inspection of the current workflows and live branch protection:
+
+- `blog-mcp-image.yml` triggers on `tools/blog-mcp/**`, which includes tests,
+  Compose files, `.env.example`, README files, and the two planning documents
+  themselves. PR
+  [#83](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/83) changed
+  only `MCP-NEXT.md` and `README.md`, yet ran the package suite and a Docker
+  build twice, then on merge published `latest` and called the Portainer
+  redeploy webhook. The Dockerfile's real inputs are far narrower than the
+  trigger.
+- `docs-deploy.yml` runs on every push to `main` with no path filter, so a
+  Blog-Bot-only merge rebuilds and redeploys the entire public site.
+- The `build-and-push` job declares `packages: write` at job level and relies
+  on step-level `if:` conditions to stay safe on pull requests. Step
+  conditions are not a permission boundary, so the workflow comment claiming
+  every PR run lacks a write-capable token is stronger than the YAML actually
+  guarantees.
+- Required contexts on protected `main` are exactly `Documentation links and
+  terminology` and `Verify Documentation Build`. This is the constraint that
+  makes naive optimization dangerous: filtering a required workflow out by
+  `paths` leaves its context permanently pending and blocks the PR forever.
+  Expensive work may be skipped, but the required context must still complete,
+  reporting an explicit `not-applicable` success.
+
+Phases:
+
+- Phase A: one repository-owned, unit-tested change classifier
+  (`build/Test-WorkflowChangeAreas.ps1`) taking base/head and returning
+  independent area booleans plus matched paths. It must read Git's complete
+  changed-file list, never GitHub's UI-truncated file summary, and be
+  table-driven against every row of the execution matrix (rename, delete,
+  merge-base, >300 files, mixed changes). A classifier error fails validation
+  and publishes nothing.
+- Phase B: stop false image publication. Narrow the trigger to the union of
+  real test and image inputs; split the unprivileged PR build (`contents:
+  read`, no registry login) from a separate publish job that alone holds
+  `packages: write` and cannot be entered by any pull-request event; guard the
+  redeploy webhook behind a qualifying image push; add PR concurrency
+  cancellation. `.dockerignore` already exists but currently excludes only
+  `node_modules`, `dist`, `test`, `README.md`, and `*.log` -- `MCP-NEXT.md`,
+  `TODO-NEXT.md`, the Compose files, and `.env*` still enter the build
+  context, so this phase extends it rather than creating it, and tests it for
+  parity with the Dockerfile's own `COPY` instructions.
+- Phases C and D (externally blocked): `docs-ci.yml` and `docs-deploy.yml` are
+  installer-owned outputs of `The-Running-Dev/Docusaurus-Template`. Their
+  optimization must be implemented upstream and regenerated here through the
+  supported installer -- never accumulated as an undocumented local fork. This
+  is the one part of this milestone that cannot be completed inside this
+  repository alone.
+- Phase E: make Blog-Bot deployment-aware. `blog_wait_for_deploy` currently
+  polls for up to 20 minutes when no matching run exists, which becomes a
+  false timeout once non-site merges legitimately produce no deploy. Monitoring
+  gains three states -- `expected`, `not-applicable`, `unknown`. The hard rule
+  is unchanged and must not be weakened: reporting a public route still
+  requires a successful exact-merge-SHA deploy plus a successful HTTPS fetch,
+  `unknown` fails closed, and `not-applicable` is never a shortcut to a URL.
+- Phase F: re-measure. The 2026-08-02 baseline over the visible 100 runs was
+  `blog-mcp Image` 35 runs / 142.9 min, `Docs CI` 46 / 56.4 min, `Docs Deploy`
+  18 / 31.4 min. Targets are zero image publications or stack webhooks for
+  non-image changes, zero Pages deployments for non-site changes, and zero
+  missing required contexts.
+
+## Milestone 11: Publishing integrity — planned
+
+Specified in `tools/blog-mcp/TODO-NEXT.md` sections 1-14. Nothing below is
+implemented.
+
+Publishing
+[GitOps Isn't Just for Infrastructure Anymore](https://blog.subzerodev.com/gitops-isnt-just-for-infrastructure-anymore/)
+exposed four defects that are structural, not operator error. Confirmed
+against the source: `src/domain/authors.ts` exposes only `AuthorEntry`,
+`authorsYmlPath`, and `loadAuthors` -- there is no author serializer, no
+resolver, and no `blog_add_author` anywhere in `src/`, so a requested author
+key that does not already exist cannot be created by any code path.
+
+1. A requested author key absent from `authors.yml` was silently replaced by
+   the configured default, so the post published under the wrong identity.
+   The Compose UI has no authors field at all, so every post created there
+   uses the default regardless of intent.
+2. Missing controlled tags require a separate `blog_add_tag` call the caller
+   must anticipate; the watcher has no metadata-creation step and therefore
+   fails outright on a new tag.
+3. Date handling is split across callers -- the tool passes a supplied string
+   through unchanged while Compose runs its own `Date.parse` -- so which
+   inputs are accepted depends on the calling interface and the JavaScript
+   runtime.
+4. A content commit was created on protected `main`. `blog_push` correctly
+   refused it, but only after the unsafe commit already existed, and the
+   subsequent branch (correctly cut from `origin/main`) did not contain it.
+
+The design spine is one canonical authoring service used by MCP, HTTP,
+Compose, and the watcher alike: atomic metadata-plus-post writes where a
+validation failure leaves `authors.yml`, `tags.yml`, and the post file all
+untouched; one injectable request clock per operation so no default depends on
+the wall clock; a protected-base invariant enforced before any content write;
+and idempotent retry that never duplicates metadata or silently changes
+authorship. Callers stage the authoritative `changedPaths` the result returns
+instead of guessing which files moved.
+
+Phases: regression fixtures and domain contracts; atomic metadata resolution
+(author serializer, `blog_add_author`, automatic author/tag creation); the
+canonical date service (deterministic parser, explicit `BLOG_MCP_DATE_ORDER`
+and timezone policy, safe filename rename when the canonical day changes);
+protected branch preparation (`blog_prepare_publish_branch`, preserving clean
+local-only base commits by rebasing them onto the branch rather than
+abandoning them); caller migration; post-merge reconciliation
+(`blog_reconcile_after_merge`, which must rely on verified GitHub PR state
+rather than `merge-base`, because squash merge rewrites ancestry); and
+end-to-end verification.
+
+An explicit non-goal: the reference post keeps its published author. Any
+editorial correction is a separate, deliberate content change after the
+machinery is fixed -- this milestone does not silently rewrite published
+history.
+
+## Milestone 12: MCP Next — planned, gated on a spike that may fail
+
+Specified in `tools/blog-mcp/MCP-NEXT.md`. Nothing below is implemented.
+
+Today a tool's MCP metadata, its authorization, and its implementation are
+written together by hand in `src/tools/*.ts`, so discovery and execution can
+drift and nothing validates the exposed surface at build time. MCP Next
+separates Blog-Bot's domain operations from the mechanics of exposing them:
+one versioned contract declares every tool, a compiler validates and
+normalizes it into an immutable registry during the build, and both
+`tools/list` and `tools/call` consume that same generated artifact. The
+official MCP TypeScript SDK keeps ownership of framing, transports, and
+authorization integration -- MCP Next must not hand-roll JSON-RPC or OAuth
+wire protocols.
+
+Three honest constraints, recorded now so they are not rediscovered late:
+
+- Phase 0 is a spike that is permitted to fail. It pins an SDK v2 version and
+  proves stdio, Streamable HTTP, output schemas, cancellation, and auth
+  middleware before any runtime PR proceeds. Unresolved SDK incompatibilities
+  are explicit blockers, not assumptions to work around later.
+- Phase 5 deliberately retires `src/serve/oauth.ts`, the hand-written OAuth
+  authorization server merged in
+  [#81](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/81) on
+  2026-08-01. That is planned obsolescence rather than churn: #81 is the
+  interim self-contained implementation, and MCP Next moves protocol handling
+  onto official SDK provider interfaces with durable storage, so a container
+  restart no longer forces every client to reauthorize. The current service
+  stays deployable until the replacement passes interoperability and restart
+  tests, and removal is its own pull request.
+- Extraction into a reusable package is deferred to Phase 8 and requires a
+  genuine second consumer. Without that evidence the runtime stays internal,
+  explicitly to avoid publishing an unsupported framework.
+
+Phases: architecture records and the SDK v2 spike; contract core and compiler;
+generic runtime and module adapter; capabilities plus read-only migration;
+mutation migration (preserving the repository mutex, audit log, and write-path
+allowlist as declarative middleware); SDK-backed authorization; the OpenAPI
+importer and HTTP adapter, where an OpenAPI document is an input catalogue and
+never permission to expose an API; cutover; and the extraction decision.
+
+Eight decisions must be settled and recorded in Phase 0 before implementation,
+including whether generated artifacts are committed or CI-only, the pinned SDK
+versions, the durable OAuth store, and the final scope-to-capability matrix.
+
+## Sequencing for Milestones 10-12
+
+These three are independent in scope but not in cost, so the recommended order
+is deliberate:
+
+1. **Milestone 10, phases A and B first.** Every pull request in Milestones 11
+   and 12 currently pays the untargeted-CI tax measured above, and phase B
+   also closes a live least-privilege gap. Fixing the trigger contract first
+   makes all subsequent work cheaper and safer to iterate on.
+2. **Milestone 11 next.** These are user-visible correctness defects in
+   published content, and `TODO-NEXT.md` is explicit that MCP Next must not
+   become a prerequisite for them. Landing the corrected domain services first
+   means Milestone 12 migrates correct code once, instead of migrating known
+   defects into a new architecture and fixing them there.
+3. **Milestone 10's remaining phases** (E and F, plus C and D whenever the
+   upstream template work lands) can interleave, since phase E touches only
+   monitoring.
+4. **Milestone 12 last**, behind its Phase 0 spike. Sequencing it last also
+   gives the newly merged OAuth implementation real production soak time
+   before it is replaced.
