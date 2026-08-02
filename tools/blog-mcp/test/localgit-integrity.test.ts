@@ -24,32 +24,35 @@ import { createScratchRemote, createAdditionalClone, removeScratchRemote, type S
  */
 
 describe('blog_commit: protected base branch', () => {
-  let remote: ScratchRemote;
+  let remote: ScratchRemote | undefined;
   let server: FakeServer;
 
   beforeAll(async () => {
-    remote = await createScratchRemote('localgit-integrity-commit');
-    const config = loadConfig(remote.clone);
+    const created = await createScratchRemote('localgit-integrity-commit');
+    remote = created;
+    const config = loadConfig(created.clone);
     server = new FakeServer();
     const ctx = {
       server: server as unknown as import('@modelcontextprotocol/sdk/server/mcp.js').McpServer,
-      repoRoot: remote.clone,
+      repoRoot: created.clone,
       config
     };
     registerLocalGitTools(ctx);
   });
 
   afterAll(() => {
-    removeScratchRemote(remote);
+    if (remote) removeScratchRemote(remote);
   });
 
   it('blog_commit refuses while the base branch is checked out', async () => {
-    expect(await currentBranch({ repoRoot: remote.clone })).toBe('main');
+    const initialized = remote;
+    if (!initialized) throw new Error('scratch remote setup did not complete');
+    expect(await currentBranch({ repoRoot: initialized.clone })).toBe('main');
 
-    const shaBefore = (await gitOrThrow(['rev-parse', 'HEAD'], { repoRoot: remote.clone })).stdout.trim();
+    const shaBefore = (await gitOrThrow(['rev-parse', 'HEAD'], { repoRoot: initialized.clone })).stdout.trim();
 
-    fs.mkdirSync(path.join(remote.clone, 'docs', 'blog'), { recursive: true });
-    fs.writeFileSync(path.join(remote.clone, 'docs', 'blog', 'fixture.md'), 'fixture content\n');
+    fs.mkdirSync(path.join(initialized.clone, 'docs', 'blog'), { recursive: true });
+    fs.writeFileSync(path.join(initialized.clone, 'docs', 'blog', 'fixture.md'), 'fixture content\n');
     const staged = await call(server, 'blog_stage', { paths: ['docs/blog/fixture.md'] });
     expect(staged.ok).toBe(true);
 
@@ -59,36 +62,37 @@ describe('blog_commit: protected base branch', () => {
     expect(result.ok).toBe(false);
     expect(result.kind).toBe('precondition');
 
-    const shaAfter = (await gitOrThrow(['rev-parse', 'HEAD'], { repoRoot: remote.clone })).stdout.trim();
+    const shaAfter = (await gitOrThrow(['rev-parse', 'HEAD'], { repoRoot: initialized.clone })).stdout.trim();
     expect(shaAfter).toBe(shaBefore);
   });
 });
 
 describe('blog_sync_base: ffOnly against a genuinely diverged base branch', () => {
-  let remote: ScratchRemote;
+  let remote: ScratchRemote | undefined;
   let server: FakeServer;
 
   beforeAll(async () => {
-    remote = await createScratchRemote('localgit-integrity-syncbase');
-    const config = loadConfig(remote.clone);
+    const created = await createScratchRemote('localgit-integrity-syncbase');
+    remote = created;
+    const config = loadConfig(created.clone);
     server = new FakeServer();
     const ctx = {
       server: server as unknown as import('@modelcontextprotocol/sdk/server/mcp.js').McpServer,
-      repoRoot: remote.clone,
+      repoRoot: created.clone,
       config
     };
     registerLocalGitTools(ctx);
 
     // Diverge: a local-only commit on the primary clone's 'main' that never
     // gets pushed...
-    fs.writeFileSync(path.join(remote.clone, 'local-only.txt'), 'local\n');
-    await gitOrThrow(['add', 'local-only.txt'], { repoRoot: remote.clone });
-    await gitOrThrow(['commit', '-m', 'chore: local-only commit'], { repoRoot: remote.clone });
+    fs.writeFileSync(path.join(created.clone, 'local-only.txt'), 'local\n');
+    await gitOrThrow(['add', 'local-only.txt'], { repoRoot: created.clone });
+    await gitOrThrow(['commit', '-m', 'chore: local-only commit'], { repoRoot: created.clone });
 
     // ...while a second, independent clone pushes a different commit to
     // origin/main. Now local 'main' and origin/main have each moved past
     // their common ancestor -- a real divergence, not just "behind".
-    const pushClone = await createAdditionalClone(remote, 'push-clone');
+    const pushClone = await createAdditionalClone(created, 'push-clone');
     fs.writeFileSync(path.join(pushClone, 'from-origin.txt'), 'origin\n');
     await gitOrThrow(['add', 'from-origin.txt'], { repoRoot: pushClone });
     await gitOrThrow(['commit', '-m', 'chore: origin commit'], { repoRoot: pushClone });
@@ -96,11 +100,13 @@ describe('blog_sync_base: ffOnly against a genuinely diverged base branch', () =
   });
 
   afterAll(() => {
-    removeScratchRemote(remote);
+    if (remote) removeScratchRemote(remote);
   });
 
   it('blog_sync_base reports a precondition, not ok:true, when a genuine fast-forward is refused', async () => {
-    expect(await currentBranch({ repoRoot: remote.clone })).toBe('main');
+    const initialized = remote;
+    if (!initialized) throw new Error('scratch remote setup did not complete');
+    expect(await currentBranch({ repoRoot: initialized.clone })).toBe('main');
 
     const result = await call(server, 'blog_sync_base', { ffOnly: true });
 

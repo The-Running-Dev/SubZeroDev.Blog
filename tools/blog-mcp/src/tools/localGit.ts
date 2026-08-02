@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { z } from 'zod';
 import { ok, precondition, infrastructureFailure } from '../result.js';
 import { PreconditionError } from '../errors.js';
@@ -137,7 +139,16 @@ export function registerLocalGitTools(ctx: ToolContext): void {
       // (which would be stale if some other clone pushed this branch after
       // our last fetch, wrongly reporting "doesn't exist" and letting the
       // new-branch algorithm run over it).
-      const existsRemotely = (await git(['ls-remote', '--exit-code', 'origin', branchName], { repoRoot })).exitCode === 0;
+      const remoteCheck = await git(['ls-remote', '--exit-code', 'origin', `refs/heads/${branchName}`], { repoRoot });
+      if (remoteCheck.exitCode !== 0 && remoteCheck.exitCode !== 2) {
+        return infrastructureFailure(`Could not verify whether branch '${branchName}' exists on origin.`, {
+          command: ['git', 'ls-remote', '--exit-code', 'origin', `refs/heads/${branchName}`],
+          exitCode: remoteCheck.exitCode,
+          stdout: remoteCheck.stdout,
+          stderr: remoteCheck.stderr
+        });
+      }
+      const existsRemotely = remoteCheck.exitCode === 0;
       if (existsLocally || existsRemotely) {
         if (!args.checkoutExisting) {
           return precondition(
@@ -173,7 +184,7 @@ export function registerLocalGitTools(ctx: ToolContext): void {
       await gitOrThrow(['fetch', '--prune', 'origin', base], { repoRoot });
       const originalBaseSha = (await gitOrThrow(['rev-parse', base], { repoRoot })).stdout.trim();
       const remoteBaseSha = (await gitOrThrow(['rev-parse', `origin/${base}`], { repoRoot })).stdout.trim();
-      const { ahead, behind } = await aheadBehind({ repoRoot }, `origin/${base}`, base);
+      const { ahead, behind } = await aheadBehind({ repoRoot }, `origin/${base}`, base, 'throw');
 
       if (ahead > 0) {
         // Local base has commit(s) origin doesn't -- preserve them on the
@@ -196,7 +207,15 @@ export function registerLocalGitTools(ctx: ToolContext): void {
 
         const rebase = await git(['rebase', '--onto', `origin/${base}`, mergeBase], { repoRoot });
         if (rebase.exitCode !== 0) {
-          await git(['rebase', '--abort'], { repoRoot });
+          const abort = await git(['rebase', '--abort'], { repoRoot });
+          if (abort.exitCode !== 0) {
+            return infrastructureFailure(`Rebase failed and 'git rebase --abort' also failed; repository cleanup requires manual intervention.`, {
+              command: ['git', 'rebase', '--abort'],
+              exitCode: abort.exitCode,
+              stdout: abort.stdout,
+              stderr: [`Original rebase failure: ${rebase.stderr || rebase.stdout}`, `Abort failure: ${abort.stderr || abort.stdout}`].join('\n')
+            });
+          }
           const shaList = preservedCommits.map((c) => c.sha.slice(0, 12)).join(', ');
           return precondition(
             `Rebasing preserved commit(s) from '${base}' onto origin/${base} conflicted; aborted safely. The original commit(s) are still reachable from '${branchName}' (currently checked out, not rebased): ${shaList}. Resolve the conflict manually.`,
@@ -258,16 +277,25 @@ export function registerLocalGitTools(ctx: ToolContext): void {
     {
       title: 'Stage files',
       description:
-        'Stages an explicit, non-empty list of repo-relative paths. Never accepts -A, --all, or "." -- every path is checked against the publishing-path allowlist before staging.',
+        'Stages an explicit, non-empty list of repo-relative paths, including tracked deletions. Never accepts -A, --all, or "." as caller paths -- every path is checked against the publishing-path allowlist before staging.',
       inputSchema: {
         paths: z.array(z.string()).min(1)
       }
     },
     wrapMutatingTool(ctx, 'blog_stage', async (args: { paths: string[] }) => {
-      const check = checkAllowedPaths(repoRoot, args.paths, ctx.capabilities?.writablePathPrefixes);
+      const check = checkAllowedPaths(repoRoot, args.paths, ctx.capabilities?.writablePathPrefixes, { allowMissing: true });
       if (!check.ok) return precondition(check.reason ?? 'One or more paths are not allowed.');
 
-      await gitOrThrow(['add', '--', ...args.paths], { repoRoot });
+      for (const relativePath of args.paths) {
+        const normalized = relativePath.replace(/\\/g, '/');
+        if (fs.existsSync(path.join(repoRoot, normalized))) continue;
+        const tracked = await git(['ls-files', '--error-unmatch', '--', normalized], { repoRoot });
+        if (tracked.exitCode !== 0) {
+          return precondition(`'${relativePath}' does not exist and is not a tracked deletion.`);
+        }
+      }
+
+      await gitOrThrow(['add', '-A', '--', ...args.paths], { repoRoot });
       return ok(`Staged ${args.paths.length} path(s)`, { paths: args.paths });
     })
   );

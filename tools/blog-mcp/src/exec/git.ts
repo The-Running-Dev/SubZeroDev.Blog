@@ -85,10 +85,18 @@ export interface AheadBehind {
   behind: number;
 }
 
-/** `git rev-list --left-right --count <base>...<ref>` -> { behind, ahead }, or zeros if the ref/base pair can't be compared (e.g. base not fetched yet). */
-export async function aheadBehind(options: GitOptions, base: string, ref: string): Promise<AheadBehind> {
+/** `git rev-list --left-right --count <base>...<ref>` -> { behind, ahead }. Read-only callers may retain the legacy zero fallback; mutating callers must request strict failure handling. */
+export async function aheadBehind(options: GitOptions, base: string, ref: string, onError: 'zeros' | 'throw' = 'zeros'): Promise<AheadBehind> {
   const result = await git(['rev-list', '--left-right', '--count', `${base}...${ref}`], options);
-  if (result.exitCode !== 0) return { ahead: 0, behind: 0 };
+  if (result.exitCode !== 0) {
+    if (onError === 'zeros') return { ahead: 0, behind: 0 };
+    throw new InfrastructureError(`git rev-list could not compare '${base}' and '${ref}' (exit ${result.exitCode})`, {
+      command: ['git', 'rev-list', '--left-right', '--count', `${base}...${ref}`],
+      exitCode: result.exitCode,
+      stdout: result.stdout,
+      stderr: result.stderr
+    });
+  }
   const [behindStr, aheadStr] = result.stdout.trim().split(/\s+/);
   return { behind: Number(behindStr ?? 0), ahead: Number(aheadStr ?? 0) };
 }

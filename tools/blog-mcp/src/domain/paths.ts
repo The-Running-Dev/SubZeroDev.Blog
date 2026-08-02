@@ -32,18 +32,23 @@ export interface PathCheckResult {
   reason?: string;
 }
 
+export interface PathCheckOptions {
+  allowMissing?: boolean;
+}
+
 /**
  * Validates a single repo-relative path against the write/staging allowlist.
  * Rejects traversal, absolute paths, drive letters, shell-meaningful
  * literals (the `-A` / `.` class that would silently widen a `git add`),
- * and anything outside the allowed prefixes -- then requires the path to
- * actually exist on disk, so a typo fails here rather than as a confusing
- * git error later.
+ * and anything outside the allowed prefixes. Write callers require the path
+ * to exist by default; deletion-aware staging may opt out of that final check
+ * and separately prove a missing path is tracked.
  */
 export function checkAllowedPath(
   repoRoot: string,
   relativePath: string,
-  allowedPrefixes: string[] = DEFAULT_ALLOWED_PREFIXES
+  allowedPrefixes: string[] = DEFAULT_ALLOWED_PREFIXES,
+  options: PathCheckOptions = {}
 ): PathCheckResult {
   if (REJECTED_LITERALS.has(relativePath)) {
     return { ok: false, reason: `'${relativePath}' is not an allowed path; pass explicit file paths, not a wildcard.` };
@@ -72,7 +77,7 @@ export function checkAllowedPath(
   }
 
   const fullPath = path.join(repoRoot, normalized);
-  if (!fs.existsSync(fullPath)) {
+  if (!options.allowMissing && !fs.existsSync(fullPath)) {
     return { ok: false, reason: `'${relativePath}' does not exist.` };
   }
 
@@ -82,10 +87,11 @@ export function checkAllowedPath(
 export function checkAllowedPaths(
   repoRoot: string,
   relativePaths: string[],
-  allowedPrefixes: string[] = DEFAULT_ALLOWED_PREFIXES
+  allowedPrefixes: string[] = DEFAULT_ALLOWED_PREFIXES,
+  options: PathCheckOptions = {}
 ): PathCheckResult {
   for (const p of relativePaths) {
-    const result = checkAllowedPath(repoRoot, p, allowedPrefixes);
+    const result = checkAllowedPath(repoRoot, p, allowedPrefixes, options);
     if (!result.ok) return result;
   }
   return { ok: true };

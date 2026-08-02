@@ -207,6 +207,19 @@ describe('blog_prepare_publish_branch', () => {
     }
   });
 
+  it('reports infrastructure failure when the live remote branch check cannot run', async () => {
+    const { remote, server } = await setUp('ppb-remote-check-failure');
+    try {
+      await gitOrThrow(['remote', 'set-url', 'origin', path.join(remote.scratchRoot, 'missing-origin.git')], { repoRoot: remote.clone });
+      const result = await call(server, 'blog_prepare_publish_branch', { slug: 'remote-check-failure', kind: 'blog' });
+      expect(result.ok).toBe(false);
+      expect(result.kind).toBe('infrastructure');
+      expect(result.summary).toContain('Could not verify');
+    } finally {
+      removeScratchRemote(remote);
+    }
+  });
+
   it('refuses when staged, unstaged, or untracked changes are present, before touching anything', async () => {
     const { remote, server } = await setUp('ppb-dirty');
     try {

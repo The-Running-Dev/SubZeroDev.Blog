@@ -29,7 +29,7 @@ describe('Milestone 11 Phase 3: canonical date service', () => {
     fs.mkdirSync(path.join(repoRoot, 'docs', 'blog'), { recursive: true });
     fs.writeFileSync(path.join(repoRoot, 'docs', 'blog', 'tags.yml'), 'test:\n  label: Test\n  permalink: /test\n  description: Fixture tag for tests.\n');
     fs.writeFileSync(path.join(repoRoot, 'docs', 'blog', 'authors.yml'), 'subzerodev:\n  name: SubZeroDev\n  url: https://blog.subzerodev.com/\n');
-    await gitOrThrow(['add', '.'], { repoRoot });
+    await gitOrThrow(['add', '--', '.config/blog.json', 'docs/blog/tags.yml', 'docs/blog/authors.yml'], { repoRoot });
     await gitOrThrow(['commit', '-m', 'chore: seed'], { repoRoot });
   });
 
@@ -99,6 +99,8 @@ describe('Milestone 11 Phase 3: canonical date service', () => {
     expect(created.ok).toBe(true);
     const oldPath = `docs/blog/2026-08-02-${slug}.md`;
     expect(fs.existsSync(path.join(repoRoot, oldPath))).toBe(true);
+    await gitOrThrow(['add', '--', oldPath], { repoRoot });
+    await gitOrThrow(['commit', '-m', 'chore: track pre-rename post'], { repoRoot });
 
     const updated = await callToolInProcess({ repoRoot }, 'blog_update_post', {
       slug,
@@ -113,6 +115,8 @@ describe('Milestone 11 Phase 3: canonical date service', () => {
     expect(data?.changedPaths).toContain(newPath);
     expect(data?.changedPaths).toContain(oldPath);
     expect(data?.canonicalDate).toBe('2026-08-05T00:00:00Z');
+    const changedPaths = data?.changedPaths;
+    if (!changedPaths) throw new Error('blog_update_post did not report changedPaths');
 
     expect(fs.existsSync(path.join(repoRoot, oldPath))).toBe(false);
     expect(fs.existsSync(path.join(repoRoot, newPath))).toBe(true);
@@ -122,6 +126,14 @@ describe('Milestone 11 Phase 3: canonical date service', () => {
     expect(parsed.frontMatter?.date).toBe('2026-08-05T00:00:00Z');
     expect(parsed.frontMatter?.slug).toBe(slug);
     expect(parsed.body).toContain('Original body.');
+
+    // The old path is now a tracked deletion. blog_stage must accept it and
+    // stage both sides of the rename using the write result's changedPaths.
+    const staged = await callToolInProcess({ repoRoot }, 'blog_stage', { paths: changedPaths });
+    expect(staged.ok).toBe(true);
+    const stagedNames = (await gitOrThrow(['diff', '--cached', '--name-status', '--no-renames'], { repoRoot })).stdout;
+    expect(stagedNames).toContain(`D\t${oldPath}`);
+    expect(stagedNames).toContain(`A\t${newPath}`);
   });
 
   it('a date change within the same canonical day does not rename anything', async () => {

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { appendAuthorEntry, checkAuthorsYmlIntegrity, resolveAuthors, type AuthorEntry } from '../src/domain/authors.js';
+import { appendAuthorEntry, checkAuthorsYmlIntegrity, parseAuthorsYaml, resolveAuthors, type AuthorEntry } from '../src/domain/authors.js';
 import { resolveTags } from '../src/domain/tags.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -16,18 +16,25 @@ describe('appendAuthorEntry', () => {
     const content = 'subzerodev:\n  name: SubZeroDev\n  url: https://blog.subzerodev.com/\n';
     const updated = appendAuthorEntry(content, { key: 'ben', name: 'Ben', url: 'https://blog.subzerodev.com' });
     expect(updated).toBe(
-      'subzerodev:\n  name: SubZeroDev\n  url: https://blog.subzerodev.com/\n\nben:\n  name: Ben\n  url: https://blog.subzerodev.com\n'
+      'subzerodev:\n  name: SubZeroDev\n  url: https://blog.subzerodev.com/\n\nben:\n  name: Ben\n  url: "https://blog.subzerodev.com"\n'
     );
   });
 
   it('includes image_url only when supplied', () => {
     const updated = appendAuthorEntry('', { key: 'ben', name: 'Ben', url: 'https://example.test', imageUrl: 'https://example.test/ben.png' });
-    expect(updated).toContain('  image_url: https://example.test/ben.png');
+    expect(updated).toContain('  image_url: "https://example.test/ben.png"');
   });
 
   it('quotes a name that would otherwise change YAML parsing', () => {
     const updated = appendAuthorEntry('', { key: 'ben', name: 'Ben: The Engineer', url: 'https://example.test' });
     expect(updated).toContain('  name: "Ben: The Engineer"');
+  });
+
+  it('round-trips YAML-significant and multiline author URLs safely', () => {
+    const url = 'https://example.test/profile # fragment\nnext-line';
+    const imageUrl = 'https://example.test/image.png\r\nvariant';
+    const updated = appendAuthorEntry('', { key: 'ben', name: 'Ben', url, imageUrl });
+    expect(parseAuthorsYaml(updated)).toEqual([{ key: 'ben', name: 'Ben', url, imageUrl }]);
   });
 });
 
@@ -116,6 +123,19 @@ describe('resolveAuthors', () => {
     expect(result.authors).toEqual(['ben']);
     expect(result.created).toHaveLength(1);
   });
+
+  it('rejects duplicate author definitions instead of using the last one', () => {
+    const result = resolveAuthors(
+      existing,
+      ['ben'],
+      [
+        { key: 'ben', name: 'First' },
+        { key: 'ben', name: 'Second' }
+      ],
+      DEFAULTS
+    );
+    expect(result).toEqual({ ok: false, reason: "Duplicate author definition for key 'ben'." });
+  });
 });
 
 describe('resolveTags', () => {
@@ -157,5 +177,13 @@ describe('resolveTags', () => {
   it('fails on an invalid key before creating anything', () => {
     const result = resolveTags(existing, ['Not Valid']);
     expect(result.ok).toBe(false);
+  });
+
+  it('rejects duplicate tag definitions instead of using the last one', () => {
+    const result = resolveTags(existing, ['new-topic'], [
+      { key: 'new-topic', label: 'First' },
+      { key: 'new-topic', label: 'Second' }
+    ]);
+    expect(result).toEqual({ ok: false, reason: "Duplicate tag definition for key 'new-topic'." });
   });
 });

@@ -12,6 +12,19 @@ export interface PendingMergesFile {
   pending: PendingMerge[];
 }
 
+function isPendingMerge(value: unknown): value is PendingMerge {
+  if (typeof value !== 'object' || value === null) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    Number.isInteger(record.pr) &&
+    (record.pr as number) > 0 &&
+    typeof record.headSha === 'string' &&
+    record.headSha.length > 0 &&
+    typeof record.slug === 'string' &&
+    record.slug.length > 0
+  );
+}
+
 function pendingMergesPath(stateDir: string): string {
   return path.join(stateDir, 'pending-merges.json');
 }
@@ -22,7 +35,7 @@ export function loadPendingMerges(stateDir: string): PendingMergesFile {
   if (!fs.existsSync(file)) return { pending: [] };
   try {
     const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as Partial<PendingMergesFile>;
-    return { pending: Array.isArray(parsed.pending) ? parsed.pending : [] };
+    return { pending: Array.isArray(parsed.pending) ? parsed.pending.filter(isPendingMerge) : [] };
   } catch {
     return { pending: [] };
   }

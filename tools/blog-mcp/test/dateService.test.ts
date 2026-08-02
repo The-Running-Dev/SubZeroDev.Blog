@@ -35,6 +35,13 @@ describe('normalizeDate', () => {
     expect(result).toEqual({ ok: true, canonical: '2026-08-02T15:00:00Z' });
   });
 
+  it.each(['2026-08-02T10:00:00+99:99', '2026-08-02T10:00:00+05:99', '02 Aug 2026 10:00:00 +0599'])(
+    'rejects an invalid timezone offset: %s',
+    (input) => {
+      expect(normalizeDate(input, UTC, NOW).ok).toBe(false);
+    }
+  );
+
   it('accepts a bare datetime-local value with no seconds', () => {
     const result = normalizeDate('2026-08-02T10:00', UTC, NOW);
     expect(result).toEqual({ ok: true, canonical: '2026-08-02T10:00:00Z' });
