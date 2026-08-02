@@ -33,11 +33,8 @@ export function tagsYmlPath(repoRoot: string, blogDir: string): string {
   return path.join(repoRoot, blogDir, 'tags.yml');
 }
 
-export function loadTags(repoRoot: string, blogDir: string): TagEntry[] {
-  const filePath = tagsYmlPath(repoRoot, blogDir);
-  if (!fs.existsSync(filePath)) return [];
-
-  const raw = fs.readFileSync(filePath, 'utf8');
+/** Parses tags.yml content already in memory -- no filesystem access. Split out from loadTags so a caller with content from somewhere other than the working tree (e.g. `git show <ref>:<path>`) can reuse the exact same parsing rules. */
+export function parseTagsYaml(raw: string): TagEntry[] {
   const parsed: unknown = parseYaml(raw);
   if (typeof parsed !== 'object' || parsed === null) return [];
 
@@ -53,6 +50,12 @@ export function loadTags(repoRoot: string, blogDir: string): TagEntry[] {
     });
   }
   return entries;
+}
+
+export function loadTags(repoRoot: string, blogDir: string): TagEntry[] {
+  const filePath = tagsYmlPath(repoRoot, blogDir);
+  if (!fs.existsSync(filePath)) return [];
+  return parseTagsYaml(fs.readFileSync(filePath, 'utf8'));
 }
 
 // Exact regexes from build/Test-DocumentationArtifact.ps1 lines 63 and 70,

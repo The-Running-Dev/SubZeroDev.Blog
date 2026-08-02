@@ -31,11 +31,8 @@ export function authorsYmlPath(repoRoot: string, blogDir: string): string {
   return path.join(repoRoot, blogDir, 'authors.yml');
 }
 
-export function loadAuthors(repoRoot: string, blogDir: string): AuthorEntry[] {
-  const filePath = authorsYmlPath(repoRoot, blogDir);
-  if (!fs.existsSync(filePath)) return [];
-
-  const raw = fs.readFileSync(filePath, 'utf8');
+/** Parses authors.yml content already in memory -- no filesystem access. Split out from loadAuthors so a caller with content from somewhere other than the working tree (e.g. `git show <ref>:<path>`) can reuse the exact same parsing rules. */
+export function parseAuthorsYaml(raw: string): AuthorEntry[] {
   const parsed: unknown = parseYaml(raw);
   if (typeof parsed !== 'object' || parsed === null) return [];
 
@@ -51,6 +48,12 @@ export function loadAuthors(repoRoot: string, blogDir: string): AuthorEntry[] {
     });
   }
   return entries;
+}
+
+export function loadAuthors(repoRoot: string, blogDir: string): AuthorEntry[] {
+  const filePath = authorsYmlPath(repoRoot, blogDir);
+  if (!fs.existsSync(filePath)) return [];
+  return parseAuthorsYaml(fs.readFileSync(filePath, 'utf8'));
 }
 
 /** Lowercase kebab-case, same shape blog_add_tag's key input already enforces (authoring.ts) -- author keys follow the same convention. */

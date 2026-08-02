@@ -496,6 +496,21 @@ Phases:
   merge rewrites ancestry).
 - Phase 7: end-to-end verification and documentation.
 
+**Interim fix, ahead of Phase 6 (delivered):** a real incident (a long-running
+container's local checkout had drifted 11 commits behind `origin/main`)
+confirmed the exact gap sec2 already documents -- `bootstrap/repo.ts`'s
+`ensureRepo()` only reconciles the checkout once, at startup. `blog_create_post`'s
+author/tag auto-creation (Phase 2) only ever consulted the local
+`authors.yml`/`tags.yml`, so a key a since-merged PR had already added looked
+"unknown" locally and got auto-created a second time with placeholder data,
+clobbering the real entry. Fixed narrowly: the four metadata-mutating tools
+now also read `authors.yml`/`tags.yml` as they exist at `origin/<base>`
+(`git show origin/<base>:<path>`, best-effort -- an unreachable origin falls
+back to local-only rather than blocking a publish) and treat a key as known
+if either copy has it. This does not replace Phase 6 -- the checkout still
+doesn't self-heal -- but it closes the specific clobbering symptom regardless
+of how stale the checkout gets.
+
 An explicit non-goal: the reference post keeps its published author. Any
 editorial correction is a separate, deliberate content change after the
 machinery is fixed -- this milestone does not silently rewrite published

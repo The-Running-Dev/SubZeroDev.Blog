@@ -7,14 +7,14 @@ import { run } from '../exec/run.js';
 import { runPwshScript } from '../exec/pwsh.js';
 import { parseMarkdown, assemblePost, type PostFrontMatter } from '../domain/frontmatter.js';
 import { buildFilename, canonicalUrl, insertTruncateMarker, type PostWriteResult } from '../domain/post.js';
-import { loadAuthors, authorsYmlPath, appendAuthorEntry, checkAuthorsYmlIntegrity, resolveAuthors, type AuthorEntry } from '../domain/authors.js';
-import { loadTags, appendTagEntry, tagsYmlPath, checkTagsYmlIntegrity, resolveTags, type TagEntry } from '../domain/tags.js';
+import { loadAuthors, authorsYmlPath, appendAuthorEntry, checkAuthorsYmlIntegrity, resolveAuthors, parseAuthorsYaml, type AuthorEntry } from '../domain/authors.js';
+import { loadTags, appendTagEntry, tagsYmlPath, checkTagsYmlIntegrity, resolveTags, parseTagsYaml, type TagEntry } from '../domain/tags.js';
 import { writeFilesAtomically, type AtomicWriteFile } from '../domain/atomicWrite.js';
 import { normalizeDate, resolveDateNormalizationOptions } from '../domain/dateService.js';
 import { insertHubEntry, assertStillParses, type HubEntry } from '../domain/hubs.js';
 import { listPostFiles, loadPost, validateAllPosts, validateHubs, type HubValidationContext } from '../domain/validate.js';
 import { checkAllowedPath } from '../domain/paths.js';
-import { currentBranch, status, remoteUrl, gitOrThrow } from '../exec/git.js';
+import { currentBranch, status, remoteUrl, gitOrThrow, git } from '../exec/git.js';
 import { resolveOwnerRepo } from '../domain/github.js';
 import { isReadOnly, isRemoteEnabled, wrapTool, wrapMutatingTool, type ToolContext } from './context.js';
 
@@ -76,6 +76,60 @@ function metadataWrites(
   }
 
   return { writes, changedPaths, findings };
+}
+
+/**
+ * Reads `relativePath` as it exists at `ref` (e.g. `origin/<base>`), parsed
+ * with `parse` -- mirrors domain/validate.ts's previousHeadSlug's exact
+ * `git show <ref>:<path>` pattern. A missing file, unresolvable ref, or any
+ * other git failure returns `[]` rather than throwing: this is a
+ * best-effort cross-check against origin, not a hard dependency that should
+ * ever block a publish on its own.
+ */
+async function readYamlAtRef<T>(repoRoot: string, relativePath: string, ref: string, parse: (raw: string) => T[]): Promise<T[]> {
+  const result = await git(['show', `${ref}:${relativePath}`], { repoRoot });
+  if (result.exitCode !== 0) return [];
+  try {
+    return parse(result.stdout);
+  } catch {
+    return [];
+  }
+}
+
+/** Union by key; `local` wins on a key present in both -- local is the actual target branch's intended state, so this only ever affects whether a key counts as "already known," never which definition of it gets reused. */
+function mergeByKey<T extends { key: string }>(local: T[], origin: T[]): T[] {
+  const localKeys = new Set(local.map((entry) => entry.key));
+  return [...local, ...origin.filter((entry) => !localKeys.has(entry.key))];
+}
+
+/**
+ * Authors/tags known either to the local working tree or to origin/<base>,
+ * whichever the caller's authoring tool is about to run against. Fixes a
+ * real incident: a container's local checkout can drift behind origin/<base>
+ * for as long as it runs (ensureRepo() only reconciles once, at startup --
+ * TODO-NEXT.md sec2's documented gap, closed properly only by Phase 6's
+ * post-merge reconciliation). Without this, resolveAuthors/resolveTags see
+ * only the stale local authors.yml/tags.yml, decide a key that was already
+ * added on origin by a since-merged PR is "unknown," and auto-create a
+ * placeholder duplicate -- silently clobbering the real entry once written.
+ * The fetch and the origin read are both best-effort: a network hiccup must
+ * never block publishing, it just falls back to whatever origin/<base> the
+ * repo already has locally (still strictly better than not checking at all).
+ */
+async function knownAuthorsAndTags(repoRoot: string, blogDir: string, baseBranch: string): Promise<{ authors: AuthorEntry[]; tags: TagEntry[] }> {
+  await git(['fetch', '--prune', 'origin', baseBranch], { repoRoot });
+
+  const localAuthors = loadAuthors(repoRoot, blogDir);
+  const localTags = loadTags(repoRoot, blogDir);
+  const [authorsAtOrigin, tagsAtOrigin] = await Promise.all([
+    readYamlAtRef(repoRoot, `${blogDir}/authors.yml`, `origin/${baseBranch}`, parseAuthorsYaml),
+    readYamlAtRef(repoRoot, `${blogDir}/tags.yml`, `origin/${baseBranch}`, parseTagsYaml)
+  ]);
+
+  return {
+    authors: mergeByKey(localAuthors, authorsAtOrigin),
+    tags: mergeByKey(localTags, tagsAtOrigin)
+  };
 }
 
 function postsForHubContext(repoRoot: string, blogDir: string): HubValidationContext[] {
@@ -426,8 +480,7 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
         return precondition(`'${relativePath}' already exists; pass overwrite to replace it.`);
       }
 
-      const existingAuthors = loadAuthors(repoRoot, config.blogDir);
-      const existingTags = loadTags(repoRoot, config.blogDir);
+      const { authors: existingAuthors, tags: existingTags } = await knownAuthorsAndTags(repoRoot, config.blogDir, config.baseBranch);
 
       const authorResolution = resolveAuthors(existingAuthors, args.authors, args.authorDefinitions, {
         authorId: config.authorId,
@@ -532,8 +585,7 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
       }
 
       const currentFm = match.frontMatter;
-      const existingAuthors = loadAuthors(repoRoot, config.blogDir);
-      const existingTags = loadTags(repoRoot, config.blogDir);
+      const { authors: existingAuthors, tags: existingTags } = await knownAuthorsAndTags(repoRoot, config.blogDir, config.baseBranch);
 
       let mergedAuthors: unknown = currentFm.authors;
       let createdAuthors: AuthorEntry[] = [];
@@ -725,7 +777,7 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
       }
     },
     wrapMutatingTool(ctx, 'blog_add_tag', async (args) => {
-      const existing = loadTags(repoRoot, config.blogDir);
+      const { tags: existing } = await knownAuthorsAndTags(repoRoot, config.blogDir, config.baseBranch);
       if (existing.some((t) => t.key === args.key)) {
         return precondition(`Tag key '${args.key}' already exists.`);
       }
@@ -763,7 +815,7 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
       }
     },
     wrapMutatingTool(ctx, 'blog_add_author', async (args) => {
-      const existing = loadAuthors(repoRoot, config.blogDir);
+      const { authors: existing } = await knownAuthorsAndTags(repoRoot, config.blogDir, config.baseBranch);
       if (existing.some((a) => a.key === args.key)) {
         return precondition(`Author key '${args.key}' already exists.`);
       }
