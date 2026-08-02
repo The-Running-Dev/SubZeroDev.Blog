@@ -10,6 +10,24 @@ export interface TagEntry {
   description: string;
 }
 
+/**
+ * Input shape for a caller-supplied tag definition, distinct from TagEntry
+ * (the loaded/serialized shape): every field but `key` is optional so a
+ * caller can supply just enough to disambiguate a new key, with the rest
+ * generated deterministically at resolution time. Not yet consumed
+ * anywhere -- a future auto-creation resolver (Milestone 11 Phase 2)
+ * accepts this as input, extracting the policy that currently lives inline
+ * in blog_add_tag's handler (tools/authoring.ts) rather than writing it
+ * from scratch -- appendTagEntry/checkTagsYmlIntegrity below already do the
+ * serialization and validation that resolver will call.
+ */
+export interface TagDefinition {
+  key: string;
+  label?: string;
+  permalink?: string;
+  description?: string;
+}
+
 export function tagsYmlPath(repoRoot: string, blogDir: string): string {
   return path.join(repoRoot, blogDir, 'tags.yml');
 }

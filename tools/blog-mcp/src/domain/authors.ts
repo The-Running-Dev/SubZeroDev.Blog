@@ -8,6 +8,21 @@ export interface AuthorEntry {
   url: string;
 }
 
+/**
+ * Input shape for a caller-supplied author definition, distinct from
+ * AuthorEntry (the loaded/serialized shape): every field but `key` is
+ * optional so a caller can supply just enough to disambiguate a new key,
+ * with the rest generated deterministically at resolution time. Not yet
+ * consumed anywhere -- a future auto-creation resolver and blog_add_author
+ * tool (Milestone 11 Phase 2) accept this as input.
+ */
+export interface AuthorDefinition {
+  key: string;
+  name?: string;
+  url?: string;
+  imageUrl?: string;
+}
+
 export function authorsYmlPath(repoRoot: string, blogDir: string): string {
   return path.join(repoRoot, blogDir, 'authors.yml');
 }

@@ -1,6 +1,31 @@
+import type { AuthorEntry } from './authors.js';
+import type { TagEntry } from './tags.js';
+
 export function buildFilename(dateIso: string, slug: string): string {
   const day = dateIso.slice(0, 10);
   return `${day}-${slug}.md`;
+}
+
+/**
+ * Unified shape a create/update tool should return, so every caller
+ * (Compose, the watcher, a direct MCP client) can stage and explain exactly
+ * what happened without independently guessing which files changed or
+ * whether a default was silently substituted. Not yet returned by any
+ * tool -- blog_create_post/blog_update_post currently each shape their own
+ * ad hoc result object (see src/tools/authoring.ts); Milestone 11 Phase 2
+ * onward migrates them to this.
+ */
+export interface PostWriteResult {
+  path: string;
+  previousPath?: string;
+  changedPaths: string[];
+  canonicalDate: string;
+  authors: string[];
+  tags: string[];
+  createdAuthors: AuthorEntry[];
+  createdTags: TagEntry[];
+  defaultAuthorUsed: boolean;
+  canonicalUrl: string;
 }
 
 export function canonicalUrl(canonicalBase: string, slug: string): string {

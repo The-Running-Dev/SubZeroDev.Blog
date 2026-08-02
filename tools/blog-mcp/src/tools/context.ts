@@ -33,6 +33,16 @@ export interface ToolContext {
   capabilities?: Capabilities;
   /** Optional -- directory for scheduler state (schedule.json). Unset in tests and any caller with no workspace concept, same as auditLogPath. */
   stateDir?: string;
+  /**
+   * Optional -- unset in tests and any caller with no need to pin time;
+   * falls back to the real clock (`new Date()`) when absent. Mirrors the
+   * `now?: () => Date` precedent in scheduler/engine.ts and
+   * watcher/engine.ts, added ahead of Milestone 11 Phase 3's canonical date
+   * service so authoring.ts's date-defaulting can become deterministically
+   * testable without a global time-mocking dependency. Not yet read
+   * anywhere.
+   */
+  clock?: () => Date;
 }
 
 export function isReadOnly(): boolean {
