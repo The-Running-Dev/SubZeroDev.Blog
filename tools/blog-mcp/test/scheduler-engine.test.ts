@@ -60,6 +60,7 @@ describe('scheduler engine: runTick', () => {
     delete process.env.GH_SHIM_STATE;
     delete process.env.GH_SHIM_MERGEABLE;
     delete process.env.GH_SHIM_HEAD_SHA;
+    delete process.env.GH_SHIM_MERGE_COMMIT;
     delete process.env.GH_SHIM_THREADS_JSON;
     fs.rmSync(scratchRoot, { recursive: true, force: true });
   });
@@ -68,6 +69,7 @@ describe('scheduler engine: runTick', () => {
     delete process.env.GH_SHIM_STATE;
     delete process.env.GH_SHIM_MERGEABLE;
     delete process.env.GH_SHIM_HEAD_SHA;
+    delete process.env.GH_SHIM_MERGE_COMMIT;
     // The shim's default thread list includes one unresolved thread;
     // blog_auto_merge now refuses to enable auto-merge while any are
     // unresolved, so tests that expect it to succeed must opt into a clean list.
@@ -134,10 +136,32 @@ describe('scheduler engine: runTick', () => {
   });
 
   it('marks a job merged once GitHub reports MERGED', async () => {
+    // reconciliation needs a real, matching SHA: expectedHeadSha is checked
+    // against the shim's headRefOid, and the merge-base --is-ancestor check
+    // needs a merge commit that actually exists in this scratch repo -- HEAD
+    // itself (a commit is its own ancestor) is the simplest valid choice.
+    const headSha = (await gitOrThrow(['rev-parse', 'HEAD'], { repoRoot: clone })).stdout.trim();
     process.env.GH_SHIM_STATE = 'MERGED';
-    saveSchedule(stateDir, { jobs: [baseJob()] });
+    process.env.GH_SHIM_HEAD_SHA = headSha;
+    process.env.GH_SHIM_MERGE_COMMIT = headSha;
+    saveSchedule(stateDir, { jobs: [baseJob({ headSha })] });
     await runTick({ repoRoot: clone, baseBranch: 'main', stateDir, serverOptions });
-    expect(loadSchedule(stateDir).jobs[0]?.status).toBe('merged');
+    const job = loadSchedule(stateDir).jobs[0];
+    expect(job?.status).toBe('merged');
+  });
+
+  it('marks a job needs-attention when the PR merged but reconciliation fails', async () => {
+    process.env.GH_SHIM_STATE = 'MERGED';
+    process.env.GH_SHIM_HEAD_SHA = 'e'.repeat(40);
+    process.env.GH_SHIM_MERGE_COMMIT = 'e'.repeat(40);
+    // job.headSha deliberately does not match the shim's reported head --
+    // blog_reconcile_after_merge refuses on a mismatch, same posture as
+    // blog_auto_merge's own SHA cross-check.
+    saveSchedule(stateDir, { jobs: [baseJob({ headSha: 'd'.repeat(40) })] });
+    await runTick({ repoRoot: clone, baseBranch: 'main', stateDir, serverOptions });
+    const job = loadSchedule(stateDir).jobs[0];
+    expect(job?.status).toBe('needs-attention');
+    expect(job?.reason).toContain('merged, but reconciliation failed');
   });
 
   it('marks a job needs-attention (terminal) when the PR closed without merging', async () => {

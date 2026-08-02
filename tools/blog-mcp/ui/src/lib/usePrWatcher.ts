@@ -21,10 +21,18 @@ const MAX_CONSECUTIVE_FAILURES = 3;
  * MAX_CONSECUTIVE_FAILURES fetch failures in a row (one error toast, not
  * one per failed poll). Per-hook-instance only -- unmounting (navigating
  * away) stops polling; there is no cross-page shared watch state.
+ *
+ * `onMerged`, if supplied, fires once, the moment `state` is first observed
+ * as MERGED -- alongside the toast, not instead of it. Callers that know
+ * this PR's expected head SHA (i.e. their own just-created publish, not an
+ * arbitrary PR number someone typed in) use it to trigger
+ * blog_reconcile_after_merge.
  */
-export function usePrWatcher(pr: number | null, onEvent: (text: string, isError?: boolean) => void): void {
+export function usePrWatcher(pr: number | null, onEvent: (text: string, isError?: boolean) => void, onMerged?: () => void): void {
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;
+  const onMergedRef = useRef(onMerged);
+  onMergedRef.current = onMerged;
 
   useEffect(() => {
     if (!pr) return;
@@ -46,6 +54,7 @@ export function usePrWatcher(pr: number | null, onEvent: (text: string, isError?
         if (status && (!last || last.state !== status.state || last.mergeStateStatus !== status.mergeStateStatus)) {
           if (status.state === 'MERGED') {
             onEventRef.current(`PR #${pr} merged.`);
+            onMergedRef.current?.();
           } else if (status.state === 'CLOSED') {
             onEventRef.current(`PR #${pr} closed without merging.`, true);
           } else {

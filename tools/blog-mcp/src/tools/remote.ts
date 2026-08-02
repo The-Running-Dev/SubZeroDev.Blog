@@ -4,7 +4,7 @@ import path from 'node:path';
 import { z } from 'zod';
 import { ok, precondition } from '../result.js';
 import { InfrastructureError } from '../errors.js';
-import { gitOrThrow, git, headSha as gitHeadSha, currentBranch } from '../exec/git.js';
+import { gitOrThrow, git, headSha as gitHeadSha, currentBranch, isClean } from '../exec/git.js';
 import { ghOrThrow, ghJson, ghGraphQl } from '../exec/gh.js';
 import { resolveOwnerRepoFromGit } from '../domain/github.js';
 import { wrapTool, wrapMutatingTool, type ToolContext } from './context.js';
@@ -21,6 +21,7 @@ interface PrViewJson {
   mergeable?: string;
   mergeStateStatus?: string;
   headRefOid: string;
+  headRefName?: string;
   mergeCommit?: { oid: string } | null;
   reviewDecision?: string;
   autoMergeRequest?: unknown;
@@ -244,6 +245,79 @@ export function registerRemoteTools(ctx: ToolContext): void {
 
       await ghOrThrow(['pr', 'merge', String(args.pr), '--auto', '--squash', '--match-head-commit', headSha], { repoRoot });
       return ok(`Enabled auto-merge on PR #${args.pr} for ${headSha.slice(0, 12)}`, { pr: args.pr, headSha });
+    })
+  );
+
+  server.registerTool(
+    'blog_reconcile_after_merge',
+    {
+      title: 'Reconcile the checkout after a PR merged',
+      description:
+        "The other half of blog_auto_merge: once GitHub reports a PR actually merged, brings the local checkout back in sync -- fetches, switches to and fast-forwards the base branch, and force-deletes the now-merged local feature branch. Deletion is gated on GitHub's own merge state, not local commit ancestry, because a squash merge (the only merge strategy this server ever uses) rewrites history, so the branch's commits are never ancestors of the merge commit in git's own eyes even though GitHub confirms it merged. Requires a clean working tree first; refuses (without touching anything) if the PR has not actually merged yet, or if expectedHeadSha is supplied and no longer matches the PR's head.",
+      inputSchema: {
+        pr: z.number().int().positive(),
+        expectedHeadSha: z.string().optional()
+      }
+    },
+    wrapMutatingTool(ctx, 'blog_reconcile_after_merge', async (args: { pr: number; expectedHeadSha?: string }) => {
+      const prView = await ghJson<PrViewJson>(['pr', 'view', String(args.pr), '--json', 'state,mergeCommit,headRefOid,headRefName'], { repoRoot });
+
+      if (prView.state !== 'MERGED') {
+        return precondition(`PR #${args.pr} has not merged yet (state: ${prView.state}); nothing to reconcile.`);
+      }
+      if (args.expectedHeadSha && prView.headRefOid !== args.expectedHeadSha) {
+        return precondition(
+          `Refusing to reconcile: the expected head SHA (${args.expectedHeadSha}) does not match PR #${args.pr}'s actual head (${prView.headRefOid}). Revalidate and retry.`
+        );
+      }
+      const mergeCommitSha = prView.mergeCommit?.oid;
+      if (!mergeCommitSha) {
+        throw new InfrastructureError(`PR #${args.pr} reports state MERGED but GitHub returned no merge commit.`);
+      }
+
+      if (!(await isClean({ repoRoot }))) {
+        return precondition(`Refusing to reconcile with uncommitted changes present; commit, stash, or discard them first.`);
+      }
+
+      await gitOrThrow(['fetch', '--prune', 'origin'], { repoRoot });
+
+      const base = config.baseBranch;
+      if ((await currentBranch({ repoRoot })) !== base) {
+        await gitOrThrow(['switch', base], { repoRoot });
+      }
+      const ff = await git(['merge', '--ff-only', `origin/${base}`], { repoRoot });
+      if (ff.exitCode !== 0) {
+        return precondition(
+          `Fetched origin/${base}, but fast-forwarding refused (local '${base}' has commits not on origin). Not deleting anything -- resolve manually.`
+        );
+      }
+      const reconciledBaseSha = await gitHeadSha({ repoRoot });
+
+      const reachable = await git(['merge-base', '--is-ancestor', mergeCommitSha, 'HEAD'], { repoRoot });
+      if (reachable.exitCode !== 0) {
+        return precondition(
+          `Fast-forwarded '${base}' to origin/${base}, but merge commit ${mergeCommitSha.slice(0, 12)} is not reachable from it. Not deleting anything -- investigate manually.`
+        );
+      }
+
+      const branch = prView.headRefName;
+      let branchDeleted = false;
+      if (branch && branch !== base) {
+        const existsLocally = (await git(['rev-parse', '--verify', '--quiet', branch], { repoRoot })).exitCode === 0;
+        if (existsLocally) {
+          // -D, not -d: a squash-merged branch's commits are never ancestors
+          // of the branch ref itself, so git's own "already merged" check
+          // would refuse -d even though GitHub (checked above) confirms it
+          // merged.
+          await gitOrThrow(['branch', '-D', branch], { repoRoot });
+          branchDeleted = true;
+        }
+      }
+
+      return ok(
+        `Reconciled after PR #${args.pr} merged: '${base}' is at ${reconciledBaseSha.slice(0, 12)}${branchDeleted ? `, '${branch}' deleted` : ''}`,
+        { pr: args.pr, mergeCommitSha, reconciledBaseSha, branch, branchDeleted }
+      );
     })
   );
 

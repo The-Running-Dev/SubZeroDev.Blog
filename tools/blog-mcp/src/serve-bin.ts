@@ -86,6 +86,7 @@ async function main(): Promise<void> {
       repoRoot: repo.repoRoot,
       watchDir,
       autoMerge: isWatchAutoMergeEnabled(),
+      stateDir,
       ...(watchIntervalMs !== undefined ? { tickIntervalMs: watchIntervalMs } : {}),
       serverOptions: { repoRoot: repo.repoRoot, auditLogPath, capabilities: WATCHER_CAPABILITIES }
     });
