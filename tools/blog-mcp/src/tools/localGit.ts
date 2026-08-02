@@ -295,7 +295,7 @@ export function registerLocalGitTools(ctx: ToolContext): void {
         }
       }
 
-      await gitOrThrow(['add', '-A', '--', ...args.paths], { repoRoot });
+      await gitOrThrow(['add', '--', ...args.paths], { repoRoot });
       return ok(`Staged ${args.paths.length} path(s)`, { paths: args.paths });
     })
   );
