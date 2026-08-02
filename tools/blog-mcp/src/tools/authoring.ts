@@ -516,7 +516,15 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
       const tagKeys = new Set([...existingTags.map((t) => t.key), ...tagResolution.created.map((t) => t.key)]);
       const { validatePost } = await import('../domain/validate.js');
       const findings = await validatePost(repoRoot, loaded, authorKeys, tagKeys);
-      const existingSlugs = postsForHubContext(repoRoot, config.blogDir).map((p) => p.slug);
+      // `overwrite` is the explicit retry path for a create that completed
+      // its atomic filesystem write before a later publishing step failed.
+      // The post at this exact path is being replaced, not duplicated; every
+      // other file retaining the slug is still an error.
+      const existingSlugs = listPostFiles(repoRoot, config.blogDir)
+        .map((file) => loadPost(repoRoot, file))
+        .filter((post) => post.absolutePath !== absolutePath)
+        .map((post) => (typeof post.frontMatter?.slug === 'string' ? post.frontMatter.slug : ''))
+        .filter((slug) => slug !== '');
       if (existingSlugs.includes(args.slug)) {
         findings.push({ path: relativePath, severity: 'error', rule: 'SlugUnique', message: `Slug '${args.slug}' is already used by another post.` });
       }
