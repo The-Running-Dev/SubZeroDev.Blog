@@ -53,6 +53,7 @@ if (group === 'pr' && action === 'view') {
     mergeable: process.env.GH_SHIM_MERGEABLE ?? 'MERGEABLE',
     mergeStateStatus: process.env.GH_SHIM_MERGE_STATE_STATUS ?? 'CLEAN',
     headRefOid: headSha,
+    headRefName: process.env.GH_SHIM_HEAD_REF_NAME,
     mergeCommit: process.env.GH_SHIM_MERGE_COMMIT ? { oid: process.env.GH_SHIM_MERGE_COMMIT } : null,
     reviewDecision: process.env.GH_SHIM_REVIEW_DECISION ?? null,
     autoMergeRequest: null

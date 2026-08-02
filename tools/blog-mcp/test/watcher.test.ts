@@ -3,8 +3,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, beforeAll, afterAll, beforeEach } from 'vitest';
-import { gitOrThrow } from '../src/exec/git.js';
+import { gitOrThrow, currentBranch, git } from '../src/exec/git.js';
 import { runWatchTick, startWatcher, type WatchTickResult } from '../src/watcher/engine.js';
+import { loadPendingMerges } from '../src/watcher/pendingMerges.js';
 import { WATCHER_CAPABILITIES } from '../src/serve/capabilities.js';
 import type { CreateServerOptions } from '../src/server.js';
 
@@ -38,6 +39,7 @@ describe('watcher engine: runWatchTick', () => {
   let scratchRoot: string;
   let clone: string;
   let watchDir: string;
+  let stateDir: string;
   let ghShimLog: string;
   let serverOptions: CreateServerOptions;
 
@@ -46,6 +48,7 @@ describe('watcher engine: runWatchTick', () => {
     const bareRemote = path.join(scratchRoot, 'origin.git');
     clone = path.join(scratchRoot, 'clone');
     watchDir = path.join(scratchRoot, 'watch');
+    stateDir = path.join(scratchRoot, 'state');
     ghShimLog = path.join(scratchRoot, 'gh-shim.log');
     fs.mkdirSync(watchDir);
 
@@ -88,6 +91,9 @@ describe('watcher engine: runWatchTick', () => {
     delete process.env.GH_SHIM_HEAD_SHA;
     delete process.env.GH_SHIM_REPO_ROOT;
     delete process.env.GH_SHIM_THREADS_JSON;
+    delete process.env.GH_SHIM_STATE;
+    delete process.env.GH_SHIM_MERGE_COMMIT;
+    delete process.env.GH_SHIM_HEAD_REF_NAME;
     fs.rmSync(scratchRoot, { recursive: true, force: true });
   });
 
@@ -96,6 +102,9 @@ describe('watcher engine: runWatchTick', () => {
     process.env.GH_SHIM_LOG = ghShimLog;
     delete process.env.GH_SHIM_HEAD_SHA;
     delete process.env.GH_SHIM_REPO_ROOT;
+    delete process.env.GH_SHIM_STATE;
+    delete process.env.GH_SHIM_MERGE_COMMIT;
+    delete process.env.GH_SHIM_HEAD_REF_NAME;
     // The shim's default thread list includes one unresolved thread;
     // blog_auto_merge refuses to enable auto-merge while any are unresolved,
     // so tests that expect it to succeed must opt into a clean list.
@@ -278,6 +287,69 @@ describe('watcher engine: runWatchTick', () => {
 
     const calls = shimCalls();
     expect(calls).toHaveLength(0); // never re-ran the pipeline against it
+  });
+
+  it('reconciles a previously-opened PR once a later tick observes it merged', async () => {
+    const mainSha = (await gitOrThrow(['rev-parse', 'main'], { repoRoot: clone })).stdout.trim();
+    const post = VALID_POST.replace(/watcher-fixture/g, 'reconcile-pending');
+    dropFile('reconcile-pending.md', post);
+    process.env.GH_SHIM_HEAD_SHA = 'GIT_HEAD';
+    process.env.GH_SHIM_REPO_ROOT = clone;
+
+    const tick1 = await runWatchTick({ repoRoot: clone, watchDir, autoMerge: false, stateDir, serverOptions });
+    expect(tick1.filesPublished).toBe(1);
+    expect(loadPendingMerges(stateDir).pending).toHaveLength(1);
+
+    // The feature branch's HEAD hasn't moved since tick 1 (autoMerge was
+    // off, nothing else touches it), so the same GIT_HEAD trick still
+    // resolves to the SHA recorded as the pending entry's headSha.
+    process.env.GH_SHIM_STATE = 'MERGED';
+    process.env.GH_SHIM_MERGE_COMMIT = mainSha;
+    process.env.GH_SHIM_HEAD_REF_NAME = 'blog/reconcile-pending';
+
+    await runWatchTick({ repoRoot: clone, watchDir, autoMerge: false, stateDir, serverOptions });
+
+    expect(loadPendingMerges(stateDir).pending).toHaveLength(0);
+    expect(await currentBranch({ repoRoot: clone })).toBe('main');
+    const branchStillExists = (await git(['rev-parse', '--verify', '--quiet', 'blog/reconcile-pending'], { repoRoot: clone })).exitCode === 0;
+    expect(branchStillExists).toBe(false);
+  });
+
+  it('prunes a closed PR from the pending list without reconciling', async () => {
+    const post = VALID_POST.replace(/watcher-fixture/g, 'closed-pr');
+    dropFile('closed-pr.md', post);
+    process.env.GH_SHIM_HEAD_SHA = 'GIT_HEAD';
+    process.env.GH_SHIM_REPO_ROOT = clone;
+
+    await runWatchTick({ repoRoot: clone, watchDir, autoMerge: false, stateDir, serverOptions });
+    expect(loadPendingMerges(stateDir).pending).toHaveLength(1);
+
+    // Audit log is shared across this whole describe block (never truncated
+    // between tests) -- scope the "no reconcile call" check to lines added
+    // by THIS test's own second tick, not the file's full history.
+    const linesBefore = fs.readFileSync(path.join(scratchRoot, 'audit.log'), 'utf8').trim().split('\n').length;
+
+    process.env.GH_SHIM_STATE = 'CLOSED';
+    await runWatchTick({ repoRoot: clone, watchDir, autoMerge: false, stateDir, serverOptions });
+
+    expect(loadPendingMerges(stateDir).pending).toHaveLength(0);
+    const newLines = fs.readFileSync(path.join(scratchRoot, 'audit.log'), 'utf8').trim().split('\n').slice(linesBefore);
+    expect(newLines.some((line) => JSON.parse(line).tool === 'blog_reconcile_after_merge')).toBe(false);
+  });
+
+  it('leaves a still-open PR pending across ticks', async () => {
+    const post = VALID_POST.replace(/watcher-fixture/g, 'still-open');
+    dropFile('still-open.md', post);
+    process.env.GH_SHIM_HEAD_SHA = 'GIT_HEAD';
+    process.env.GH_SHIM_REPO_ROOT = clone;
+
+    await runWatchTick({ repoRoot: clone, watchDir, autoMerge: false, stateDir, serverOptions });
+    expect(loadPendingMerges(stateDir).pending).toHaveLength(1);
+
+    // GH_SHIM_STATE stays at its default ('OPEN').
+    await runWatchTick({ repoRoot: clone, watchDir, autoMerge: false, stateDir, serverOptions });
+
+    expect(loadPendingMerges(stateDir).pending).toHaveLength(1);
   });
 });
 

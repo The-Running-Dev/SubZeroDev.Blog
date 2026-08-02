@@ -94,7 +94,21 @@ async function processJob(deps: TickDeps, job: ScheduledJob, now: Date): Promise
   const data = statusResult.data as PrStatusData;
 
   if (data.state === 'MERGED') {
-    job.status = 'merged';
+    // Reconcile immediately, in the same tick that observes the merge --
+    // this is "deferred reconciliation for unattended publishers" for the
+    // scheduler specifically: it already runs periodically, so there's no
+    // separate queue to maintain, ScheduledJob already carries job.headSha.
+    const reconcileResult = await callToolInProcess(deps.serverOptions, 'blog_reconcile_after_merge', { pr: job.pr, expectedHeadSha: job.headSha });
+    if (reconcileResult.ok) {
+      job.status = 'merged';
+      job.reason = reconcileResult.summary;
+    } else {
+      // Merged but not reconciled must surface, not silently look identical
+      // to a clean merge -- a human needs to know the checkout may still
+      // reference this branch.
+      job.status = 'needs-attention';
+      job.reason = `PR #${job.pr} merged, but reconciliation failed: ${reconcileResult.summary}`;
+    }
     job.updatedAt = now.toISOString();
     return true;
   }

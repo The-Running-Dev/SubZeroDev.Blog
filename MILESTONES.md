@@ -401,8 +401,11 @@ Phases:
 
 Specified in `tools/blog-mcp/TODO-NEXT.md` sections 1-14. Phase 1 (regression
 fixtures and domain contracts), Phase 2 (atomic metadata resolution), Phase 3
-(canonical date service), and Phase 4 (protected branch preparation) are
-delivered; Phases 5-7 below are not implemented.
+(canonical date service), Phase 4 (protected branch preparation), and Phase 6
+(post-merge reconciliation) are delivered; Phase 5 (caller migration) and
+Phase 7 (end-to-end verification) are not implemented. Phase 6 was delivered
+before Phase 5 -- it directly root-causes the interim-fix incident below, so
+it was prioritized ahead of its numeric order.
 
 Publishing
 [GitOps Isn't Just for Infrastructure Anymore](https://blog.subzerodev.com/gitops-isnt-just-for-infrastructure-anymore/)
@@ -491,9 +494,27 @@ Phases:
   `it.fails()` fixtures.
 - Phase 5: caller migration (Compose, watcher, HTTP/API onto `changedPaths`,
   including migrating them onto `blog_prepare_publish_branch`).
-- Phase 6: post-merge reconciliation (`blog_reconcile_after_merge`, which must
-  rely on verified GitHub PR state rather than `merge-base`, because squash
-  merge rewrites ancestry).
+- Phase 6 (delivered): post-merge reconciliation. New `blog_reconcile_after_merge({
+  pr, expectedHeadSha? })`: confirms the PR actually merged via `gh pr view`
+  (state, not `merge-base` -- squash merge rewrites ancestry, same reasoning
+  `bootstrap/repo.ts`'s pre-existing `isBranchMergedViaGitHub` already
+  established), refuses on a head-SHA mismatch or a dirty tree, fetches,
+  fast-forwards the base branch, verifies the merge commit is reachable, and
+  force-deletes (`git branch -D`) the now-merged local branch -- `-D` because
+  a squash-merged branch's commits are never ancestors of its own ref, so
+  `-d` would refuse despite GitHub confirming the merge. The scheduler now
+  calls it the moment a tick observes `MERGED` (reusing the job's already-persisted
+  `headSha`, no new state) instead of just flipping a status string. The
+  watcher gained a small persisted `pending-merges.json`
+  (`src/watcher/pendingMerges.ts`, mirroring `scheduler/store.ts`'s
+  write-temp-then-rename exactly) so an unattended publish gets reconciled
+  once it merges, checked at the start of every later tick. Compose's
+  `usePrWatcher` gained an `onMerged` callback wired to a new
+  `/api/pr/:number/reconcile` route -- deliberately not wired into the
+  generic `PrStatusView` (no reliable expected head SHA for an arbitrary
+  watched PR number). `ensureRepo()` itself is untouched; it remains the
+  startup recovery path, now one of two reconciliation mechanisms instead of
+  the only one.
 - Phase 7: end-to-end verification and documentation.
 
 **Interim fix, ahead of Phase 6 (delivered):** a real incident (a long-running

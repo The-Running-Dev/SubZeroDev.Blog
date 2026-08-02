@@ -92,6 +92,10 @@ export default function ComposeView() {
 
   const [exists, setExists] = useState(false);
   const [pr, setPr] = useState<number | null>(null);
+  // The SHA this session itself pushed for `pr` -- threaded into
+  // blog_reconcile_after_merge's expectedHeadSha once the PR merges, same
+  // cross-check reasoning as auto-merge's own headSha (see handlePublish).
+  const [prHeadSha, setPrHeadSha] = useState<string | null>(null);
   const [log, setLog] = useState<LogLine[]>([]);
   // True for the duration of handlePublish's whole branch->...->auto-merge
   // sequence -- disables the form so a double-click can't fire a second,
@@ -114,7 +118,18 @@ export default function ComposeView() {
 
   // Starts watching the PR the moment `pr` is set (right after Publish opens
   // one) and posts a toast on every state change until it merges or closes.
-  usePrWatcher(pr, logLine);
+  // Once merged, reconciles the checkout (fetch, fast-forward base,
+  // force-delete the now-merged local branch) so the next publish starts
+  // clean -- TODO-NEXT.md sec7.5's "deferred reconciliation," the
+  // interactive-UI half of it.
+  const onPrMerged = useCallback(() => {
+    if (!pr) return;
+    void post(`/api/pr/${pr}/reconcile`, { expectedHeadSha: prHeadSha }).then(
+      (result) => logLine(`Reconciled after merge: ${result.summary ?? 'done'}.`),
+      (err) => logLine(`Reconciliation after merge failed: ${err instanceof Error ? err.message : String(err)}`, true)
+    );
+  }, [pr, prHeadSha, logLine]);
+  usePrWatcher(pr, logLine, onPrMerged);
 
   // Toasts stack in a fixed corner (position: fixed, not part of document
   // flow), so unlike an inline log they never clear themselves -- each one
@@ -438,6 +453,7 @@ export default function ComposeView() {
       });
       const newPr = prResult.data?.pr ?? null;
       setPr(newPr);
+      setPrHeadSha(sha);
       logLine(`Opened PR #${newPr}: ${prResult.data?.url}`);
 
       if (autoMerge && newPr && sha) {

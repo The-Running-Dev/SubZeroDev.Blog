@@ -4,6 +4,7 @@ import { isClean } from '../exec/git.js';
 import { callToolInProcess } from '../serve/client.js';
 import { appendAuditLog } from '../exec/auditLog.js';
 import { insertTruncateMarker } from '../domain/post.js';
+import { loadPendingMerges, savePendingMerges, type PendingMerge } from './pendingMerges.js';
 import type { CreateServerOptions } from '../server.js';
 import type { ResultKind } from '../result.js';
 
@@ -15,6 +16,15 @@ export interface WatchTickDeps {
   autoMerge: boolean;
   /** Must carry the watcher Capabilities profile (src/serve/capabilities.ts's WATCHER_CAPABILITIES). */
   serverOptions: CreateServerOptions;
+  /**
+   * Optional -- unset in tests and any caller with no workspace concept,
+   * same convention as auditLogPath. When set, every PR the watcher opens is
+   * recorded here (pending-merges.json) and checked back on at the start of
+   * every later tick, so an unattended publish still gets reconciled
+   * (blog_reconcile_after_merge) once it actually merges -- "deferred
+   * reconciliation for unattended publishers," TODO-NEXT.md sec7.5/sec10.
+   */
+  stateDir?: string;
   /** Injectable clock for tests; defaults to the real time. */
   now?: () => Date;
 }
@@ -254,6 +264,15 @@ async function publishFile(deps: WatchTickDeps, filePath: string, originalName: 
   if (!prResult.ok) return { ok: false, kind: prResult.kind, summary: `blog_create_pr failed: ${prResult.summary}` };
   const { pr, url } = prResult.data as { pr: number; url: string };
 
+  // Recorded regardless of autoMerge: even a PR a human must manually
+  // approve should eventually get reconciled once it merges, not just the
+  // ones this watcher enabled auto-merge on itself.
+  if (deps.stateDir) {
+    const file = loadPendingMerges(deps.stateDir);
+    file.pending.push({ pr, headSha: localSha, slug: fields.slug });
+    savePendingMerges(deps.stateDir, file);
+  }
+
   if (!deps.autoMerge) {
     return { ok: true, kind: 'success', summary: `Published '${fields.slug}' as PR #${pr} (${url}); auto-merge not enabled (BLOG_MCP_WATCH_AUTO_MERGE=0).` };
   }
@@ -267,6 +286,55 @@ async function publishFile(deps: WatchTickDeps, filePath: string, originalName: 
     return { ok: false, kind: autoMergeResult.kind, summary: `Opened PR #${pr} (${url}) but blog_auto_merge failed: ${autoMergeResult.summary}` };
   }
   return { ok: true, kind: 'success', summary: `Published '${fields.slug}' as PR #${pr} (${url}), auto-merge enabled.` };
+}
+
+/**
+ * Checks every PR the watcher previously opened and hasn't seen resolved
+ * yet, re-derived from GitHub's current state each time -- never a cached
+ * "already reconciled" flag, same self-healing posture as the scheduler's
+ * processJob. MERGED -> reconcile (fetch, ff base, force-delete the local
+ * branch) and drop from the pending list regardless of whether reconcile
+ * itself succeeds -- a merged-but-unreconciled PR is a problem for a human
+ * to notice via the audit log, not something to keep silently retrying
+ * forever. CLOSED -> drop, nothing to reconcile. Anything else, or a
+ * transient status-check failure, stays pending for the next tick.
+ */
+async function reconcilePendingMerges(deps: WatchTickDeps): Promise<void> {
+  if (!deps.stateDir) return;
+  const file = loadPendingMerges(deps.stateDir);
+  if (file.pending.length === 0) return;
+
+  const stillPending: PendingMerge[] = [];
+  for (const entry of file.pending) {
+    const statusResult = await callToolInProcess(deps.serverOptions, 'blog_pr_status', { pr: entry.pr });
+    if (!statusResult.ok) {
+      stillPending.push(entry);
+      continue;
+    }
+    const state = (statusResult.data as { state: string }).state;
+
+    if (state === 'MERGED') {
+      const reconcileResult = await callToolInProcess(deps.serverOptions, 'blog_reconcile_after_merge', {
+        pr: entry.pr,
+        expectedHeadSha: entry.headSha
+      });
+      appendAuditLog(deps.serverOptions.auditLogPath, {
+        tool: 'blog_reconcile_after_merge',
+        ok: reconcileResult.ok,
+        kind: reconcileResult.kind,
+        summary: `PR #${entry.pr} ('${entry.slug}'): ${reconcileResult.summary}`
+      });
+      continue; // dropped from pending either way
+    }
+    if (state === 'CLOSED') {
+      continue; // dropped -- nothing to reconcile
+    }
+    stillPending.push(entry);
+  }
+
+  if (stillPending.length !== file.pending.length) {
+    savePendingMerges(deps.stateDir, { pending: stillPending });
+  }
 }
 
 /**
@@ -287,6 +355,8 @@ export async function runWatchTick(deps: WatchTickDeps): Promise<WatchTickResult
   if (!(await isClean({ repoRoot: deps.repoRoot }))) {
     return { skippedRepoNotReady: true, filesConsidered: 0, filesPublished: 0, filesFailed: 0 };
   }
+
+  await reconcilePendingMerges(deps);
 
   const names = fs
     .readdirSync(deps.watchDir)

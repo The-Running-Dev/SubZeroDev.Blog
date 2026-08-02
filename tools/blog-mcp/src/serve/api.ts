@@ -198,6 +198,11 @@ export async function handleApiRequest(
       return callTool(serverOptions, 'blog_auto_merge', { ...args, pr: Number(autoMergeMatch[1]) });
     }
 
+    const reconcileMatch = /^\/api\/pr\/(\d+)\/reconcile$/.exec(pathname);
+    if (reconcileMatch) {
+      return callTool(serverOptions, 'blog_reconcile_after_merge', { ...args, pr: Number(reconcileMatch[1]) });
+    }
+
     return undefined;
   }
 
