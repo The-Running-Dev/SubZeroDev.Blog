@@ -237,7 +237,9 @@ function Add-ChangeAreaScratchCommit {
         Set-Content -LiteralPath $fullPath -Value $WriteFile[$relativePath] -NoNewline -Encoding utf8
     }
 
-    Invoke-GitCommand -RepositoryRoot $RepositoryRoot -ArgumentList @('add', '-A') | Out-Null
+    if ($WriteFile.Keys.Count -gt 0) {
+        Invoke-GitCommand -RepositoryRoot $RepositoryRoot -ArgumentList (@('add', '--') + @($WriteFile.Keys)) | Out-Null
+    }
     Invoke-GitCommand -RepositoryRoot $RepositoryRoot -ArgumentList @('commit', '-m', $Message) | Out-Null
     return (Invoke-GitCommand -RepositoryRoot $RepositoryRoot -ArgumentList @('rev-parse', 'HEAD')).StdOut.Trim()
 }
@@ -706,38 +708,50 @@ else {
         }
 
         if (Test-FixtureIncluded -Name 'git/wrapper-json-roundtrip') {
-            # The wrapper always self-locates its repository root by walking
-            # up from its own script location (matching how it will
-            # actually run in CI), so it cannot be pointed at a scratch
-            # repository without giving the production wrapper a
-            # test-only parameter it has no real use for. Use a fixed,
-            # immutable commit pair from this repository's own history
-            # instead -- f1f5613 (the old-blog-to-blog-post migration,
-            # which renamed files out of docs/docs/** into docs/blog/**)
-            # against its parent, already hand-verified to classify as
-            # markdown_gate + site_verify + site_deploy only, 25 paths,
-            # 0 unmatched.
-            $wrapperPath = Join-Path $repositoryRoot 'build' 'Get-WorkflowChangeArea.ps1'
-            $jsonOutput = & pwsh -NoProfile -File $wrapperPath -Base 'f1f5613~1' -Head 'f1f5613' -Quiet 2>$null
-
+            # Self-contained: a real historical commit pair from this
+            # repository would break in a shallow checkout (actions/checkout
+            # defaults to fetch-depth: 1, and even a full local clone
+            # shouldn't be a hard requirement just to run this fixture). The
+            # wrapper always self-locates its repository root by walking up
+            # from its own script location, so it's copied into the scratch
+            # repository's own build/ directory -- run from there, that walk
+            # resolves to the scratch repository, not this one.
+            $scratch = New-ChangeAreaScratchRepository
             try {
-                $parsed = $jsonOutput | ConvertFrom-Json
-            }
-            catch {
-                $parsed = $null
-                $findings.Add((New-ChangeAreaFinding -Fixture 'git/wrapper-json-roundtrip' -Assertion 'ValidJson' -Severity 'Error' -Message "Wrapper stdout did not parse as JSON: $($_.Exception.Message)"))
-            }
+                Add-ChangeAreaScratchCommit -RepositoryRoot $scratch -Message 'seed' -WriteFile @{ 'README.md' = "# seed`n" } | Out-Null
+                Invoke-GitCommand -RepositoryRoot $scratch -ArgumentList @('checkout', '-b', 'feature') | Out-Null
+                Add-ChangeAreaScratchCommit -RepositoryRoot $scratch -Message 'feature work' -WriteFile @{ 'tools/blog-mcp/src/feature.ts' = "export const x = 1;`n" } | Out-Null
 
-            if ($parsed) {
-                $definitionKeys = @((Get-WorkflowChangeAreaDefinition).Keys)
-                $parsedAreaKeys = @($parsed.Area.PSObject.Properties.Name)
-                $findings.AddRange([pscustomobject[]] (Test-StringSetEqual -Fixture 'git/wrapper-json-roundtrip' -Assertion 'AreaKeys' -Expected $definitionKeys -Actual $parsedAreaKeys))
-                if ($parsed.Area.site_deploy -ne $true) {
-                    $findings.Add((New-ChangeAreaFinding -Fixture 'git/wrapper-json-roundtrip' -Assertion 'site_deploy' -Severity 'Error' -Message 'Expected site_deploy true through the JSON round trip via the wrapper script.'))
+                $scratchBuildDirectory = Join-Path $scratch 'build'
+                New-Item -ItemType Directory -Path $scratchBuildDirectory -Force | Out-Null
+                Copy-Item -LiteralPath (Join-Path $repositoryRoot 'build' 'WorkflowChangeAreas.psm1') -Destination $scratchBuildDirectory
+                Copy-Item -LiteralPath (Join-Path $repositoryRoot 'build' 'Get-WorkflowChangeArea.ps1') -Destination $scratchBuildDirectory
+
+                $scratchWrapperPath = Join-Path $scratchBuildDirectory 'Get-WorkflowChangeArea.ps1'
+                $jsonOutput = & pwsh -NoProfile -File $scratchWrapperPath -Base 'main' -Head 'feature' -Quiet 2>$null
+
+                try {
+                    $parsed = $jsonOutput | ConvertFrom-Json
                 }
-                if ($null -eq $parsed.MatchedPath.blog_mcp_compose -or @($parsed.MatchedPath.blog_mcp_compose).Count -ne 0) {
-                    $findings.Add((New-ChangeAreaFinding -Fixture 'git/wrapper-json-roundtrip' -Assertion 'EmptyArraySerialization' -Severity 'Error' -Message 'An inactive area must serialize as an empty JSON array, not null or a non-empty value.'))
+                catch {
+                    $parsed = $null
+                    $findings.Add((New-ChangeAreaFinding -Fixture 'git/wrapper-json-roundtrip' -Assertion 'ValidJson' -Severity 'Error' -Message "Wrapper stdout did not parse as JSON: $($_.Exception.Message)"))
                 }
+
+                if ($parsed) {
+                    $definitionKeys = @((Get-WorkflowChangeAreaDefinition).Keys)
+                    $parsedAreaKeys = @($parsed.Area.PSObject.Properties.Name)
+                    $findings.AddRange([pscustomobject[]] (Test-StringSetEqual -Fixture 'git/wrapper-json-roundtrip' -Assertion 'AreaKeys' -Expected $definitionKeys -Actual $parsedAreaKeys))
+                    if ($parsed.Area.blog_mcp_image -ne $true) {
+                        $findings.Add((New-ChangeAreaFinding -Fixture 'git/wrapper-json-roundtrip' -Assertion 'blog_mcp_image' -Severity 'Error' -Message 'Expected blog_mcp_image true through the JSON round trip via the wrapper script.'))
+                    }
+                    if ($null -eq $parsed.MatchedPath.blog_mcp_compose -or @($parsed.MatchedPath.blog_mcp_compose).Count -ne 0) {
+                        $findings.Add((New-ChangeAreaFinding -Fixture 'git/wrapper-json-roundtrip' -Assertion 'EmptyArraySerialization' -Severity 'Error' -Message 'An inactive area must serialize as an empty JSON array, not null or a non-empty value.'))
+                    }
+                }
+            }
+            finally {
+                Remove-ChangeAreaScratchRepository -RepositoryRoot $scratch
             }
         }
     }

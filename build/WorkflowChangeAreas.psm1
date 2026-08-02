@@ -322,16 +322,19 @@ function Get-WorkflowChangeArea {
         [string[]] $MergeBase = @()
     )
 
-    $normalizedPath = @(
-        $ChangedPath |
-            ForEach-Object {
-                $value = $_.Replace('\', '/')
-                if ($value.StartsWith('./')) { $value = $value.Substring(2) }
-                $value
-            } |
-            Where-Object { $_ -ne '' } |
-            Sort-Object -Unique
-    )
+    # Sort-Object -Unique compares case-insensitively by default, which
+    # would silently collapse two distinct git paths that differ only by
+    # case (a real possibility on the case-sensitive Linux runners this
+    # module targets) into one. Dedupe with an ordinal HashSet first, then
+    # sort purely for stable, readable output -- ordering doesn't affect
+    # correctness, only uniqueness does.
+    $uniquePath = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+    foreach ($rawPath in $ChangedPath) {
+        $value = $rawPath.Replace('\', '/')
+        if ($value.StartsWith('./')) { $value = $value.Substring(2) }
+        if ($value -ne '') { [void] $uniquePath.Add($value) }
+    }
+    $normalizedPath = @($uniquePath | Sort-Object)
 
     $definition = Get-WorkflowChangeAreaDefinition
     $area = [ordered]@{}
@@ -515,23 +518,29 @@ function Invoke-GitCommand {
     $startInfo.EnvironmentVariables['GIT_TERMINAL_PROMPT'] = '0'
 
     $process = [System.Diagnostics.Process]::new()
-    $process.StartInfo = $startInfo
-    [void] $process.Start()
+    try {
+        $process.StartInfo = $startInfo
+        [void] $process.Start()
 
-    $stdOutTask = $process.StandardOutput.ReadToEndAsync()
-    $stdErrTask = $process.StandardError.ReadToEndAsync()
-    $process.WaitForExit()
+        $stdOutTask = $process.StandardOutput.ReadToEndAsync()
+        $stdErrTask = $process.StandardError.ReadToEndAsync()
+        $process.WaitForExit()
 
-    $stdOut = $stdOutTask.GetAwaiter().GetResult()
-    $stdErr = $stdErrTask.GetAwaiter().GetResult()
+        $stdOut = $stdOutTask.GetAwaiter().GetResult()
+        $stdErr = $stdErrTask.GetAwaiter().GetResult()
+        $exitCode = $process.ExitCode
+    }
+    finally {
+        $process.Dispose()
+    }
 
-    if ($process.ExitCode -ne 0) {
-        throw "git $($ArgumentList -join ' ') failed (exit $($process.ExitCode)): $($stdErr.Trim())"
+    if ($exitCode -ne 0) {
+        throw "git $($ArgumentList -join ' ') failed (exit $exitCode): $($stdErr.Trim())"
     }
 
     return [pscustomobject]@{
         Command  = @('git') + $ArgumentList
-        ExitCode = $process.ExitCode
+        ExitCode = $exitCode
         StdOut   = $stdOut
         StdErr   = $stdErr
     }
