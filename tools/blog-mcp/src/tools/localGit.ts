@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { ok, precondition, infrastructureFailure } from '../result.js';
 import { PreconditionError } from '../errors.js';
-import { git, gitOrThrow, status, currentBranch, isClean } from '../exec/git.js';
+import { git, gitOrThrow, status, currentBranch, isClean, headSha, aheadBehind } from '../exec/git.js';
 import { checkAllowedPaths } from '../domain/paths.js';
 import { wrapTool, wrapMutatingTool, type ToolContext } from './context.js';
 
@@ -9,6 +9,22 @@ const COMMIT_SUBJECT_PATTERN = /^(feat|fix|docs|chore|refactor|style|test|build|
 
 function deriveBranchName(kind: string, slug: string): string {
   return `${kind}/${slug}`;
+}
+
+interface PreservedCommit {
+  sha: string;
+  subject: string;
+}
+
+type PreparePublishBranchAction = 'switched-existing' | 'created-from-remote-base' | 'fast-forwarded-and-created' | 'preserved-and-rebased';
+
+interface PreparePublishBranchResult {
+  branch: string;
+  action: PreparePublishBranchAction;
+  originalBaseSha: string;
+  resultingSha: string;
+  remoteBaseSha: string;
+  preservedCommits: PreservedCommit[];
 }
 
 export function registerLocalGitTools(ctx: ToolContext): void {
@@ -47,11 +63,10 @@ export function registerLocalGitTools(ctx: ToolContext): void {
 
       const ff = await git(['merge', '--ff-only', `origin/${base}`], { repoRoot });
       if (ff.exitCode !== 0) {
-        return ok(`Fetched origin/${base}; fast-forward refused (local '${base}' has commits not on origin).`, {
-          base,
-          fastForwarded: false,
-          branch
-        });
+        return precondition(
+          `Fetched origin/${base}; fast-forward refused (local '${base}' has commits not on origin). Use blog_prepare_publish_branch to preserve them on a feature branch.`,
+          { base, fastForwarded: false, branch }
+        );
       }
       return ok(`Fetched and fast-forwarded '${base}' to origin/${base}`, { base, fastForwarded: true, branch });
     })
@@ -98,6 +113,147 @@ export function registerLocalGitTools(ctx: ToolContext): void {
   );
 
   server.registerTool(
+    'blog_prepare_publish_branch',
+    {
+      title: 'Prepare a branch for publishing',
+      description:
+        "The first mutating step of publishing (TODO-NEXT.md sec7): creates or switches to a feature branch based on the latest origin/<base>, without abandoning a clean local-only commit that might already be sitting on <base> -- that commit is preserved on the requested branch and rebased onto the latest remote state instead of being left behind. Requires a fully clean working tree, including untracked files, when creating a new branch: uncommitted changes are never moved implicitly. Never rewrites a branch that already exists locally or on origin -- switches to it as-is instead.",
+      inputSchema: {
+        name: z.string().optional(),
+        slug: z.string().optional(),
+        kind: z.enum(['blog', 'content', 'fix', 'feature', 'docs']).optional(),
+        checkoutExisting: z.boolean().optional()
+      }
+    },
+    wrapMutatingTool(ctx, 'blog_prepare_publish_branch', async (args: { name?: string; slug?: string; kind?: string; checkoutExisting?: boolean }) => {
+      if (!args.name && !args.slug) {
+        throw new PreconditionError('Provide either name, or slug (with optional kind).');
+      }
+      const branchName = args.name ?? deriveBranchName(args.kind ?? 'blog', args.slug as string);
+      const base = config.baseBranch;
+
+      const existsLocally = (await git(['rev-parse', '--verify', '--quiet', branchName], { repoRoot })).exitCode === 0;
+      // A live remote check, not a local origin/<branchName> tracking ref
+      // (which would be stale if some other clone pushed this branch after
+      // our last fetch, wrongly reporting "doesn't exist" and letting the
+      // new-branch algorithm run over it).
+      const existsRemotely = (await git(['ls-remote', '--exit-code', 'origin', branchName], { repoRoot })).exitCode === 0;
+      if (existsLocally || existsRemotely) {
+        if (!args.checkoutExisting) {
+          return precondition(
+            `Branch '${branchName}' already ${existsLocally ? 'exists locally' : 'exists on origin'}; pass checkoutExisting to switch to it. It will not be rebased or otherwise rewritten.`
+          );
+        }
+        if (existsLocally) {
+          await gitOrThrow(['switch', branchName], { repoRoot });
+        } else {
+          await gitOrThrow(['fetch', 'origin', branchName], { repoRoot });
+          await gitOrThrow(['switch', '-c', branchName, `origin/${branchName}`], { repoRoot });
+        }
+        const resultingSha = await headSha({ repoRoot });
+        const baseRev = await git(['rev-parse', base], { repoRoot });
+        const remoteBaseRev = await git(['rev-parse', `origin/${base}`], { repoRoot });
+        const result: PreparePublishBranchResult = {
+          branch: branchName,
+          action: 'switched-existing',
+          originalBaseSha: baseRev.exitCode === 0 ? baseRev.stdout.trim() : '',
+          resultingSha,
+          remoteBaseSha: remoteBaseRev.exitCode === 0 ? remoteBaseRev.stdout.trim() : '',
+          preservedCommits: []
+        };
+        return ok(`Switched to existing branch '${branchName}'; left untouched (not rebased).`, result);
+      }
+
+      if (!(await isClean({ repoRoot }))) {
+        return precondition(
+          'Refusing to prepare a publish branch with uncommitted changes present (staged, unstaged, or untracked); commit, stash, or discard them first -- branch preparation never moves uncommitted work implicitly.'
+        );
+      }
+
+      await gitOrThrow(['fetch', '--prune', 'origin', base], { repoRoot });
+      const originalBaseSha = (await gitOrThrow(['rev-parse', base], { repoRoot })).stdout.trim();
+      const remoteBaseSha = (await gitOrThrow(['rev-parse', `origin/${base}`], { repoRoot })).stdout.trim();
+      const { ahead, behind } = await aheadBehind({ repoRoot }, `origin/${base}`, base);
+
+      if (ahead > 0) {
+        // Local base has commit(s) origin doesn't -- preserve them on the
+        // new branch and rebase onto the latest remote state, rather than
+        // cutting the branch from origin/<base> and abandoning them
+        // (the exact Milestone 11 incident this tool exists to prevent).
+        const mergeBase = (await gitOrThrow(['merge-base', base, `origin/${base}`], { repoRoot })).stdout.trim();
+        const logResult = await gitOrThrow(['log', '--format=%H\x1f%s', '-z', `${mergeBase}..${originalBaseSha}`], { repoRoot });
+        const preservedCommits: PreservedCommit[] = logResult.stdout
+          .split('\0')
+          .filter((entry) => entry.length > 0)
+          .map((entry) => {
+            const [sha, subject] = entry.split('\x1f');
+            return { sha: sha ?? '', subject: subject ?? '' };
+          });
+
+        await gitOrThrow(['branch', branchName, base], { repoRoot });
+        await gitOrThrow(['switch', branchName], { repoRoot });
+        await gitOrThrow(['branch', '-f', base, `origin/${base}`], { repoRoot });
+
+        const rebase = await git(['rebase', '--onto', `origin/${base}`, mergeBase], { repoRoot });
+        if (rebase.exitCode !== 0) {
+          await git(['rebase', '--abort'], { repoRoot });
+          const shaList = preservedCommits.map((c) => c.sha.slice(0, 12)).join(', ');
+          return precondition(
+            `Rebasing preserved commit(s) from '${base}' onto origin/${base} conflicted; aborted safely. The original commit(s) are still reachable from '${branchName}' (currently checked out, not rebased): ${shaList}. Resolve the conflict manually.`,
+            { branch: branchName, originalBaseSha, remoteBaseSha, preservedCommits }
+          );
+        }
+
+        const resultingSha = await headSha({ repoRoot });
+        const result: PreparePublishBranchResult = {
+          branch: branchName,
+          action: 'preserved-and-rebased',
+          originalBaseSha,
+          resultingSha,
+          remoteBaseSha,
+          preservedCommits
+        };
+        return ok(
+          `Created '${branchName}', preserving ${preservedCommits.length} local-only commit(s) from '${base}' rebased onto origin/${base}`,
+          result
+        );
+      }
+
+      if (behind > 0) {
+        const onBase = (await currentBranch({ repoRoot })) === base;
+        if (onBase) {
+          await gitOrThrow(['merge', '--ff-only', `origin/${base}`], { repoRoot });
+        } else {
+          await gitOrThrow(['branch', '-f', base, `origin/${base}`], { repoRoot });
+        }
+        await gitOrThrow(['switch', '-c', branchName, base], { repoRoot });
+        const resultingSha = await headSha({ repoRoot });
+        const result: PreparePublishBranchResult = {
+          branch: branchName,
+          action: 'fast-forwarded-and-created',
+          originalBaseSha,
+          resultingSha,
+          remoteBaseSha,
+          preservedCommits: []
+        };
+        return ok(`Fast-forwarded '${base}' to origin/${base} and created '${branchName}'`, result);
+      }
+
+      await gitOrThrow(['switch', '-c', branchName, base], { repoRoot });
+      const resultingSha = await headSha({ repoRoot });
+      const result: PreparePublishBranchResult = {
+        branch: branchName,
+        action: 'created-from-remote-base',
+        originalBaseSha,
+        resultingSha,
+        remoteBaseSha,
+        preservedCommits: []
+      };
+      return ok(`Created '${branchName}' from '${base}' (already in sync with origin/${base})`, result);
+    })
+  );
+
+  server.registerTool(
     'blog_stage',
     {
       title: 'Stage files',
@@ -132,6 +288,11 @@ export function registerLocalGitTools(ctx: ToolContext): void {
       }
     },
     wrapMutatingTool(ctx, 'blog_commit', async (args: { type?: string; scope?: string; summary?: string; body?: string; message?: string; coAuthor?: string }) => {
+      const branch = await currentBranch({ repoRoot });
+      if (branch === config.baseBranch) {
+        return precondition(`Refusing to commit directly on '${branch}'; it is the base branch. Use blog_prepare_publish_branch first.`);
+      }
+
       let subject: string;
       if (args.message) {
         subject = args.message.split('\n')[0] ?? args.message;

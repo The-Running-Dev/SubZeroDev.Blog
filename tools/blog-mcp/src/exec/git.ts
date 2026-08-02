@@ -79,3 +79,16 @@ export async function isClean(options: GitOptions): Promise<boolean> {
   const entries = await status(options);
   return entries.length === 0;
 }
+
+export interface AheadBehind {
+  ahead: number;
+  behind: number;
+}
+
+/** `git rev-list --left-right --count <base>...<ref>` -> { behind, ahead }, or zeros if the ref/base pair can't be compared (e.g. base not fetched yet). */
+export async function aheadBehind(options: GitOptions, base: string, ref: string): Promise<AheadBehind> {
+  const result = await git(['rev-list', '--left-right', '--count', `${base}...${ref}`], options);
+  if (result.exitCode !== 0) return { ahead: 0, behind: 0 };
+  const [behindStr, aheadStr] = result.stdout.trim().split(/\s+/);
+  return { behind: Number(behindStr ?? 0), ahead: Number(aheadStr ?? 0) };
+}

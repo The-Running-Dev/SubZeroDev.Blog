@@ -400,9 +400,9 @@ Phases:
 ## Milestone 11: Publishing integrity — in progress
 
 Specified in `tools/blog-mcp/TODO-NEXT.md` sections 1-14. Phase 1 (regression
-fixtures and domain contracts), Phase 2 (atomic metadata resolution), and
-Phase 3 (canonical date service) are delivered; Phases 4-7 below are not
-implemented.
+fixtures and domain contracts), Phase 2 (atomic metadata resolution), Phase 3
+(canonical date service), and Phase 4 (protected branch preparation) are
+delivered; Phases 5-7 below are not implemented.
 
 Publishing
 [GitOps Isn't Just for Infrastructure Anymore](https://blog.subzerodev.com/gitops-isnt-just-for-infrastructure-anymore/)
@@ -473,10 +473,24 @@ Phases:
   it now just forwards the raw field value and lets the server's
   precondition failure (listing accepted formats) surface through the same
   path every other tool rejection already used.
-- Phase 4: protected branch preparation (`blog_prepare_publish_branch`,
-  preserving clean local-only base commits by rebasing them onto the branch
-  rather than abandoning them).
-- Phase 5: caller migration (Compose, watcher, HTTP/API onto `changedPaths`).
+- Phase 4 (delivered): protected branch preparation. New
+  `blog_prepare_publish_branch` (a shared
+  `aheadBehind` primitive promoted from `blog_branches`/`blog_repo_health`
+  into `src/exec/git.ts`) resolves local-vs-remote-base ancestry before any
+  write: in sync -> branch straight from `origin/<base>`; local base purely
+  behind -> fast-forward it, then branch; local base has commit(s) origin
+  doesn't -> preserve them on the new branch and rebase onto the latest
+  `origin/<base>` instead of abandoning them (the exact Milestone 11
+  incident), aborting safely back to the untouched preserved branch on a
+  genuine conflict. A branch that already exists locally or on `origin`
+  (checked live via `git ls-remote`, not a possibly-stale tracking ref) is
+  switched to as-is and never rebased. `blog_commit` now refuses on the base
+  branch (matching `blog_push`'s existing guard) and `blog_sync_base({
+  ffOnly: true })` reports a precondition, not `ok:true`, when a fast-forward
+  is genuinely attempted and refused -- closing out the last two of Phase 1's
+  `it.fails()` fixtures.
+- Phase 5: caller migration (Compose, watcher, HTTP/API onto `changedPaths`,
+  including migrating them onto `blog_prepare_publish_branch`).
 - Phase 6: post-merge reconciliation (`blog_reconcile_after_merge`, which must
   rely on verified GitHub PR state rather than `merge-base`, because squash
   merge rewrites ancestry).
