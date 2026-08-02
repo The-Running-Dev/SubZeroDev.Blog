@@ -34,9 +34,9 @@ integrity"), then close the milestone out.
 
 ## 2. What is already merged (do not redo this)
 
-Phases 1-6 plus an interim bugfix plus Phase 5 (delivered out of numeric
-order, ahead of Phase 5, because a real incident root-caused it) are merged
-to `main`:
+Phases 1-6 plus an interim bugfix are merged to `main`. Phase 6 was
+delivered out of numeric order, ahead of Phase 5, because a real incident
+root-caused it — see the table below:
 
 | Phase | PR | What it delivered |
 | --- | --- | --- |
