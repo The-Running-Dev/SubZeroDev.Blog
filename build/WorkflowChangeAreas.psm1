@@ -212,6 +212,22 @@ $script:BlogMcpImagePattern = @(
     'tools/blog-mcp/ui/index.html'
     'tools/blog-mcp/ui/public/**'
     'tools/blog-mcp/ui/src/**'
+    # Deliberately enumerated per-file rather than a blanket
+    # 'tools/blog-mcp/ui/**' catch-all -- matching this table's own
+    # convention elsewhere (a catch-all only for actual source directories;
+    # explicit enumeration for individual root config files). The
+    # Dockerfile's `COPY ui/ ./` does copy the whole ui/ directory, filtered
+    # by .dockerignore, but .dockerignore also deliberately excludes
+    # ui/README.md, ui/.oxlintrc.json, and ui/.gitignore from that copy -- a
+    # blanket ui/** would classify those three as blog_mcp_image too, which
+    # would force an unnecessary image rebuild and production redeploy for a
+    # change that provably never enters the built image, the exact class of
+    # waste this whole classifier exists to eliminate.
+    # build/Test-BlogMcpImageContract.ps1's classifier/copy-is-image-input
+    # fixture walks every REAL, non-dockerignored file under every directory
+    # COPY source (not a synthetic probe) and fails if any of them lack a
+    # matching pattern here, so a genuinely new real ui/ file that .dockerignore
+    # doesn't exclude is still caught if this list falls behind.
 )
 
 # The classifier's own implementation is deliberately a member of every area
@@ -253,6 +269,7 @@ $script:AreaDefinition = [ordered]@{
     blog_mcp_test = $script:BlogMcpImagePattern + @(
         'tools/blog-mcp/test/**'
         'tools/blog-mcp/vitest.config.*'
+        'build/Test-BlogMcpImageContract.ps1'
         '.github/workflows/blog-mcp-image.yml'
     ) + $script:ClassifierPattern
 

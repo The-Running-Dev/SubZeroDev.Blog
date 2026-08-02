@@ -1,5 +1,66 @@
-node_modules
-dist
+# Docker's .dockerignore matching is NOT .gitignore matching: each pattern is
+# matched against the whole path relative to the build context root
+# (tools/blog-mcp -- see .github/workflows/blog-mcp-image.yml's `context:`),
+# using Go's filepath.Match plus `**`. A bare `dist` therefore matches only
+# the context root's own dist/ and does NOT match ui/dist the way a .gitignore
+# entry would -- confirmed directly: before this file added the `**/` prefixes
+# below, both ui/node_modules (108 MB) and ui/dist were silently uploaded into
+# every build context, and so was tools/blog-mcp/.env (real local
+# credentials). Every pattern below that must apply at any depth is spelled
+# with an explicit `**/` prefix for exactly that reason.
+#
+# Keep in parity with Dockerfile's COPY instructions and with
+# build/WorkflowChangeAreas.psm1's blog_mcp_image pattern list.
+# build/Test-BlogMcpImageContract.ps1 fails CI if the three drift apart.
+#
+# Exception (`!`) rules are deliberately absent: the parity test's matcher
+# implements simple last-match-wins, which is exact only while there are none.
+# Adding one requires extending that matcher first.
+
+# Dependencies -- reinstalled inside the image by `npm ci` in the build,
+# ui-build, and deps stages. The bare `node_modules` this file used to carry
+# left ui/node_modules in the context, where `COPY ui/ ./` then overwrote the
+# ui-build stage's own freshly installed, correctly-platformed tree.
+**/node_modules
+
+# Build output -- regenerated inside the image; the runtime stage copies
+# dist/ and ui/dist from the build stages, never from the context.
+**/dist
+**/dist-ssr
+**/.vite
+**/coverage
+**/.cache
+
+# Tests and fixtures -- blog_mcp_test inputs, never image inputs.
 test
-README.md
-*.log
+
+# Local environment and secrets. `.env` is a real, git-ignored credential file
+# on developer machines; without this it is uploaded into every build context
+# and retained in BuildKit's context cache. `.env.*` covers .env.example and
+# the CI Compose fixture .env.ci as well.
+**/.env
+**/.env.*
+
+# Runtime/deployment configuration and the watcher's input directory --
+# blog_mcp_compose concerns, not image inputs.
+docker-compose.yml
+watch
+
+# Documentation and planning documents. Safe as a blanket rule: there are no
+# .md files anywhere under src/, ui/src/, or ui/public/.
+**/*.md
+
+# Tooling config not used by any build script. ui/package.json's build is
+# `tsc -b && vite build`; oxlint runs only via the separate `lint` script.
+**/.oxlintrc.json
+
+# VCS, container, editor, and OS metadata.
+**/.git
+**/.gitignore
+**/.gitattributes
+**/.dockerignore
+**/*.log
+**/.DS_Store
+**/Thumbs.db
+**/.vscode
+**/.idea
