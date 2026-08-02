@@ -158,6 +158,43 @@ export function wrapTool<A>(handler: (args: A) => Promise<ToolResult>) {
 }
 
 /**
+ * Best-effort extraction of "what changed" from a write tool's result `data`,
+ * for the audit log (TODO-NEXT.md sec3.3: generated metadata defaults must be
+ * visible, not silent). Two result shapes exist today: PostWriteResult's
+ * `changedPaths`/`createdAuthors`/`createdTags` (blog_create_post,
+ * blog_update_post), and blog_add_tag/blog_add_author's own single `key`/
+ * `path`. Neither shape is required -- most write tools' `data` has neither
+ * field, and that's fine, this just returns nothing for them.
+ */
+function auditFieldsFromData(data: unknown): { changedPaths?: string[]; generatedKeys?: string[] } {
+  if (typeof data !== 'object' || data === null) return {};
+  const record = data as Record<string, unknown>;
+
+  const changedPaths =
+    Array.isArray(record.changedPaths) && record.changedPaths.every((p) => typeof p === 'string')
+      ? (record.changedPaths as string[])
+      : typeof record.path === 'string'
+        ? [record.path]
+        : undefined;
+
+  const generatedKeys: string[] = [];
+  for (const field of ['createdAuthors', 'createdTags'] as const) {
+    const list = record[field];
+    if (!Array.isArray(list)) continue;
+    for (const entry of list) {
+      const key = typeof entry === 'object' && entry !== null ? (entry as Record<string, unknown>).key : undefined;
+      if (typeof key === 'string') generatedKeys.push(key);
+    }
+  }
+  if (typeof record.key === 'string') generatedKeys.push(record.key);
+
+  return {
+    ...(changedPaths ? { changedPaths } : {}),
+    ...(generatedKeys.length > 0 ? { generatedKeys } : {})
+  };
+}
+
+/**
  * Like wrapTool, but for tools that mutate the repo's working tree, git
  * state, or a PR/merge on GitHub: serializes them behind the repo mutex
  * (exec/repoLock.ts) and appends a scrubbed, best-effort audit line
@@ -170,12 +207,13 @@ export function wrapMutatingTool<A>(ctx: ToolContext, toolName: string, handler:
   return async (args: A, extra?: unknown): Promise<CallToolResult> => {
     return withRepoLock(async () => {
       const result = await inner(args, extra);
-      const structured = result.structuredContent as { ok?: boolean; kind?: string; summary?: string } | undefined;
+      const structured = result.structuredContent as { ok?: boolean; kind?: string; summary?: string; data?: unknown } | undefined;
       appendAuditLog(ctx.auditLogPath, {
         tool: toolName,
         ok: structured?.ok === true,
         ...(structured?.kind ? { kind: structured.kind } : {}),
-        ...(structured?.summary ? { summary: structured.summary } : {})
+        ...(structured?.summary ? { summary: structured.summary } : {}),
+        ...auditFieldsFromData(structured?.data)
       });
       return result;
     });

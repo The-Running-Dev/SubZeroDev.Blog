@@ -397,18 +397,20 @@ Phases:
   non-image changes, zero Pages deployments for non-site changes, and zero
   missing required contexts.
 
-## Milestone 11: Publishing integrity — planned
+## Milestone 11: Publishing integrity — in progress
 
-Specified in `tools/blog-mcp/TODO-NEXT.md` sections 1-14. Nothing below is
-implemented.
+Specified in `tools/blog-mcp/TODO-NEXT.md` sections 1-14. Phase 1 (regression
+fixtures and domain contracts) and Phase 2 (atomic metadata resolution) are
+delivered; Phases 3-7 below are not implemented.
 
 Publishing
 [GitOps Isn't Just for Infrastructure Anymore](https://blog.subzerodev.com/gitops-isnt-just-for-infrastructure-anymore/)
-exposed four defects that are structural, not operator error. Confirmed
-against the source: `src/domain/authors.ts` exposes only `AuthorEntry`,
-`authorsYmlPath`, and `loadAuthors` -- there is no author serializer, no
-resolver, and no `blog_add_author` anywhere in `src/`, so a requested author
-key that does not already exist cannot be created by any code path.
+exposed four defects that are structural, not operator error. At the time,
+`src/domain/authors.ts` exposed only `AuthorEntry`, `authorsYmlPath`, and
+`loadAuthors` -- no author serializer, no resolver, and no `blog_add_author`
+anywhere in `src/`, so a requested author key that did not already exist
+could not be created by any code path. Phase 2 (below) fixed this and the
+equivalent tag gap.
 
 1. A requested author key absent from `authors.yml` was silently replaced by
    the configured default, so the post published under the wrong identity.
@@ -434,16 +436,36 @@ and idempotent retry that never duplicates metadata or silently changes
 authorship. Callers stage the authoritative `changedPaths` the result returns
 instead of guessing which files moved.
 
-Phases: regression fixtures and domain contracts; atomic metadata resolution
-(author serializer, `blog_add_author`, automatic author/tag creation); the
-canonical date service (deterministic parser, explicit `BLOG_MCP_DATE_ORDER`
-and timezone policy, safe filename rename when the canonical day changes);
-protected branch preparation (`blog_prepare_publish_branch`, preserving clean
-local-only base commits by rebasing them onto the branch rather than
-abandoning them); caller migration; post-merge reconciliation
-(`blog_reconcile_after_merge`, which must rely on verified GitHub PR state
-rather than `merge-base`, because squash merge rewrites ancestry); and
-end-to-end verification.
+Phases:
+
+- Phase 1 (delivered, [#90](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/90)):
+  regression fixtures and domain contracts. `it.fails()` fixtures pin all four
+  defects against the pre-fix behavior; adds `AuthorDefinition`,
+  `TagDefinition`, `PostWriteResult`, and an injectable `ToolContext.clock`.
+  No production behavior changed.
+- Phase 2 (delivered): atomic metadata resolution. `resolveAuthors`/
+  `resolveTags` (pure, no fs), an author serializer and `checkAuthorsYmlIntegrity`
+  (`src/domain/authors.ts`), a new `blog_add_author` tool mirroring
+  `blog_add_tag`, and a write-temp-then-rename `writeFilesAtomically`
+  (`src/domain/atomicWrite.ts`) generalizing the pattern `scheduler/store.ts`
+  already used for `schedule.json`. `blog_create_post`/`blog_update_post` now
+  auto-create a requested author or tag key absent from `authors.yml`/
+  `tags.yml` instead of rejecting it or silently substituting the configured
+  default, and return the full `PostWriteResult` (`changedPaths`,
+  `createdAuthors`, `createdTags`, `defaultAuthorUsed`). A validation failure
+  at any stage still leaves every source file untouched. `blog_add_tag` keeps
+  its existing refuse-on-duplicate-key contract exactly.
+- Phase 3: the canonical date service (deterministic parser, explicit
+  `BLOG_MCP_DATE_ORDER` and timezone policy, safe filename rename when the
+  canonical day changes).
+- Phase 4: protected branch preparation (`blog_prepare_publish_branch`,
+  preserving clean local-only base commits by rebasing them onto the branch
+  rather than abandoning them).
+- Phase 5: caller migration (Compose, watcher, HTTP/API onto `changedPaths`).
+- Phase 6: post-merge reconciliation (`blog_reconcile_after_merge`, which must
+  rely on verified GitHub PR state rather than `merge-base`, because squash
+  merge rewrites ancestry).
+- Phase 7: end-to-end verification and documentation.
 
 An explicit non-goal: the reference post keeps its published author. Any
 editorial correction is a separate, deliberate content change after the

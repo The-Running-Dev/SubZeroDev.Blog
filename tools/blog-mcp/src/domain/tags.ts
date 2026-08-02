@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import type { Finding } from '../result.js';
+import { escapeYamlScalar, titleCaseKey } from './yamlText.js';
 
 export interface TagEntry {
   key: string;
@@ -125,11 +126,6 @@ export function checkTagsYmlIntegrity(content: string, relativePath: string): Fi
   return findings;
 }
 
-function escapeYamlScalar(value: string): string {
-  if (/^[a-zA-Z0-9 .,'()-]*$/.test(value)) return value;
-  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
-}
-
 /** Appends a new tag entry in the exact blank-line-separated shape docs/blog/tags.yml already uses. */
 export function appendTagEntry(content: string, entry: { key: string; label: string; permalink: string; description: string }): string {
   const trimmed = content.replace(/\s+$/, '');
@@ -140,4 +136,85 @@ export function appendTagEntry(content: string, entry: { key: string; label: str
     `  description: ${escapeYamlScalar(entry.description)}`
   ].join('\n');
   return `${trimmed}\n\n${block}\n`;
+}
+
+/** Lowercase kebab-case -- the same pattern blog_add_tag's `key` input schema already enforces (authoring.ts). */
+const TAG_KEY_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
+
+export interface ResolveTagsSuccess {
+  ok: true;
+  tags: string[];
+  created: TagEntry[];
+}
+
+export interface ResolveTagsFailure {
+  ok: false;
+  reason: string;
+}
+
+export type ResolveTagsResult = ResolveTagsSuccess | ResolveTagsFailure;
+
+/**
+ * Pure resolution of a create/update call's requested tags against the
+ * currently-loaded tags.yml -- no filesystem access. TODO-NEXT.md sec5.3:
+ * requested keys are deduplicated while preserving first-occurrence order; a
+ * definition may only be supplied for a key present in `requested`; an
+ * existing tag is reused as-is, and a definition that disagrees with it on
+ * any explicitly-supplied field is a conflict; a permalink collision (against
+ * an existing tag or another tag created in this same call) fails the whole
+ * operation.
+ */
+export function resolveTags(existing: TagEntry[], requested: string[], definitions?: TagDefinition[]): ResolveTagsResult {
+  const orderedKeys: string[] = [];
+  for (const key of requested) {
+    if (!orderedKeys.includes(key)) orderedKeys.push(key);
+  }
+
+  for (const key of orderedKeys) {
+    if (!TAG_KEY_PATTERN.test(key)) {
+      return { ok: false, reason: `Tag key '${key}' must be lowercase kebab-case.` };
+    }
+  }
+
+  const definitionByKey = new Map((definitions ?? []).map((d) => [d.key, d]));
+  for (const key of definitionByKey.keys()) {
+    if (!orderedKeys.includes(key)) {
+      return { ok: false, reason: `A tag definition was supplied for '${key}', which is not in the requested tags.` };
+    }
+  }
+
+  const existingByKey = new Map(existing.map((t) => [t.key, t]));
+  const usedPermalinks = new Set(existing.map((t) => t.permalink));
+  const created: TagEntry[] = [];
+
+  for (const key of orderedKeys) {
+    const current = existingByKey.get(key);
+    const definition = definitionByKey.get(key);
+
+    if (current) {
+      if (definition?.label !== undefined && definition.label !== current.label) {
+        return { ok: false, reason: `Tag '${key}' already exists with label '${current.label}', which conflicts with the supplied label '${definition.label}'.` };
+      }
+      if (definition?.permalink !== undefined && definition.permalink !== current.permalink) {
+        return { ok: false, reason: `Tag '${key}' already exists with permalink '${current.permalink}', which conflicts with the supplied permalink '${definition.permalink}'.` };
+      }
+      if (definition?.description !== undefined && definition.description !== current.description) {
+        return { ok: false, reason: `Tag '${key}' already exists with a different description than supplied.` };
+      }
+      continue;
+    }
+
+    const label = definition?.label ?? titleCaseKey(key);
+    const permalink = definition?.permalink ?? `/${key}`;
+    const description = definition?.description ?? `Posts related to ${label}.`;
+
+    if (usedPermalinks.has(permalink)) {
+      return { ok: false, reason: `Permalink '${permalink}' for new tag '${key}' is already used by another tag.` };
+    }
+    usedPermalinks.add(permalink);
+
+    created.push({ key, label, permalink, description });
+  }
+
+  return { ok: true, tags: orderedKeys, created };
 }

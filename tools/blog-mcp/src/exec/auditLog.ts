@@ -7,6 +7,10 @@ export interface AuditEntry {
   ok: boolean;
   kind?: string;
   summary?: string;
+  /** Every repo-relative path a write actually touched -- PostWriteResult.changedPaths, or blog_add_tag's/blog_add_author's single `path`, when the tool returned one. TODO-NEXT.md sec3.3: generated metadata defaults must be visible, not silent. */
+  changedPaths?: string[];
+  /** Author/tag keys the tool auto-created (PostWriteResult.createdAuthors/createdTags, or blog_add_tag/blog_add_author's own `key`), so a generated entry shows up in the audit trail even though it wasn't explicitly requested. */
+  generatedKeys?: string[];
 }
 
 /**
