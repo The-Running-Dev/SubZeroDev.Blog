@@ -13,11 +13,10 @@ import { parseMarkdown } from '../src/domain/frontmatter.js';
  * post-fix behavior against the then-still-buggy handler, so the suite
  * stayed green while the defect was pinned (see the Milestone 11 Phase 1
  * plan). Phase 2 (atomic metadata resolution) fixed the first three -- the
- * unknown-author, omitted-authors, and unknown-tag cases -- so their
- * `.fails` was removed once they started genuinely passing; leaving `.fails`
- * on them after the fix would have made the suite fail on an "unexpected
- * pass" instead. The two date-normalization fixtures remain `it.fails` for
- * Phase 3.
+ * unknown-author, omitted-authors, and unknown-tag cases. Phase 3 (the
+ * canonical date service) fixed the remaining two -- `.fails` was removed
+ * from each once it started genuinely passing; leaving `.fails` on a fixed
+ * case would make the suite fail on an "unexpected pass" instead.
  *
  * Uses callToolInProcess (the same seam authoring-writes.test.ts uses for
  * this exact tool), not FakeServer -- these fixtures care about real zod
@@ -110,7 +109,7 @@ describe('blog_create_post: publishing integrity (Milestone 11)', () => {
     expect(data?.createdTags?.some((t) => t.key === 'new-topic')).toBe(true);
   });
 
-  it.fails('a date-only YYYY-MM-DD input normalizes to canonical midnight UTC', async () => {
+  it('a date-only YYYY-MM-DD input normalizes to canonical midnight UTC', async () => {
     const result = await callToolInProcess({ repoRoot }, 'blog_create_post', {
       title: 'A Date-Only Post',
       description: 'Exercises date-format normalization.',
@@ -121,16 +120,13 @@ describe('blog_create_post: publishing integrity (Milestone 11)', () => {
       date: '2026-08-02'
     });
 
-    // Today: rejected outright by the 'Date' validation error (doesn't match
-    // the YYYY-MM-DDTHH:MM:SSZ pattern). Desired: normalized to canonical
-    // midnight UTC and written that way.
     expect(result.ok).toBe(true);
     const written = fs.readFileSync(path.join(repoRoot, 'docs', 'blog', '2026-08-02-date-only-post.md'), 'utf8');
     const parsed = parseMarkdown(written);
     expect(parsed.frontMatter?.date).toBe('2026-08-02T00:00:00Z');
   });
 
-  it.fails('a month-name date input normalizes to canonical UTC', async () => {
+  it('a month-name date input normalizes to canonical UTC', async () => {
     const result = await callToolInProcess({ repoRoot }, 'blog_create_post', {
       title: 'A Month-Name Date Post',
       description: 'Exercises date-format normalization for a human-readable input.',
@@ -141,8 +137,6 @@ describe('blog_create_post: publishing integrity (Milestone 11)', () => {
       date: 'August 2, 2026'
     });
 
-    // Today: rejected outright by the 'Date' validation error, same as the
-    // date-only fixture above. Desired: also normalizes to canonical UTC.
     expect(result.ok).toBe(true);
     const written = fs.readFileSync(path.join(repoRoot, 'docs', 'blog', '2026-08-02-month-name-date-post.md'), 'utf8');
     const parsed = parseMarkdown(written);

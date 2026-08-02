@@ -378,19 +378,16 @@ export default function ComposeView() {
       return;
     }
 
-    const trimmedDate = date.trim();
-    let isoDate: string | undefined;
-    if (trimmedDate) {
-      const parsed = Date.parse(trimmedDate);
-      if (Number.isNaN(parsed)) {
-        logLine(`Date '${trimmedDate}' doesn't parse -- fix it or clear the field to default to now.`, true);
-        return;
-      }
-      // .toISOString() always appends milliseconds (".000Z"); the server's
-      // Date rule only accepts YYYY-MM-DDTHH:MM:SSZ, exactly, with none --
-      // stripped the same way blog_create_post's own now() default is.
-      isoDate = new Date(parsed).toISOString().replace(/\.\d{3}Z$/, 'Z');
-    }
+    // The server (blog_create_post/blog_update_post's canonical date
+    // service, src/domain/dateService.ts) is the single source of truth for
+    // what counts as a valid date -- Compose used to run its own
+    // Date.parse-based validation/conversion here, which was a second,
+    // divergent implementation of the same rule (TODO-NEXT.md sec6.1's
+    // "which inputs are accepted depends on the calling interface"). An
+    // unparseable date now surfaces as a normal ApiError/precondition
+    // failure through the catch block below, same as any other tool
+    // rejection.
+    const isoDate = date.trim() || undefined;
 
     setIsPublishing(true);
     try {
