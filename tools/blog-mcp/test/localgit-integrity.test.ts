@@ -11,10 +11,11 @@ import { createScratchRemote, createAdditionalClone, removeScratchRemote, type S
  * Regression fixtures for Milestone 11 bug 4 (TODO-NEXT.md sec1-14): a commit
  * can land directly on the protected base branch before branch preparation
  * happens, and blog_sync_base({ ffOnly: true }) can report a genuinely
- * refused fast-forward as ok:true. Each `it.fails` body asserts the DESIRED
- * behavior against today's still-buggy handlers -- see the Milestone 11
- * Phase 1 plan for why (keeps the suite green today, turns into a hard
- * "remove .fails" signal once a later phase fixes each one).
+ * refused fast-forward as ok:true. Originally both were `it.fails()` --
+ * each body asserted the DESIRED behavior against the then-still-buggy
+ * handlers, keeping the suite green while the defect was pinned (see the
+ * Milestone 11 Phase 1 plan). Phase 4 (protected branch preparation) fixed
+ * both, so `.fails` was removed once each started genuinely passing.
  *
  * Two independent describe blocks, each with its own scratch remote --
  * unlike repoInfo.test.ts (which shares one beforeAll and deliberately
@@ -42,7 +43,7 @@ describe('blog_commit: protected base branch', () => {
     removeScratchRemote(remote);
   });
 
-  it.fails('blog_commit refuses while the base branch is checked out', async () => {
+  it('blog_commit refuses while the base branch is checked out', async () => {
     expect(await currentBranch({ repoRoot: remote.clone })).toBe('main');
 
     const shaBefore = (await gitOrThrow(['rev-parse', 'HEAD'], { repoRoot: remote.clone })).stdout.trim();
@@ -54,9 +55,7 @@ describe('blog_commit: protected base branch', () => {
 
     const result = await call(server, 'blog_commit', { type: 'chore', summary: 'add fixture' });
 
-    // Today: ok:true, a real commit lands directly on 'main'. Desired: a
-    // precondition failure, matching blog_push's existing base-branch guard
-    // (src/tools/remote.ts:140-142) -- and no commit should be created.
+    // Matches blog_push's existing base-branch guard (src/tools/remote.ts:140-142) -- no commit is created.
     expect(result.ok).toBe(false);
     expect(result.kind).toBe('precondition');
 
@@ -100,18 +99,15 @@ describe('blog_sync_base: ffOnly against a genuinely diverged base branch', () =
     removeScratchRemote(remote);
   });
 
-  it.fails('blog_sync_base reports a precondition, not ok:true, when a genuine fast-forward is refused', async () => {
+  it('blog_sync_base reports a precondition, not ok:true, when a genuine fast-forward is refused', async () => {
     expect(await currentBranch({ repoRoot: remote.clone })).toBe('main');
 
     const result = await call(server, 'blog_sync_base', { ffOnly: true });
 
-    // Today: fetch succeeds, `git merge --ff-only origin/main` is genuinely
-    // attempted and genuinely refused (local main has a commit origin
-    // doesn't), and the non-zero exit is swallowed into ok:true,
-    // fastForwarded:false (src/tools/localGit.ts:48-55) -- indistinguishable
-    // from the legitimate "parked on a different branch, ff never attempted"
-    // case repoInfo.test.ts already covers. Desired: this genuinely-refused
-    // case is reported as a precondition instead.
+    // `git merge --ff-only origin/main` is genuinely attempted and genuinely
+    // refused (local main has a commit origin doesn't) -- distinct from the
+    // legitimate "parked on a different branch, ff never attempted" case
+    // repoInfo.test.ts covers, which still returns ok:true.
     expect(result.ok).toBe(false);
     expect(result.kind).toBe('precondition');
   });

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ok, precondition } from '../result.js';
-import { git, gitOrThrow, currentBranch, isClean } from '../exec/git.js';
+import { git, gitOrThrow, currentBranch, isClean, aheadBehind } from '../exec/git.js';
 import { ghJson } from '../exec/gh.js';
 import { checkStatus } from './monitor.js';
 import { wrapTool, type ToolContext } from './context.js';
@@ -22,19 +22,6 @@ const GITHUB_FIELD_TIMEOUT_MS = 15_000;
 
 /** Unit separator (0x1f) between fields, NUL between records (git log -z) -- a crafted commit subject cannot spoof either boundary. */
 const FIELD_SEP = '\x1f';
-
-interface AheadBehind {
-  ahead: number;
-  behind: number;
-}
-
-/** `git rev-list --left-right --count <base>...<ref>` -> { behind, ahead }, or zeros if the ref/base pair can't be compared (e.g. base not fetched yet). */
-async function aheadBehind(repoRoot: string, base: string, ref: string): Promise<AheadBehind> {
-  const result = await git(['rev-list', '--left-right', '--count', `${base}...${ref}`], { repoRoot });
-  if (result.exitCode !== 0) return { ahead: 0, behind: 0 };
-  const [behindStr, aheadStr] = result.stdout.trim().split(/\s+/);
-  return { behind: Number(behindStr ?? 0), ahead: Number(aheadStr ?? 0) };
-}
 
 /** `git log -1 --format=%cI <ref>` -> that commit's committer date, or null if the ref has no commits / can't be read. */
 async function lastCommitDate(repoRoot: string, ref: string): Promise<string | null> {
@@ -68,7 +55,7 @@ async function listBranchesWithMetadata(repoRoot: string, base: string): Promise
     names.map(async (name) => ({
       name,
       current: name === current,
-      ...(await aheadBehind(repoRoot, base, name)),
+      ...(await aheadBehind({ repoRoot }, base, name)),
       lastCommitDate: await lastCommitDate(repoRoot, name)
     }))
   );
@@ -188,7 +175,7 @@ export function registerRepoInfoTools(ctx: ToolContext): void {
       const dirty = !(await isClean({ repoRoot }));
       const parked = branch !== config.baseBranch;
       const baseRef = `origin/${config.baseBranch}`;
-      const { ahead, behind } = await aheadBehind(repoRoot, baseRef, 'HEAD');
+      const { ahead, behind } = await aheadBehind({ repoRoot }, baseRef, 'HEAD');
 
       const commitsLast7DaysResult = await git(['rev-list', '--count', '--since=7.days', baseRef], { repoRoot });
       const commitsLast7Days = commitsLast7DaysResult.exitCode === 0 ? Number(commitsLast7DaysResult.stdout.trim()) || 0 : 0;
