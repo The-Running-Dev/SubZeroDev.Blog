@@ -102,13 +102,14 @@ function zonedTimeToUtc(year: number, month: number, day: number, hour: number, 
   return new Date(guess - offsetMs);
 }
 
-/** 'Z' -> 0; '+05:00'/'+0500'/'-05:00'/'-0500' -> signed minutes. */
-function parseOffsetMinutes(raw: string): number {
+/** 'Z' -> 0; valid '+05:00'/'+0500'/'-05:00'/'-0500' -> signed minutes. */
+function parseOffsetMinutes(raw: string): number | undefined {
   if (raw === 'Z') return 0;
   const sign = raw[0] === '-' ? -1 : 1;
   const digits = raw.slice(1).replace(':', '');
   const hours = Number(digits.slice(0, 2));
   const minutes = Number(digits.slice(2, 4));
+  if (hours > 23 || minutes >= 60) return undefined;
   return sign * (hours * 60 + minutes);
 }
 
@@ -130,7 +131,9 @@ function tryIso(input: string, options: DateNormalizationOptions): Date | undefi
   if (!isValidComponents(year, month, day, hour, minute, second)) return undefined;
 
   if (offset) {
-    return new Date(Date.UTC(year, month - 1, day, hour, minute, second) - parseOffsetMinutes(offset) * 60000);
+    const offsetMinutes = parseOffsetMinutes(offset);
+    if (offsetMinutes === undefined) return undefined;
+    return new Date(Date.UTC(year, month - 1, day, hour, minute, second) - offsetMinutes * 60000);
   }
   return zonedTimeToUtc(year, month, day, hour, minute, second, options.defaultTimeZone);
 }
@@ -182,6 +185,7 @@ function tryRfc2822(input: string): Date | undefined {
   if (!isValidComponents(year, month, day, hour, minute, second)) return undefined;
 
   const offsetMinutes = zone === 'UT' || zone === 'GMT' || zone === 'UTC' || zone === 'Z' ? 0 : parseOffsetMinutes(zone);
+  if (offsetMinutes === undefined) return undefined;
   return new Date(Date.UTC(year, month - 1, day, hour, minute, second) - offsetMinutes * 60000);
 }
 

@@ -24,8 +24,13 @@ export interface AtomicWriteFile {
  */
 export function writeFilesAtomically(files: AtomicWriteFile[]): void {
   const priorBytes = new Map<string, Buffer | undefined>();
-  for (const file of files) {
-    priorBytes.set(file.absolutePath, fs.existsSync(file.absolutePath) ? fs.readFileSync(file.absolutePath) : undefined);
+  try {
+    for (const file of files) {
+      priorBytes.set(file.absolutePath, fs.existsSync(file.absolutePath) ? fs.readFileSync(file.absolutePath) : undefined);
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    throw new InfrastructureError(`Failed to read existing file(s) before candidate write: ${message}`);
   }
 
   const tempPaths = new Map<string, string>();
@@ -57,6 +62,13 @@ export function writeFilesAtomically(files: AtomicWriteFile[]): void {
       renamed.push(file.absolutePath);
     }
   } catch (err) {
+    for (const tmp of tempPaths.values()) {
+      try {
+        fs.rmSync(tmp, { force: true });
+      } catch {
+        // Best-effort cleanup of every temp file not consumed by rename.
+      }
+    }
     for (const absolutePath of renamed) {
       const prior = priorBytes.get(absolutePath);
       try {

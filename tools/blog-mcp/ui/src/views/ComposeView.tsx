@@ -131,6 +131,7 @@ export default function ComposeView() {
 
   const hasTagVocab = existingTags.length > 0;
   const hasAuthorVocab = existingAuthors.length > 0;
+  const metadataCreationInProgress = creatingTag !== null || creatingAuthor !== null;
   // Guards against re-running the prefill effect a second time if this
   // component re-renders for an unrelated reason (React Strict Mode's
   // double-invoke in dev, tagsLoaded flipping, etc.).
@@ -148,7 +149,7 @@ export default function ComposeView() {
   // interactive-UI half of it.
   const onPrMerged = useCallback(() => {
     if (!pr) return;
-    void post(`/api/pr/${pr}/reconcile`, { expectedHeadSha: prHeadSha }).then(
+    void post(`/api/pr/${pr}/reconcile`, prHeadSha ? { expectedHeadSha: prHeadSha } : {}).then(
       (result) => logLine(`Reconciled after merge: ${result.summary ?? 'done'}.`),
       (err) => logLine(`Reconciliation after merge failed: ${err instanceof Error ? err.message : String(err)}`, true)
     );
@@ -345,6 +346,32 @@ export default function ComposeView() {
       .finally(() => setAuthorsLoaded(true));
   }, []);
 
+  // A paste/load can populate the fallback fields before the vocabularies
+  // finish loading. Once they arrive, migrate that desired selection into
+  // the checklist/pending state instead of silently abandoning it when the
+  // UI switches away from the fallback inputs.
+  useEffect(() => {
+    if (!tagsLoaded || !hasTagVocab || !tagsFallback.trim()) return;
+    setCheckedTags(
+      tagsFallback
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean)
+    );
+    setTagsFallback('');
+  }, [tagsLoaded, hasTagVocab, tagsFallback, setCheckedTags]);
+
+  useEffect(() => {
+    if (!authorsLoaded || !hasAuthorVocab || !authorsFallback.trim()) return;
+    setCheckedAuthors(
+      authorsFallback
+        .split(',')
+        .map((author) => author.trim())
+        .filter(Boolean)
+    );
+    setAuthorsFallback('');
+  }, [authorsLoaded, hasAuthorVocab, authorsFallback, setCheckedAuthors]);
+
   // Jumped here from the Posts table's Edit button (or a direct
   // /compose/:slug link) -- load it the same way typing the slug and
   // pressing "Load existing" would. Waits for the tags/authors fetches to
@@ -460,6 +487,10 @@ export default function ComposeView() {
 
   async function handlePublish() {
     setLog([]);
+    if (metadataCreationInProgress) {
+      logLine('Wait for the pending tag or author creation to finish before publishing.', true);
+      return;
+    }
     const trimmedSlug = slug.trim();
     if (!trimmedSlug) {
       logLine('Slug is required.', true);
@@ -629,7 +660,7 @@ export default function ComposeView() {
           ))}
         </datalist>
 
-        <fieldset className="compose-fieldset" disabled={isPublishing}>
+        <fieldset className="compose-fieldset" disabled={isPublishing || metadataCreationInProgress}>
         {mode === 'compose' && (
           <>
             <div className="field">
@@ -803,7 +834,7 @@ export default function ComposeView() {
         )}
 
         <div className="compose-actions">
-          <button type="button" className="primary" onClick={() => void handlePublish()}>
+          <button type="button" className="primary" disabled={metadataCreationInProgress} onClick={() => void handlePublish()}>
             {isPublishing ? 'Publishing…' : 'Create/update & open PR'}
           </button>
           <label

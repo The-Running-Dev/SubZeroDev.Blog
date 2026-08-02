@@ -65,8 +65,8 @@ export function appendAuthorEntry(content: string, entry: AuthorEntry): string {
   const block = [
     `${entry.key}:`,
     `  name: ${escapeYamlScalar(entry.name)}`,
-    `  url: ${entry.url}`,
-    ...(entry.imageUrl ? [`  image_url: ${entry.imageUrl}`] : [])
+    `  url: ${escapeYamlScalar(entry.url)}`,
+    ...(entry.imageUrl ? [`  image_url: ${escapeYamlScalar(entry.imageUrl)}`] : [])
   ].join('\n');
   return `${trimmed}\n\n${block}\n`;
 }
@@ -180,7 +180,13 @@ export function resolveAuthors(
     }
   }
 
-  const definitionByKey = new Map((definitions ?? []).map((d) => [d.key, d]));
+  const definitionByKey = new Map<string, AuthorDefinition>();
+  for (const definition of definitions ?? []) {
+    if (definitionByKey.has(definition.key)) {
+      return { ok: false, reason: `Duplicate author definition for key '${definition.key}'.` };
+    }
+    definitionByKey.set(definition.key, definition);
+  }
   for (const key of definitionByKey.keys()) {
     if (!orderedKeys.includes(key)) {
       return { ok: false, reason: `An author definition was supplied for '${key}', which is not in the requested authors.` };

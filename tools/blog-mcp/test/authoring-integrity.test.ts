@@ -40,7 +40,7 @@ describe('blog_create_post: publishing integrity (Milestone 11)', () => {
     // "unknown" key uses something else entirely.
     fs.writeFileSync(path.join(repoRoot, 'docs', 'blog', 'tags.yml'), 'test:\n  label: Test\n  permalink: /test\n  description: Fixture tag for tests.\n');
     fs.writeFileSync(path.join(repoRoot, 'docs', 'blog', 'authors.yml'), 'subzerodev:\n  name: SubZeroDev\n  url: https://blog.subzerodev.com/\n');
-    await gitOrThrow(['add', '.'], { repoRoot });
+    await gitOrThrow(['add', '--', '.config/blog.json', 'docs/blog/tags.yml', 'docs/blog/authors.yml'], { repoRoot });
     await gitOrThrow(['commit', '-m', 'chore: seed'], { repoRoot });
   });
 

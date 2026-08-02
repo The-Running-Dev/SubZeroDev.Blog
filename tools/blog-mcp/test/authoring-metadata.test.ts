@@ -28,7 +28,7 @@ describe('Milestone 11 Phase 2: atomic metadata resolution', () => {
     fs.mkdirSync(path.join(repoRoot, 'docs', 'blog'), { recursive: true });
     fs.writeFileSync(path.join(repoRoot, 'docs', 'blog', 'tags.yml'), 'test:\n  label: Test\n  permalink: /test\n  description: Fixture tag for tests.\n');
     fs.writeFileSync(path.join(repoRoot, 'docs', 'blog', 'authors.yml'), 'subzerodev:\n  name: SubZeroDev\n  url: https://blog.subzerodev.com/\n');
-    await gitOrThrow(['add', '.'], { repoRoot });
+    await gitOrThrow(['add', '--', '.config/blog.json', 'docs/blog/tags.yml', 'docs/blog/authors.yml'], { repoRoot });
     await gitOrThrow(['commit', '-m', 'chore: seed'], { repoRoot });
   });
 

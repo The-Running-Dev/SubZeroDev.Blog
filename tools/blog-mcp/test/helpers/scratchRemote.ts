@@ -23,25 +23,34 @@ export async function createScratchRemote(prefix: string): Promise<ScratchRemote
   const bareRemote = path.join(scratchRoot, 'origin.git');
   const clone = path.join(scratchRoot, 'clone');
 
-  fs.mkdirSync(bareRemote);
-  await gitOrThrow(['init', '--bare', '-b', 'main'], { repoRoot: bareRemote });
+  try {
+    fs.mkdirSync(bareRemote);
+    await gitOrThrow(['init', '--bare', '-b', 'main'], { repoRoot: bareRemote });
 
-  const seed = path.join(scratchRoot, 'seed');
-  fs.mkdirSync(seed);
-  await gitOrThrow(['init', '-b', 'main'], { repoRoot: seed });
-  await gitOrThrow(['config', 'user.email', 'test@example.test'], { repoRoot: seed });
-  await gitOrThrow(['config', 'user.name', 'Test'], { repoRoot: seed });
-  fs.writeFileSync(path.join(seed, 'README.md'), '# seed\n');
-  await gitOrThrow(['add', 'README.md'], { repoRoot: seed });
-  await gitOrThrow(['commit', '-m', 'chore: seed'], { repoRoot: seed });
-  await gitOrThrow(['remote', 'add', 'origin', bareRemote], { repoRoot: seed });
-  await gitOrThrow(['push', 'origin', 'main'], { repoRoot: seed });
+    const seed = path.join(scratchRoot, 'seed');
+    fs.mkdirSync(seed);
+    await gitOrThrow(['init', '-b', 'main'], { repoRoot: seed });
+    await gitOrThrow(['config', 'user.email', 'test@example.test'], { repoRoot: seed });
+    await gitOrThrow(['config', 'user.name', 'Test'], { repoRoot: seed });
+    fs.writeFileSync(path.join(seed, 'README.md'), '# seed\n');
+    await gitOrThrow(['add', 'README.md'], { repoRoot: seed });
+    await gitOrThrow(['commit', '-m', 'chore: seed'], { repoRoot: seed });
+    await gitOrThrow(['remote', 'add', 'origin', bareRemote], { repoRoot: seed });
+    await gitOrThrow(['push', 'origin', 'main'], { repoRoot: seed });
 
-  await gitOrThrow(['clone', bareRemote, clone], { repoRoot: scratchRoot });
-  await gitOrThrow(['config', 'user.email', 'test@example.test'], { repoRoot: clone });
-  await gitOrThrow(['config', 'user.name', 'Test'], { repoRoot: clone });
+    await gitOrThrow(['clone', bareRemote, clone], { repoRoot: scratchRoot });
+    await gitOrThrow(['config', 'user.email', 'test@example.test'], { repoRoot: clone });
+    await gitOrThrow(['config', 'user.name', 'Test'], { repoRoot: clone });
 
-  return { scratchRoot, bareRemote, clone };
+    return { scratchRoot, bareRemote, clone };
+  } catch (err) {
+    try {
+      fs.rmSync(scratchRoot, { recursive: true, force: true });
+    } catch {
+      // Preserve the setup error; cleanup is best effort on the failure path.
+    }
+    throw err;
+  }
 }
 
 export function removeScratchRemote(remote: ScratchRemote): void {

@@ -179,7 +179,13 @@ export function resolveTags(existing: TagEntry[], requested: string[], definitio
     }
   }
 
-  const definitionByKey = new Map((definitions ?? []).map((d) => [d.key, d]));
+  const definitionByKey = new Map<string, TagDefinition>();
+  for (const definition of definitions ?? []) {
+    if (definitionByKey.has(definition.key)) {
+      return { ok: false, reason: `Duplicate tag definition for key '${definition.key}'.` };
+    }
+    definitionByKey.set(definition.key, definition);
+  }
   for (const key of definitionByKey.keys()) {
     if (!orderedKeys.includes(key)) {
       return { ok: false, reason: `A tag definition was supplied for '${key}', which is not in the requested tags.` };
