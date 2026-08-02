@@ -286,6 +286,23 @@ runs unauthenticated — acceptable only while bound to loopback.
 | `BLOG_MCP_HTTP_ALLOWED_ORIGINS` | `http://<host>:<port>`, `http://localhost:<port>` | Comma-separated `Origin` allowlist. A request with no `Origin` header (any non-browser client) is always allowed; only a *present, disallowed* `Origin` is rejected — this is what stops a malicious page in a browser from talking to the server via DNS rebinding or a simple cross-origin fetch. |
 | `BLOG_MCP_HTTP_MAX_SESSIONS` | `100` | Caps concurrent `/mcp` sessions. A `POST` that would create a session beyond this limit gets `503` instead of being admitted — otherwise a reachable client (more likely with no `BLOG_MCP_HTTP_TOKEN` set) could keep initializing sessions, each holding its own `McpServer`, until the 30-minute idle reap. |
 
+#### Date parsing policy
+
+The post tools read dates from a user-provided value (or from the request
+timestamp when no value is provided), then normalize them before writing front
+matter.
+
+- `BLOG_MCP_DATE_ORDER` (default `MDY`): sets how ambiguous numeric date
+  strings are interpreted. For example, `01/08/2026` parses as 1 August when
+  set to `DMY`, and as 8 January when set to `MDY`.
+- `BLOG_MCP_DEFAULT_TIME_ZONE` (default `UTC`): timezone applied to date strings
+  with no explicit zone.
+- When no date is supplied, the request timestamp is used as the publication
+  date.
+
+Accepted formats include ISO 8601, RFC 2822, month-name formats, date-only values,
+and numeric values resolved with the `BLOG_MCP_DATE_ORDER` rule.
+
 `GET /healthz` returns `{"ok":true}` without auth, for container health checks.
 
 #### Handing this to a third-party MCP client (e.g. a ChatGPT connector)
@@ -434,6 +451,45 @@ The scheduler's own registration profile (`CRON_CAPABILITIES`,
 `blog_pr_status`/`blog_auto_merge` (Tier C, registered independent of
 write-tier tools), never `blog_create_post`/`blog_stage`/`blog_add_tag`.
 
+### Restart and reconciliation playbook
+
+If the container restarts mid-publish, the server's startup/retry paths are
+designed to be recoverable without manual state repair.
+
+#### 1) Restart before a local commit exists
+
+- No post changes are persisted yet, so there is nothing to duplicate.
+- On startup, `ensureRepo()` handles the checkout state:
+  - clean checkout already on `base`: fetch + fast-forward;
+  - clean checked out feature branch already merged in GitHub: switch to base and fast-forward;
+  - clean checked out feature branch not yet merged: fetch-only, stay parked on that branch.
+- In watcher mode, a file left in `watch/processing/` after a crash is promoted to
+  `watch/failed/` on startup with an `.error.txt`, so retries are explicit.
+
+#### 2) Restart after push but before merge
+
+- PR is usually still open and feature branch still exists locally.
+- Reconciliation state is recorded as:
+  - `${BLOG_MCP_WORKSPACE}/repo/state/pending-merges.json` (watcher),
+  - `${BLOG_MCP_WORKSPACE}/repo/state/schedule.json` (scheduler).
+- Next `runScheduleTick` / watcher tick will re-check PR state and keep this work
+  pending until it is merged or terminally closed.
+
+#### 3) Restart after merge but before local reconciliation
+
+- On the next tick, the server notices the merged state, calls
+  `blog_reconcile_after_merge` and tries to fetch+fast-forward base and
+  force-delete the feature branch.
+- Confirm recovery by checking:
+  - `blog_pr_status` shows `state: MERGED`;
+  - `blog_repo_health` and/or `blog_branches` show base branch fast-forwarded and feature branch removed;
+  - `${BLOG_MCP_WORKSPACE}/repo/state/audit.log` contains a JSON line for
+    `tool: 'blog_reconcile_after_merge'` with `ok: true`;
+  - serve/API path `POST /api/pr/:pr/reconcile` succeeds when called manually.
+- If reconciliation did not run automatically, run it manually:
+  - MCP: `blog_reconcile_after_merge` with `pr` (and `expectedHeadSha`, if you have the SHA from the push step).
+  - HTTP/serve: `POST /api/pr/:pr/reconcile`.
+
 ### Watcher (directory)
 
 `BLOG_MCP_ALLOW_WATCHER=1` (and `BLOG_MCP_ALLOW_REMOTE=1`, and
@@ -561,6 +617,20 @@ Local filesystem writes:
 - `blog_create_post`, `blog_update_post` (refuses a slug change unless both `allowSlugChange` and `compatibilityRouteAdded` are set) — a requested `authors`/`tags` key not yet declared is created automatically, atomically with the post itself (a deterministic minimal entry unless an explicit `authorDefinitions`/`tagDefinitions` entry is supplied); omitting `authors` uses the configured default author, reported back via the result's `defaultAuthorUsed` field rather than substituted silently. The result's `changedPaths` lists every file the call actually touched — callers stage from that, not by guessing.
 - `blog_add_tag`, `blog_add_author` — each explicitly registers one new tag/author, refusing a duplicate key (or, for tags, a duplicate permalink); for auto-creating one as part of a post write instead, use `blog_create_post`/`blog_update_post`'s `tagDefinitions`/`authorDefinitions`
 - `blog_add_hub_entry` — edits the hand-maintained `entries[]` array in a hub `.tsx` file by AST text-range splice (TypeScript compiler API), never regex, so existing formatting is preserved byte-for-byte outside the inserted entry
+
+### Caller migration notes
+
+- For `blog_create_post`/`blog_update_post`, always stage `changedPaths` from the
+  result payload. The call can auto-create `authors.yml`/`tags.yml` entries, and
+  those entries are part of the same commit as the post.
+- Prefer `blog_prepare_publish_branch` over `blog_create_branch` when starting a
+  publish. `prepare` preserves a clean local-only commit and only rebases when the
+  base branch is behind origin.
+- `blog_commit` now refuses to run on the base branch; callers must commit from a
+  feature branch.
+- `blog_sync_base({ ffOnly: true })` reports a blocked fast-forward as a
+  precondition failure instead of `ok:true`, so callers must handle the explicit
+  refusal.
 
 Local git:
 
