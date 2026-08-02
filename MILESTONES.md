@@ -397,15 +397,15 @@ Phases:
   non-image changes, zero Pages deployments for non-site changes, and zero
   missing required contexts.
 
-## Milestone 11: Publishing integrity — in progress
+## Milestone 11: Publishing integrity — complete
 
 Specified in `tools/blog-mcp/TODO-NEXT.md` sections 1-14. Phase 1 (regression
 fixtures and domain contracts), Phase 2 (atomic metadata resolution), Phase 3
 (canonical date service), Phase 4 (protected branch preparation), Phase 6
-(post-merge reconciliation), and Phase 5 (caller migration) are delivered;
-Phase 7 (end-to-end verification) is not implemented. Phase 6 was delivered
-before Phase 5 -- it directly root-causes the interim-fix incident below, so
-it was prioritized ahead of its numeric order.
+(post-merge reconciliation), Phase 5 (caller migration), and Phase 7
+(end-to-end verification and documentation) are delivered. Phase 6 was
+delivered before Phase 5 -- it directly root-causes the interim-fix incident
+below, so it was prioritized ahead of its numeric order.
 
 Publishing
 [GitOps Isn't Just for Infrastructure Anymore](https://blog.subzerodev.com/gitops-isnt-just-for-infrastructure-anymore/)
@@ -536,7 +536,15 @@ Phases:
   watched PR number). `ensureRepo()` itself is untouched; it remains the
   startup recovery path, now one of two reconciliation mechanisms instead of
   the only one.
-- Phase 7: end-to-end verification and documentation.
+- Phase 7 (delivered, [#99](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/99),
+  [#100](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/100)):
+  operator documentation now covers date policy, generated metadata, restart
+  recovery, branch reconciliation, and caller migrations. A scratch-remote,
+  fake-GitHub end-to-end simulation covers direct MCP-shaped publishing and
+  watcher equivalence, retry without duplicate generated metadata, competing
+  base conflicts, squash merge reconciliation, restart recovery, and deferred
+  watcher reconciliation. It also corrected explicit overwrite retries so the
+  target post is replaced rather than being misclassified as a duplicate slug.
 
 **Interim fix, ahead of Phase 6 (delivered):** a real incident (a long-running
 container's local checkout had drifted 11 commits behind `origin/main`)
