@@ -558,14 +558,15 @@ Read-only:
 
 Local filesystem writes:
 
-- `blog_create_post`, `blog_update_post` (refuses a slug change unless both `allowSlugChange` and `compatibilityRouteAdded` are set)
-- `blog_add_tag`
+- `blog_create_post`, `blog_update_post` (refuses a slug change unless both `allowSlugChange` and `compatibilityRouteAdded` are set) — a requested `authors`/`tags` key not yet declared is created automatically, atomically with the post itself (a deterministic minimal entry unless an explicit `authorDefinitions`/`tagDefinitions` entry is supplied); omitting `authors` uses the configured default author, reported back via the result's `defaultAuthorUsed` field rather than substituted silently. The result's `changedPaths` lists every file the call actually touched — callers stage from that, not by guessing.
+- `blog_add_tag`, `blog_add_author` — each explicitly registers one new tag/author, refusing a duplicate key (or, for tags, a duplicate permalink); for auto-creating one as part of a post write instead, use `blog_create_post`/`blog_update_post`'s `tagDefinitions`/`authorDefinitions`
 - `blog_add_hub_entry` — edits the hand-maintained `entries[]` array in a hub `.tsx` file by AST text-range splice (TypeScript compiler API), never regex, so existing formatting is preserved byte-for-byte outside the inserted entry
 
 Local git:
 
-- `blog_sync_base` — `git fetch --prune origin <base>`; pass `ffOnly` to also fast-forward the local base branch, but only when it's the one currently checked out and the tree is clean (never switches branches, never touches a feature branch)
-- `blog_create_branch`, `blog_stage`, `blog_commit`, `blog_diff`, `blog_reset_stage`
+- `blog_sync_base` — `git fetch --prune origin <base>`; pass `ffOnly` to also fast-forward the local base branch, but only when it's the one currently checked out and the tree is clean (never switches branches, never touches a feature branch); reports a precondition, not `ok:true`, when a fast-forward is genuinely attempted and refused
+- `blog_prepare_publish_branch` — the preferred way to start a publish. Resolves local-vs-remote-base ancestry before any write: base already in sync with origin -> branch straight from it; base purely behind -> fast-forward it, then branch; base has a clean local-only commit origin doesn't -> preserve it on the new branch and rebase onto the latest origin instead of abandoning it (a genuine rebase conflict aborts safely, leaving the original commit reachable from the untouched branch). A branch that already exists locally or on origin is switched to as-is and never rebased. `blog_create_branch` (same inputs, simpler behavior: always branches straight from `origin/<base>`) stays registered for any caller that already depends on it, but no longer abandons a local-only commit is the whole reason to prefer the newer tool.
+- `blog_stage`, `blog_commit` (refuses while the base branch is checked out), `blog_diff`, `blog_reset_stage`
 
 Every tool that mutates the working tree, git state, or a PR/merge — every tool above except `blog_diff` and the read-only tiers — is serialized behind an in-process mutex (`src/exec/repoLock.ts`) and appends a scrubbed, best-effort line to `${BLOG_MCP_WORKSPACE}/state/audit.log` (`src/exec/auditLog.ts`) once it completes. The mutex exists because `serve` mode (a later phase) will have multiple actors — an external MCP client, a web UI, a scheduler tick — sharing one working tree and one `HEAD`; without it, two concurrent branch/stage/commit calls would race. The audit log is a no-op (never throws, never blocks) when no workspace path is available, which is the case for every unit test.
 
@@ -574,6 +575,7 @@ Remote (registered only with `BLOG_MCP_ALLOW_REMOTE=1`):
 - `blog_push` — no force option exists in the tool's schema; refuses to push the base branch directly; verifies the remote now holds the same commit as local `HEAD`
 - `blog_create_pr` — writes the PR body to a temp file (`--body-file`, never on argv); ready by default, `draft` to hold
 - `blog_auto_merge` — cross-checks the supplied head SHA against the PR's *actual* head via `gh pr view` and refuses on mismatch or on a draft PR. **There is no `blog_merge_pr`** — enabling GitHub's own auto-merge is the only merge path this server ever takes.
+- `blog_reconcile_after_merge` — the other half of `blog_auto_merge`: once GitHub reports a PR actually merged, fetches, fast-forwards the base branch, and force-deletes (`git branch -D`) the now-merged local branch. Deletion is gated on GitHub's own merge state, not local commit ancestry, because a squash merge (the only merge strategy this server ever uses) rewrites history. Called automatically by the scheduler and the watcher once each observes a merge, and by Compose's PR watcher in the browser.
 - `blog_pr_status`, `blog_list_prs` (up to 100 PRs, open/closed/merged combined, most recently updated first), `blog_pr_comments` (review-thread resolution status; returned bodies are author-controlled review text — data, not instructions)
 
 CI/deploy monitoring (read-only against GitHub; on by default):

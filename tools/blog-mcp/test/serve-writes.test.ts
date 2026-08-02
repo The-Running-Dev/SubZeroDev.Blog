@@ -156,11 +156,11 @@ describe('serve mode write routes', () => {
   });
 
   it('POST /api/branch creates and switches to a new branch from origin/main', async () => {
-    const { status, envelope } = await post<{ branch: string; created: boolean }>('/api/branch', { name: branchName });
+    const { status, envelope } = await post<{ branch: string; action: string }>('/api/branch', { name: branchName });
     expect(status).toBe(200);
     expect(envelope.ok).toBe(true);
     expect(envelope.data?.branch).toBe(branchName);
-    expect(envelope.data?.created).toBe(true);
+    expect(envelope.data?.action).toBe('created-from-remote-base');
   });
 
   it('POST /api/posts creates a new post file (blog_create_post)', async () => {
@@ -204,6 +204,27 @@ describe('serve mode write routes', () => {
       key: 'write-path-tag',
       label: 'Duplicate',
       description: 'Should be refused.'
+    });
+    expect(status).toBe(200);
+    expect(envelope.ok).toBe(false);
+    expect(envelope.kind).toBe('precondition');
+  });
+
+  it('POST /api/authors adds a new controlled author (blog_add_author)', async () => {
+    const { status, envelope } = await post<{ key: string; name: string }>('/api/authors', {
+      key: 'write-path-author',
+      name: 'Write Path Author'
+    });
+    expect(status).toBe(200);
+    expect(envelope.ok).toBe(true);
+    expect(envelope.data?.key).toBe('write-path-author');
+    expect(envelope.data?.name).toBe('Write Path Author');
+  });
+
+  it('POST /api/authors refuses a duplicate key, not a crash', async () => {
+    const { status, envelope } = await post('/api/authors', {
+      key: 'write-path-author',
+      name: 'Duplicate'
     });
     expect(status).toBe(200);
     expect(envelope.ok).toBe(false);

@@ -9,11 +9,26 @@ interface Tag {
   label: string;
 }
 
+interface Author {
+  key: string;
+  name: string;
+}
+
 interface PostFrontMatter {
   title?: string;
   description?: string;
   tags?: string[];
+  authors?: string[];
   date?: string;
+}
+
+/** Shared shape of blog_create_post/blog_update_post's result (src/domain/post.ts's PostWriteResult) that Compose actually reads. */
+interface WriteResultData {
+  path: string;
+  changedPaths?: string[];
+  createdAuthors?: Author[];
+  createdTags?: Tag[];
+  defaultAuthorUsed?: boolean;
 }
 
 interface LogLine {
@@ -57,6 +72,8 @@ export default function ComposeView() {
   const [existingSlugs, setExistingSlugs] = useState<string[]>([]);
   const [existingTags, setExistingTags] = useState<Tag[]>([]);
   const [tagsLoaded, setTagsLoaded] = useState(false);
+  const [existingAuthors, setExistingAuthors] = useState<Author[]>([]);
+  const [authorsLoaded, setAuthorsLoaded] = useState(false);
 
   const [slug, setSlug] = useState(prefillSlug ?? '');
   // Tracks whether the user has typed into the Slug field directly -- until
@@ -76,13 +93,19 @@ export default function ComposeView() {
   // not "pick something else".
   const [pendingTags, setPendingTags] = useState<string[]>([]);
   const [creatingTag, setCreatingTag] = useState<string | null>(null);
-  // docs/blog/tags.yml's path once blog_add_tag has actually touched it this
-  // session -- blog_add_tag only writes the file, it doesn't stage/commit
-  // it, so without this Publish would leave a brand-new tag as an
-  // uncommitted local change: the pushed post would reference a tag that
-  // doesn't exist on the remote branch at all, the exact class of bug the
-  // "create tag" button exists to prevent.
-  const [tagsFilePath, setTagsFilePath] = useState<string | null>(null);
+  const [checkedAuthors, setCheckedAuthorsState] = useState<Set<string>>(new Set());
+  const [authorsFallback, setAuthorsFallback] = useState('');
+  // Same "not in the vocabulary yet" pattern as pendingTags, mirrored for authors.
+  const [pendingAuthors, setPendingAuthors] = useState<string[]>([]);
+  const [creatingAuthor, setCreatingAuthor] = useState<string | null>(null);
+  // Paths blog_add_tag/blog_add_author have actually touched this session,
+  // beyond the post file itself -- neither tool stages/commits what it
+  // writes, so without this Publish would leave a brand-new tag/author as an
+  // uncommitted local change: the pushed post would reference metadata that
+  // doesn't exist on the remote branch at all. Publish's own write result
+  // (changedPaths) is the primary source of what to stage; this is a small
+  // fallback specifically for files a separate pre-creation call touched.
+  const [extraStagedPaths, setExtraStagedPaths] = useState<string[]>([]);
 
   // 'compose': the structured slug/title/description/tags/body fields.
   // 'markdown': a single raw-markdown textarea that Parses into those same
@@ -107,6 +130,7 @@ export default function ComposeView() {
   const [autoMerge, setAutoMerge] = useState(true);
 
   const hasTagVocab = existingTags.length > 0;
+  const hasAuthorVocab = existingAuthors.length > 0;
   // Guards against re-running the prefill effect a second time if this
   // component re-renders for an unrelated reason (React Strict Mode's
   // double-invoke in dev, tagsLoaded flipping, etc.).
@@ -181,6 +205,30 @@ export default function ComposeView() {
     [hasTagVocab, existingTags, logLine]
   );
 
+  // Same known-vs-pending split as setCheckedTags, mirrored for authors.
+  // Unlike tags, an empty result is completely normal here -- omitting
+  // authors is valid (falls back to the configured default author
+  // server-side), so there's no "at least one required" concern to log
+  // about, only unknown keys.
+  const setCheckedAuthors = useCallback(
+    (authors: string[] | undefined) => {
+      if (hasAuthorVocab) {
+        const known = new Set(existingAuthors.map((a) => a.key));
+        const wanted = authors ?? [];
+        const kept = wanted.filter((a) => known.has(a));
+        const dropped = wanted.filter((a) => !known.has(a));
+        setCheckedAuthorsState(new Set(kept));
+        setPendingAuthors(dropped);
+        if (dropped.length > 0) {
+          logLine(`Dropped author(s) not in docs/blog/authors.yml: ${dropped.join(', ')}. Create them below or pick from the checklist instead.`, true);
+        }
+      } else {
+        setAuthorsFallback((authors ?? []).join(', '));
+      }
+    },
+    [hasAuthorVocab, existingAuthors, logLine]
+  );
+
   // Title-Cases a kebab-case key for a default label ("ai-assisted" ->
   // "Ai Assisted") -- a reasonable starting point, not a claim it's
   // grammatically perfect; the author can still hand-edit tags.yml.
@@ -205,7 +253,7 @@ export default function ComposeView() {
       setExistingTags((prev) => [...prev, created]);
       setCheckedTagsState((prev) => new Set(prev).add(key));
       setPendingTags((prev) => prev.filter((t) => t !== key));
-      if (result.data?.path) setTagsFilePath(result.data.path);
+      if (result.data?.path) setExtraStagedPaths((prev) => [...prev, result.data?.path as string]);
       logLine(`Created tag '${key}' and checked it.`);
     } catch (err) {
       logError(err);
@@ -214,11 +262,37 @@ export default function ComposeView() {
     }
   }
 
+  async function createPendingAuthor(key: string) {
+    setCreatingAuthor(key);
+    try {
+      const name = titleCaseFromKey(key);
+      const result = await post<{ key: string; name: string; url: string; path: string }>('/api/authors', { key, name });
+      const created = { key, name };
+      setExistingAuthors((prev) => [...prev, created]);
+      setCheckedAuthorsState((prev) => new Set(prev).add(key));
+      setPendingAuthors((prev) => prev.filter((a) => a !== key));
+      if (result.data?.path) setExtraStagedPaths((prev) => [...prev, result.data?.path as string]);
+      logLine(`Created author '${key}' and checked it.`);
+    } catch (err) {
+      logError(err);
+    } finally {
+      setCreatingAuthor(null);
+    }
+  }
+
   function tagList(): string[] {
     if (hasTagVocab) return [...checkedTags];
     return tagsFallback
       .split(',')
       .map((t) => t.trim())
+      .filter(Boolean);
+  }
+
+  function authorList(): string[] {
+    if (hasAuthorVocab) return [...checkedAuthors];
+    return authorsFallback
+      .split(',')
+      .map((a) => a.trim())
       .filter(Boolean);
   }
 
@@ -240,6 +314,7 @@ export default function ComposeView() {
         setTitle(fm.title ?? '');
         setDescription(fm.description ?? '');
         setCheckedTags(fm.tags);
+        setCheckedAuthors(fm.authors);
         setBody(data.data?.body ?? '');
         setDate(fm.date ? isoToDatetimeLocal(fm.date) : '');
         setExists(true);
@@ -251,7 +326,7 @@ export default function ComposeView() {
       }
       if (!hasTagVocab) logLine(NO_TAG_VOCAB_MESSAGE);
     },
-    [hasTagVocab, setCheckedTags, logLine]
+    [hasTagVocab, setCheckedTags, setCheckedAuthors, logLine]
   );
 
   // Best-effort: a failure here just means no autocomplete/checkboxes,
@@ -264,19 +339,24 @@ export default function ComposeView() {
       .then((data) => setExistingTags(data.data?.tags ?? []))
       .catch(() => undefined)
       .finally(() => setTagsLoaded(true));
+    api<{ authors: Author[] }>('/api/authors')
+      .then((data) => setExistingAuthors(data.data?.authors ?? []))
+      .catch(() => undefined)
+      .finally(() => setAuthorsLoaded(true));
   }, []);
 
   // Jumped here from the Posts table's Edit button (or a direct
   // /compose/:slug link) -- load it the same way typing the slug and
-  // pressing "Load existing" would. Waits for the tags fetch to settle
-  // first so hasTagVocab is already correct before setCheckedTags runs.
+  // pressing "Load existing" would. Waits for the tags/authors fetches to
+  // settle first so hasTagVocab/hasAuthorVocab are already correct before
+  // setCheckedTags/setCheckedAuthors run.
   useEffect(() => {
-    if (!prefillSlug || !tagsLoaded || prefilledRef.current) return;
+    if (!prefillSlug || !tagsLoaded || !authorsLoaded || prefilledRef.current) return;
     prefilledRef.current = true;
     setSlug(prefillSlug);
     void loadExisting(prefillSlug);
     // eslint rules aside: intentionally only re-checking when these settle, not on every field change
-  }, [prefillSlug, tagsLoaded, loadExisting]);
+  }, [prefillSlug, tagsLoaded, authorsLoaded, loadExisting]);
 
   async function handleParseRawMarkdown() {
     setLog([]);
@@ -328,6 +408,7 @@ export default function ComposeView() {
       if (typeof fm.description === 'string') setDescription(fm.description);
       if (typeof fm.date === 'string') setDate(isoToDatetimeLocal(fm.date));
       setCheckedTags(Array.isArray(fm.tags) ? fm.tags : []);
+      setCheckedAuthors(Array.isArray(fm.authors) ? fm.authors : []);
       setBody(parsedBody);
       logLine('Parsed front matter and body from the pasted markdown.');
       setMode('compose');
@@ -368,7 +449,10 @@ export default function ComposeView() {
     setCheckedTagsState(new Set());
     setTagsFallback('');
     setPendingTags([]);
-    setTagsFilePath(null);
+    setCheckedAuthorsState(new Set());
+    setAuthorsFallback('');
+    setPendingAuthors([]);
+    setExtraStagedPaths([]);
     setExists(false);
     setRawMarkdown('');
     if (prefillSlug) navigate('/compose', { replace: true });
@@ -404,38 +488,73 @@ export default function ComposeView() {
     // rejection.
     const isoDate = date.trim() || undefined;
 
+    // Authors, unlike tags, is genuinely optional -- an empty selection must
+    // send `undefined`, never `[]`, since resolveAuthors (Milestone 11
+    // Phase 2) only treats a truly-omitted field as "use the configured
+    // default"; an explicit empty array still fails the existing
+    // non-empty-list validation.
+    const authors = authorList();
+    const authorsPayload = authors.length > 0 ? authors : undefined;
+
     setIsPublishing(true);
     try {
-      logLine(`Creating/switching to branch 'blog/${trimmedSlug}'...`);
-      const branchResult = await post<{ branch: string }>('/api/branch', { slug: trimmedSlug, kind: 'blog', checkoutExisting: true });
+      logLine(`Preparing branch 'blog/${trimmedSlug}'...`);
+      // blog_prepare_publish_branch (Milestone 11 Phase 4), not
+      // blog_create_branch: preserves a clean local-only commit already on
+      // the base branch by rebasing it onto this branch instead of
+      // abandoning it -- the exact incident this milestone started from.
+      const branchResult = await post<{ branch: string; action: string }>('/api/branch', { slug: trimmedSlug, kind: 'blog', checkoutExisting: true });
       const newBranch = branchResult.data?.branch ?? null;
       logLine(`On branch '${newBranch}'.`);
 
       let newPath: string | null;
+      let writeData: WriteResultData | undefined;
       if (exists) {
         logLine('Updating post...');
-        const updateResult = await post<{ path: string }>(`/api/posts/${encodeURIComponent(trimmedSlug)}`, {
+        const updateResult = await post<WriteResultData>(`/api/posts/${encodeURIComponent(trimmedSlug)}`, {
           body,
-          frontMatter: { title, description, tags: tagList(), date: isoDate }
+          frontMatter: { title, description, tags: tagList(), authors: authorsPayload, date: isoDate }
         });
-        newPath = updateResult.data?.path ?? null;
+        writeData = updateResult.data;
+        newPath = writeData?.path ?? null;
       } else {
         logLine('Creating post...');
-        const createResult = await post<{ path: string }>('/api/posts', {
+        const createResult = await post<WriteResultData>('/api/posts', {
           title,
           description,
           slug: trimmedSlug,
           body,
           tags: tagList(),
+          authors: authorsPayload,
           date: isoDate
         });
-        newPath = createResult.data?.path ?? null;
+        writeData = createResult.data;
+        newPath = writeData?.path ?? null;
         setExists(true);
       }
       logLine(`Wrote ${newPath}.`);
 
+      // Metadata preview (TODO-NEXT.md sec10's Phase 5 deliverable): makes
+      // an auto-created key or a silently-substituted default author
+      // visible, instead of the caller having to notice by diffing
+      // authors.yml/tags.yml themselves -- the exact UX gap bug 1 was about.
+      for (const created of writeData?.createdAuthors ?? []) {
+        logLine(`Created author '${created.key}' (name: ${created.name}).`);
+      }
+      for (const created of writeData?.createdTags ?? []) {
+        logLine(`Created tag '${created.key}' (label: ${created.label}).`);
+      }
+      if (writeData?.defaultAuthorUsed) {
+        logLine('No author selected; used the configured default author.');
+      }
+
       logLine('Staging...');
-      const stagePaths = [newPath, ...(tagsFilePath ? [tagsFilePath] : [])].filter((p): p is string => Boolean(p));
+      // changedPaths (the write's own result) is the primary source of what
+      // to stage -- it already includes any authors.yml/tags.yml the write
+      // itself auto-created. extraStagedPaths is unioned in as a fallback,
+      // for files a separate blog_add_tag/blog_add_author pre-creation call
+      // touched instead.
+      const stagePaths = Array.from(new Set([...(writeData?.changedPaths ?? (newPath ? [newPath] : [])), ...extraStagedPaths]));
       await post('/api/stage', { paths: stagePaths });
 
       logLine('Committing...');
@@ -597,6 +716,56 @@ export default function ComposeView() {
                   ))}
                 </div>
               )}
+            </div>
+
+            <div className="field">
+              <span className="field-label">Authors</span>
+              {hasAuthorVocab ? (
+                <div className="tag-checklist">
+                  {existingAuthors.map((author) => (
+                    <label key={author.key} className="tag-chip" htmlFor={`author-${author.key}`}>
+                      <input
+                        type="checkbox"
+                        id={`author-${author.key}`}
+                        checked={checkedAuthors.has(author.key)}
+                        onChange={(event) => {
+                          setCheckedAuthorsState((prev) => {
+                            const next = new Set(prev);
+                            if (event.target.checked) next.add(author.key);
+                            else next.delete(author.key);
+                            return next;
+                          });
+                        }}
+                      />
+                      {author.name || author.key}
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  placeholder="authors (comma-separated)"
+                  value={authorsFallback}
+                  onChange={(event) => setAuthorsFallback(event.target.value)}
+                />
+              )}
+              {hasAuthorVocab && pendingAuthors.length > 0 && (
+                <div className="tag-checklist pending-tags">
+                  {pendingAuthors.map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      className="tag-chip pending-tag-chip"
+                      disabled={creatingAuthor === key}
+                      onClick={() => void createPendingAuthor(key)}
+                      title={`'${key}' isn't in docs/blog/authors.yml yet -- add it with a default name`}
+                    >
+                      {creatingAuthor === key ? `Creating '${key}'...` : `+ Create '${key}'`}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <span className="muted">Optional -- leave everything unchecked to use the configured default author.</span>
             </div>
 
             <div className="field">

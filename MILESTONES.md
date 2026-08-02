@@ -401,9 +401,9 @@ Phases:
 
 Specified in `tools/blog-mcp/TODO-NEXT.md` sections 1-14. Phase 1 (regression
 fixtures and domain contracts), Phase 2 (atomic metadata resolution), Phase 3
-(canonical date service), Phase 4 (protected branch preparation), and Phase 6
-(post-merge reconciliation) are delivered; Phase 5 (caller migration) and
-Phase 7 (end-to-end verification) are not implemented. Phase 6 was delivered
+(canonical date service), Phase 4 (protected branch preparation), Phase 6
+(post-merge reconciliation), and Phase 5 (caller migration) are delivered;
+Phase 7 (end-to-end verification) is not implemented. Phase 6 was delivered
 before Phase 5 -- it directly root-causes the interim-fix incident below, so
 it was prioritized ahead of its numeric order.
 
@@ -492,8 +492,29 @@ Phases:
   ffOnly: true })` reports a precondition, not `ok:true`, when a fast-forward
   is genuinely attempted and refused -- closing out the last two of Phase 1's
   `it.fails()` fixtures.
-- Phase 5: caller migration (Compose, watcher, HTTP/API onto `changedPaths`,
-  including migrating them onto `blog_prepare_publish_branch`).
+- Phase 5 (delivered): caller migration. `/api/branch` now calls
+  `blog_prepare_publish_branch` instead of `blog_create_branch` (same input
+  shape); the watcher's `publishFile` does the same and stages
+  `PostWriteResult.changedPaths` (falling back to the single written path)
+  instead of always assuming only the post file moved -- closing a real
+  latent bug where a brand-new tag/author key would be auto-created
+  server-side but never committed. Compose gained an author checklist
+  mirroring the existing tag checklist (`GET`/`POST /api/authors` -> new
+  `blog_list_authors`/`blog_add_author` routes) and a post-publish metadata
+  preview that logs any `createdAuthors`/`createdTags`/`defaultAuthorUsed`
+  the write result reports, making previously-silent default-author
+  substitution visible. Per an explicit product choice, Compose keeps its
+  pre-creation UX (a "+ Create '\<key\>'" button calling `blog_add_tag`/
+  `blog_add_author` before Publish) rather than relying solely on the write
+  call's own atomic auto-creation -- so it still tracks a small
+  `extraStagedPaths` array purely for staging, unioned with `changedPaths` at
+  publish time. This is an intentional, informed tradeoff against the letter
+  of "UI state no longer tracks metadata files solely for staging," not an
+  oversight. `blog_create_branch` itself is unchanged and still registered
+  (an external caller may depend on it); only its description now points
+  callers at `blog_prepare_publish_branch`. Workflow docs
+  (`create-blog-post.md`, `publish-change.md`) and `README.md`'s tool
+  catalogue were updated to match.
 - Phase 6 (delivered): post-merge reconciliation. New `blog_reconcile_after_merge({
   pr, expectedHeadSha? })`: confirms the PR actually merged via `gh pr view`
   (state, not `merge-base` -- squash merge rewrites ancestry, same reasoning

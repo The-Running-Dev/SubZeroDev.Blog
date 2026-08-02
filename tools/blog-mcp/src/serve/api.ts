@@ -119,6 +119,10 @@ export async function handleApiRequest(
       return callTool(serverOptions, 'blog_list_tags', {});
     }
 
+    if (pathname === '/api/authors') {
+      return callTool(serverOptions, 'blog_list_authors', {});
+    }
+
     if (pathname === '/api/prs') {
       const limit = queryBoundedInt(url, 'limit', MAX_PR_LIST_LIMIT);
       if (!limit.ok) return { status: 400, body: { error: `limit must be an integer between 1 and ${MAX_PR_LIST_LIMIT}.` } };
@@ -159,6 +163,10 @@ export async function handleApiRequest(
       return callTool(serverOptions, 'blog_add_tag', args);
     }
 
+    if (pathname === '/api/authors') {
+      return callTool(serverOptions, 'blog_add_author', args);
+    }
+
     const updatePostMatch = /^\/api\/posts\/([^/]+)$/.exec(pathname);
     if (updatePostMatch) {
       const slug = safeDecodeSlug(updatePostMatch[1] as string);
@@ -174,7 +182,13 @@ export async function handleApiRequest(
     }
 
     if (pathname === '/api/branch') {
-      return callTool(serverOptions, 'blog_create_branch', args);
+      // blog_prepare_publish_branch (Milestone 11 Phase 4), not
+      // blog_create_branch: preserves a clean local-only commit already on
+      // the base branch by rebasing it onto the requested feature branch
+      // instead of abandoning it -- the exact incident this milestone
+      // started from. Same input shape; blog_create_branch itself stays
+      // registered for any external MCP client still using it directly.
+      return callTool(serverOptions, 'blog_prepare_publish_branch', args);
     }
 
     if (pathname === '/api/stage') {

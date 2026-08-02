@@ -154,6 +154,33 @@ describe('watcher engine: runWatchTick', () => {
     expect(calls.some((c) => c[0] === 'pr' && c[1] === 'merge')).toBe(true);
   });
 
+  it('stages and commits an auto-created tags.yml change, not just the post file, when a dropped file requests a brand-new tag', async () => {
+    const post = [
+      '---',
+      'title: "Brand New Tag"',
+      'description: "A post introducing a tag that does not exist yet."',
+      'slug: brand-new-tag-post',
+      'tags:',
+      '  - brand-new-tag',
+      '---',
+      '',
+      'Body text for the new-tag fixture.'
+    ].join('\n');
+    dropFile('brand-new-tag.md', post);
+    process.env.GH_SHIM_HEAD_SHA = 'GIT_HEAD';
+    process.env.GH_SHIM_REPO_ROOT = clone;
+
+    const result = await runWatchTick({ repoRoot: clone, watchDir, autoMerge: true, serverOptions });
+    expect(result.filesPublished).toBe(1);
+    expect(result.filesFailed).toBe(0);
+
+    const committed = await gitOrThrow(['show', '--stat', '--format=', 'HEAD'], { repoRoot: clone });
+    expect(committed.stdout).toContain('docs/blog/tags.yml');
+
+    const tagsYml = fs.readFileSync(path.join(clone, 'docs', 'blog', 'tags.yml'), 'utf8');
+    expect(tagsYml).toContain('brand-new-tag:');
+  });
+
   it('rejects a file missing required front matter fields before touching git at all', async () => {
     const incomplete = ['---', 'title: "No Tags Here"', 'description: "Missing tags."', 'slug: no-tags', '---', '', 'Body.'].join('\n');
     dropFile('incomplete.md', incomplete);

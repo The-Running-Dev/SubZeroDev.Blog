@@ -254,6 +254,15 @@ describe('serve mode', () => {
       expect(body.data.tags[0]).toHaveProperty('label');
     });
 
+    it('GET /api/authors returns the declared author list', async () => {
+      const res = await fetch(`${baseUrl}/api/authors`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { data: { authors: Array<{ key: string; name: string }> } };
+      expect(body.data.authors.length).toBeGreaterThan(0);
+      expect(body.data.authors[0]).toHaveProperty('key');
+      expect(body.data.authors[0]).toHaveProperty('name');
+    });
+
     it('GET /api/repo/health reports read-only repo state plus GitHub-derived fields via the shim', async () => {
       const res = await fetch(`${baseUrl}/api/repo/health`, { headers: { cookie, origin: TEST_ORIGIN, 'x-blog-mcp-csrf': '1' } });
       expect(res.status).toBe(200);

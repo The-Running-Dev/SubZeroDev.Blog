@@ -77,7 +77,7 @@ export function registerLocalGitTools(ctx: ToolContext): void {
     {
       title: 'Create a working branch',
       description:
-        'Creates and switches to a new branch from the latest origin/<base>. Derives `<kind>/<slug>` when name is omitted, matching this repo\'s branch-naming convention. Refuses if anything is already staged.',
+        "Creates and switches to a new branch from the latest origin/<base>. Derives `<kind>/<slug>` when name is omitted, matching this repo's branch-naming convention. Refuses if anything is already staged. Prefer blog_prepare_publish_branch instead: same inputs, but it also preserves a clean local-only commit already on the base branch (rebasing it onto the new branch) rather than cutting straight from origin/<base> and abandoning it. Kept as-is, unchanged, for any caller that already depends on this exact behavior.",
       inputSchema: {
         name: z.string().optional(),
         slug: z.string().optional(),

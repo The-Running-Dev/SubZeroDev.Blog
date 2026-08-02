@@ -29,8 +29,12 @@ what must be true before merging, what must be true before reporting a URL
 
 1. Read `AGENTS.md` and all relevant source and workflow files.
 2. Start from the latest available `main` on a focused branch.
-   - **Tool:** `blog_create_branch({ name: "<branch-name>" })` (fetches
-     `origin/main` first, refuses if anything is staged).
+   - **Tool:** `blog_prepare_publish_branch({ name: "<branch-name>" })`
+     (fetches `origin/main` first, then creates the branch from the latest
+     remote state -- preserving a clean local-only commit already on `main`
+     by rebasing it onto the new branch instead of abandoning it, rather
+     than `blog_create_branch`'s plain cut-from-remote behavior). Refuses a
+     dirty working tree (staged, unstaged, or untracked).
    - **Fallback:** `git fetch origin main && git switch -c <branch-name>
      origin/main`.
 3. Preserve unrelated work and stage only files that belong to the change.
