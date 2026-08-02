@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
-import { loadConfig } from '../src/config.js';
 import { git, gitOrThrow, currentBranch } from '../src/exec/git.js';
 import { ensureRepo } from '../src/bootstrap/repo.js';
 import { callToolInProcess } from '../src/serve/client.js';

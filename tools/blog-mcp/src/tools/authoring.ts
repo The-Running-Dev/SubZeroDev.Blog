@@ -132,9 +132,10 @@ async function knownAuthorsAndTags(repoRoot: string, blogDir: string, baseBranch
   };
 }
 
-function postsForHubContext(repoRoot: string, blogDir: string): HubValidationContext[] {
+function postsForHubContext(repoRoot: string, blogDir: string, excludeAbsolutePath?: string): HubValidationContext[] {
   return listPostFiles(repoRoot, blogDir)
     .map((p) => loadPost(repoRoot, p))
+    .filter((p) => p.absolutePath !== excludeAbsolutePath)
     .filter((p) => p.frontMatter !== null)
     .map((p) => ({
       slug: typeof p.frontMatter?.slug === 'string' ? p.frontMatter.slug : '',
@@ -520,11 +521,7 @@ export function registerAuthoringWriteTools(ctx: ToolContext): void {
       // its atomic filesystem write before a later publishing step failed.
       // The post at this exact path is being replaced, not duplicated; every
       // other file retaining the slug is still an error.
-      const existingSlugs = listPostFiles(repoRoot, config.blogDir)
-        .map((file) => loadPost(repoRoot, file))
-        .filter((post) => post.absolutePath !== absolutePath)
-        .map((post) => (typeof post.frontMatter?.slug === 'string' ? post.frontMatter.slug : ''))
-        .filter((slug) => slug !== '');
+      const existingSlugs = postsForHubContext(repoRoot, config.blogDir, absolutePath).map((post) => post.slug);
       if (existingSlugs.includes(args.slug)) {
         findings.push({ path: relativePath, severity: 'error', rule: 'SlugUnique', message: `Slug '${args.slug}' is already used by another post.` });
       }

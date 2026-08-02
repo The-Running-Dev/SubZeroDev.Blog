@@ -1,12 +1,17 @@
-# Handoff: Milestone 11 Phase 7 (final phase)
+# Historical handoff: Milestone 11 Phase 7 (delivered)
 
-**Audience:** an agent picking this up with no memory of the prior work
-(e.g. Codex). This document is self-contained — do not assume access to any
-chat history that produced it. Everything you need to verify a claim is a
-file path, a `git log` entry, or a PR number below.
+> **Status:** Phase 7 was delivered by
+> [PR #99](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/99) and
+> [PR #100](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/100).
+> [PR #101](https://github.com/The-Running-Dev/SubZeroDev.Blog/pull/101)
+> closed Milestone 11. This document is retained as a historical record of
+> the implementation contract; it is not an active work instruction.
 
-**Task:** implement Phase 7, the last phase of Milestone 11 ("Publishing
-integrity"), then close the milestone out.
+**Audience:** maintainers reviewing how Phase 7 was scoped and delivered.
+Everything needed to verify a historical claim is a file path, a `git log`
+entry, or a PR number below.
+
+**Outcome:** Phase 7 completed Milestone 11 ("Publishing integrity").
 
 ## 1. Read these first, in order
 
@@ -18,7 +23,7 @@ integrity"), then close the milestone out.
    done; section 14 is explicit non-goals. Phase 7 itself is section 10,
    "Phase 7: end-to-end verification and documentation" (search for that
    heading).
-3. `MILESTONES.md`, the `## Milestone 11: Publishing integrity — in progress`
+3. `MILESTONES.md`, the `## Milestone 11: Publishing integrity — complete`
    section (search for that heading) — the shipped-state narrative for
    Phases 1-6 and the interim bugfix, written after each merge. This is the
    most reliable record of what already exists; trust it over inference from
@@ -51,10 +56,8 @@ root-caused it — see the table below:
 `git log --oneline -- tools/blog-mcp` and `gh pr view <number>` are
 authoritative if any of the above needs more detail than this table gives.
 
-**Only Phase 7 remains.** Everything else in the milestone's definition of
-done (section 13 of `TODO-NEXT.md`) is already satisfied by the merged
-phases above — Phase 7 does not add new production behavior, it verifies and
-documents what phases 1-6 built.
+At the time of this handoff, only Phase 7 remained. It subsequently verified
+and documented what Phases 1-6 built without adding new production behavior.
 
 ## 3. Phase 7 deliverables (from `TODO-NEXT.md` section 10)
 
@@ -73,18 +76,16 @@ Acceptance criteria (verbatim from the same section):
 - release notes identify any caller migration required by `changedPaths` and
   the protected-base commit rule.
 
-## 4. Concrete gaps, confirmed by direct inspection
+## 4. Gaps identified at handoff time (now closed)
 
-These are not guesses — each was checked against the current `main` before
-writing this document, so you can start straight from the fix rather than
-re-discovering the gap:
+Each gap below was checked against `main` when the handoff was written. They
+are preserved to explain the delivered Phase 7 scope; they are no longer open
+work items.
 
-### 4.1 No cross-caller, container-level end-to-end test exists yet
+### 4.1 End-to-end publish coverage (closed by PR #100)
 
-Every phase has thorough **unit and integration** coverage of its own piece
-(see `tools/blog-mcp/README.md`'s "Development" section, which documents
-what each `test/*.ts` file covers — read it before writing new tests, so you
-extend the existing map instead of duplicating it). But nothing currently:
+Before Phase 7, every phase had thorough **unit and integration** coverage of
+its own piece, but the suite did not yet cover these cross-pipeline cases:
 
 - Exercises direct-MCP, HTTP, and the watcher against **the same** scratch
   remote and asserts they produce an **equivalent resulting tree** for
@@ -102,9 +103,8 @@ extend the existing map instead of duplicating it). But nothing currently:
   within one primitive, like `test/prepare-publish-branch.test.ts`'s rebase-
   conflict case).
 
-**What to build:** a new test file, likely
-`tools/blog-mcp/test/e2e-publish-simulation.test.ts` (or split into two if
-that reads better — your call), that:
+**Delivered implementation:**
+`tools/blog-mcp/test/e2e-publish-simulation.test.ts`, which:
 
 - Reuses `test/helpers/scratchRemote.ts` (`createScratchRemote`,
   `createAdditionalClone`) for the bare remote + one or more clones, exactly
@@ -116,42 +116,27 @@ that reads better — your call), that:
   `GH_SHIM_PR_LIST_JSON`). Check its current env-var surface with
   `grep -n "process.env.GH_SHIM" tools/blog-mcp/test/fixtures-bin/gh-shim.mjs`
   before assuming you need to extend it.
-- Drives at least: **create** (a full publish through the watcher, or
+- Drives **create** (a full publish through the watcher or
   through `callToolInProcess` — `tools/blog-mcp/src/serve/client.ts` — for a
   direct-MCP-shaped call), **retry** (a call that fails partway and is
   re-run), **conflict** (two callers/ticks racing on the same base), a real
   **merge** (`gh-shim` reporting `MERGED`), a **restart** mid-pipeline, and
   **reconciliation** converging the checkout afterward. That is six
-  scenarios; the acceptance criteria names exactly these six words
-  ("create, retry, conflict, merge, restart, and reconciliation"), so treat
-  each as its own `it()` rather than folding several into one.
-- Runs the full suite once as `npm test` and independently confirms new/
-  touched files in isolation — see section 5 below on this repo's known
-  flakiness pattern before treating any failure as a regression.
+  scenarios, each represented by its own `it()`.
 
-### 4.2 Date policy is implemented but undocumented
+### 4.2 Date policy documentation (closed by PR #99)
 
 `src/domain/dateService.ts` reads `BLOG_MCP_DATE_ORDER` (default `MDY`) and
-`BLOG_MCP_DEFAULT_TIME_ZONE` (default `UTC`) — confirmed via
-`grep -n "BLOG_MCP_DATE_ORDER\|BLOG_MCP_DEFAULT_TIME_ZONE" tools/blog-mcp/src/domain/dateService.ts`.
-Neither variable appears anywhere in `tools/blog-mcp/README.md` or
-`tools/blog-mcp/.env.example` (confirmed by the same grep against both
-files — zero matches). An operator has no way to discover these exist short
-of reading source. Add both to `.env.example` (there's a clear existing
-convention to follow — look at how `BLOG_MCP_WATCH_INTERVAL_MS` etc. are
-documented there, with a comment above each) and to `README.md` (the
-"Development" or a new dedicated subsection is a reasonable home — your
-call, but it needs to be discoverable from the table of contents a reader
-would build by skimming `##`/`###` headers).
+`BLOG_MCP_DEFAULT_TIME_ZONE` (default `UTC`). At handoff time neither variable
+was documented outside source. PR #99 added both to `.env.example` and the
+operator documentation in `README.md`.
 
-### 4.3 No consolidated recovery/reconciliation operator runbook
+### 4.3 Recovery and reconciliation runbook (closed by PR #99)
 
-The mechanics of `blog_reconcile_after_merge`, the watcher's
-`pending-merges.json`, and `ensureRepo()`'s startup recovery are each
-documented in their own tool description or `MILESTONES.md`'s narrative
-prose, but there is no single "if the container restarts mid-publish, here
-is what happens and what you should check" section aimed at an operator
-under time pressure. Write one. It should answer, concretely:
+At handoff time the mechanics of `blog_reconcile_after_merge`, the watcher's
+`pending-merges.json`, and `ensureRepo()`'s startup recovery were scattered
+across tool descriptions and milestone notes. PR #99 consolidated the answers
+to these operator questions in `README.md`:
 
 - What happens if the container restarts before a commit lands?
 - What happens if it restarts after push but before the PR merges?
@@ -161,16 +146,11 @@ under time pressure. Write one. It should answer, concretely:
 - What does an operator do if reconciliation did *not* happen automatically
   (e.g. `blog_reconcile_after_merge` called manually, with what arguments)?
 
-`README.md` is the natural home (it already has "Watcher (directory)" and
-"Scheduler (cron)" sections you can sit this beside), but use your judgment.
+### 4.4 Migration and compatibility notes (closed by PR #99)
 
-### 4.4 No migration/compatibility notes anywhere
-
-There is no `CHANGELOG.md` in this repository (confirmed — none exists at
-the repo root or under `tools/blog-mcp/`). Phase 7's acceptance criterion
-requires "release notes identify any caller migration required by
-`changedPaths` and the protected-base commit rule." The two concrete
-migrations an external caller would need to make:
+Phase 7's acceptance criterion required release notes to identify caller
+migration required by `changedPaths` and the protected-base commit rule. The
+two concrete migrations documented in `README.md` were:
 
 1. **Staging**: a caller that used to hand-assemble the list of paths to
    stage after `blog_create_post`/`blog_update_post` must switch to the
@@ -184,16 +164,10 @@ migrations an external caller would need to make:
    `origin/<base>` should migrate to avoid silently abandoning that commit
    (the original Milestone 11 incident).
 
-Also worth a line: `blog_commit` now refuses on the base branch, and
+The notes also record that `blog_commit` now refuses on the base branch, and
 `blog_sync_base({ ffOnly: true })` now reports a refused fast-forward as a
 precondition failure rather than `ok:true` — a caller that only checked
 `ok` before would previously have missed this.
-
-Add this as a short, clearly-labeled section — `README.md`'s tool catalogue
-(search for `## Tool catalogue`) or a new short section near the top is
-reasonable. Do not invent a `CHANGELOG.md` convention this repo doesn't
-already have unless you have a specific reason; a section in an existing,
-already-read file is more discoverable here.
 
 ## 5. Verification — read this before treating any test failure as a bug
 
@@ -241,41 +215,28 @@ Docker is unavailable locally, the production documentation build is
 delegated to the required `Verify Documentation Build` GitHub Actions check
 — do not claim that gate passed locally if you couldn't actually run it.
 
-## 6. Shipping
+## 6. Historical shipping record
 
-Follow `.agents/workflows/publish-change.md` exactly, using the code/
-configuration review lane. In short: focused branch off latest `main` (the
-tools in that workflow doc automate this if available; otherwise the
-documented git fallback commands) → the validation in section 5 above →
-commit → push → open a ready PR → check for unresolved review threads via
-the `gh api graphql` query in that workflow doc's section 3 (do not trust
-`gh pr view --json reviewRequests,latestReviews` alone — it misses bot
-review threads) → enable auto-merge matched to the exact validated head SHA
-→ wait for required checks and the merge → **wait for the `Docs Deploy`
-GitHub Actions run for the merge commit to show `completed`/`success`**
-before considering the work done (this repo has a hard rule against
-reporting anything "published" before that; see that workflow doc's closing
-section for why).
+The work followed `.agents/workflows/publish-change.md` through focused
+branches, local validation, ready PRs, review-thread checks, auto-merge, and
+successful `Docs Deploy` runs for the exact merge commits.
 
-Given Phase 7 has three fairly independent deliverables (the test suite,
-operator docs, compatibility notes), consider whether one PR or two or three
-smaller ones better fits your own workflow — this milestone's convention has
-been one PR per coherent chunk of work (seven PRs for six phases plus one
-interim bugfix), not one PR per phase mechanically. Use your judgment; either
-is consistent with precedent here.
+The documentation and compatibility notes shipped in PR #99; the end-to-end
+simulation and retry fix shipped in PR #100.
 
-## 7. Closing the milestone
+## 7. Milestone closure (completed)
 
-Once Phase 7 is merged and its deploy verified:
+After Phase 7 merged and its deploy was verified, PR #101 completed these
+closure steps:
 
-1. In `MILESTONES.md`, add a Phase 7 entry to the `## Milestone 11:
+1. Added a Phase 7 entry to the `## Milestone 11:
    Publishing integrity` section, matching the style of the existing Phase
    1-6 entries (what was delivered, one paragraph, PR link).
-2. Change that section's header from `— in progress` to `— complete`,
+2. Changed that section's header from `— in progress` to `— complete`,
    matching every other finished milestone's header in this file (grep
    `^## Milestone` in `MILESTONES.md` to see the exact convention — `—
    complete` is what every other finished milestone uses).
-3. Do not touch the Milestone 11 sub-narrative above the phase list (the
+3. Preserved the Milestone 11 sub-narrative above the phase list (the
    incident summary, the four original bugs, the "explicit non-goal" note
    about not silently rewriting the reference post's author) — that is a
    permanent historical record, not a status field.
