@@ -303,7 +303,78 @@ matter.
 Accepted formats include ISO 8601, RFC 2822, month-name formats, date-only values,
 and numeric values resolved with the `BLOG_MCP_DATE_ORDER` rule.
 
-`GET /healthz` returns `{"ok":true}` without auth, for container health checks.
+#### Deployment verification
+
+`GET /healthz` returns a versioned, unauthenticated payload for container
+health checks and post-deploy verification (`Cache-Control: no-store`, so an
+intermediary proxy can never satisfy a probe with a stale response):
+
+```json
+{
+  "schema": "blog-mcp-health/v1",
+  "ok": true,
+  "service": "subzerodev-blog-mcp",
+  "version": "0.1.0",
+  "revision": "d1c218f0c270a7b4d144feda5b4581ac554845e1",
+  "catalogRevision": "d1c218f0c270a7b4d144feda5b4581ac554845e1",
+  "startedAt": "2026-08-02T21:13:00.000Z",
+  "instanceId": "..."
+}
+```
+
+`revision` is the image's own source commit SHA (baked in at build time via
+the `BLOG_MCP_BUILD_REVISION` Docker build arg — see `Dockerfile` and
+`src/runtimeInfo.ts`), never derived from the persistent `/workspace` clone,
+which may legitimately be ahead, behind, or on another branch. It is the
+literal string `development` for every non-image execution (local `npm run
+dev`, stdio, `npm test`). `instanceId` is a random value generated once per
+process start, so alternating `instanceId` values across consecutive polls is
+itself evidence of two parallel instances serving traffic. The MCP
+`initialize` response's `serverInfo.version` and `blog_repo_status`'s
+`revision`/`catalogRevision`/`startedAt`/`instanceId`/`capabilityProfile`
+fields report this same identity, so a connected client can compare what
+`/healthz` says against what its own session actually got.
+
+A successful call to the Portainer redeploy webhook only proves the request
+was accepted, not that the public endpoint is serving the new image.
+`.github/workflows/blog-mcp-image.yml`'s "Verify deployed build and MCP
+catalog" step (`build/Confirm-BlogMcpDeployment.ps1`) closes that gap after
+every redeploy: it polls `/healthz` until the exact expected commit SHA is
+stable across several consecutive samples, then runs a real
+`initialize -> tools/list -> blog_repo_status` MCP session to prove the
+write-capable tool catalog (including `blog_restore_paths`) is actually being
+served, not just labelled. It classifies a failure as one of:
+
+| Classification | Meaning | What to do |
+|---|---|---|
+| `stale-runtime` | `/healthz` never reached the expected SHA within the timeout. | Check the Portainer pull/recreate step and any reverse-proxy routing in front of the stack. |
+| `mixed-runtime` | `/healthz` alternated between revisions or instance IDs. | Multiple instances are serving traffic at once (an incomplete rolling replacement); investigate before retrying. |
+| `verification-credential` | `/healthz` matched, but MCP `initialize` returned 401/403. | `BLOG_MCP_DEPLOY_VERIFY_TOKEN` (a GitHub Actions secret) no longer matches the deployment's primary write bearer token; reconcile them. |
+| `unexpected-profile-or-catalog` | MCP initialized, but a required tool was missing, `blog_repo_status` reported `write: false`, or its revision didn't match `/healthz`'s. | Compare `blog_repo_status`'s reported `capabilityProfile` against what the deployment is supposed to grant; treat a runtime/catalog mismatch as a real defect, not a caching artifact. |
+| `verified` | The exact expected commit is serving the expected write-capable catalog. | Nothing — this is the success case. |
+
+None of the above cover a stale *connector-side* tool catalog: an MCP client
+that discovered `tools/list` before a redeploy and never re-ran `initialize`
+afterward. `Confirm-BlogMcpDeployment.ps1` always opens its own fresh session,
+so it cannot detect that case by itself — it can only prove the server side is
+current. If the workflow's verification step reports `verified` but an
+already-connected interactive client still can't see or call a tool (for
+example, a client that hit the dirty-tree error recommending
+`blog_restore_paths` but couldn't invoke it), that is connector-side catalog
+drift, not a server problem:
+
+1. Confirm the server side first — re-run `Confirm-BlogMcpDeployment.ps1` (or
+   check the workflow's own step summary) and confirm it reports `verified`
+   for the commit you expect.
+2. If it does, the connector's session is stale. Disconnect and reconnect
+   that one MCP client (or otherwise force it to re-run `initialize` ->
+   `tools/list`) — there is no supported way to push a catalog refresh into
+   an already-connected client.
+3. After reconnecting, call `blog_repo_status` through that client and
+   confirm its `revision` now matches the value `/healthz` reports. If it
+   still doesn't after one clean reconnect, that is upstream MCP client
+   caching behavior outside this repository's control — record it against
+   issue #108 with redacted evidence rather than reconnecting repeatedly.
 
 #### Handing this to a third-party MCP client (e.g. a ChatGPT connector)
 

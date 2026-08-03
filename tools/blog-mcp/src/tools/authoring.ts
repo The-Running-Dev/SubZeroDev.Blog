@@ -16,7 +16,8 @@ import { listPostFiles, loadPost, validateAllPosts, validateHubs, type HubValida
 import { checkAllowedPath } from '../domain/paths.js';
 import { currentBranch, status, remoteUrl, gitOrThrow, git } from '../exec/git.js';
 import { resolveOwnerRepo } from '../domain/github.js';
-import { isReadOnly, isRemoteEnabled, wrapTool, wrapMutatingTool, type ToolContext } from './context.js';
+import { defaultCapabilities, wrapTool, wrapMutatingTool, type ToolContext } from './context.js';
+import { formatCapabilityProfile } from '../runtimeInfo.js';
 
 async function toolVersions(repoRoot: string): Promise<Record<string, string>> {
   const versions: Record<string, string> = { node: process.version };
@@ -171,6 +172,14 @@ export function registerAuthoringTools(ctx: ToolContext): void {
       } catch {
         ownerRepo = undefined;
       }
+      // The effective session profile, not process-wide env flags: tool
+      // registration varies by ctx.capabilities (OAuth read/write grant,
+      // scheduler, watcher, UI session), so a caller reading isReadOnly()/
+      // isRemoteEnabled() directly here would report the wrong profile for
+      // every session built with an explicit capabilities override -- the
+      // same defaulting server.ts itself uses when no override is passed.
+      const capabilities = ctx.capabilities ?? defaultCapabilities();
+      const runtime = ctx.runtime;
       return ok('Repository status', {
         repoRoot,
         branch,
@@ -180,7 +189,17 @@ export function registerAuthoringTools(ctx: ToolContext): void {
         remoteUrl: remote,
         owner: ownerRepo?.owner,
         repo: ownerRepo?.repo,
-        capabilities: { readOnly: isReadOnly(), remoteEnabled: isRemoteEnabled() },
+        capabilities: {
+          write: capabilities.write,
+          remote: capabilities.remote,
+          monitor: capabilities.monitor,
+          scheduler: capabilities.scheduler
+        },
+        capabilityProfile: formatCapabilityProfile(capabilities),
+        revision: runtime?.revision,
+        catalogRevision: runtime?.catalogRevision,
+        startedAt: runtime?.startedAt,
+        instanceId: runtime?.instanceId,
         versions
       });
     })

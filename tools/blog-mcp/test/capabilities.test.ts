@@ -7,6 +7,8 @@ import { gitOrThrow } from '../src/exec/git.js';
 import { loadConfig } from '../src/config.js';
 import { createServer } from '../src/server.js';
 import { registerLocalGitTools } from '../src/tools/localGit.js';
+import { registerAuthoringTools } from '../src/tools/authoring.js';
+import type { ToolResult } from '../src/result.js';
 import { FakeServer, call } from './helpers/fakeServer.js';
 
 /** _registeredTools is private (TS-only), not hidden -- a pragmatic way for a test to introspect a real McpServer without standing up a transport. */
@@ -92,6 +94,40 @@ describe('createServer with an explicit capabilities override', () => {
       expect(names).toContain('blog_create_post');
       expect(names).not.toContain('blog_push'); // BLOG_MCP_ALLOW_REMOTE unset
     });
+  });
+
+  it("blog_repo_status reports the session's real ctx.capabilities profile, not process-wide env flags read at call time", async () => {
+    const config = loadConfig(repo);
+    const fakeServer = new FakeServer();
+    registerAuthoringTools({
+      server: fakeServer as unknown as McpServer,
+      repoRoot: repo,
+      config,
+      capabilities: { write: false, remote: false, monitor: true, scheduler: false, writablePathPrefixes: [] }
+    });
+
+    const originalReadOnly = process.env.BLOG_MCP_READ_ONLY;
+    const originalAllowRemote = process.env.BLOG_MCP_ALLOW_REMOTE;
+    // Decoy env pointing the opposite direction of the explicit override
+    // above (write-enabled, remote-enabled): before this fix, blog_repo_status
+    // called isReadOnly()/isRemoteEnabled() directly, which would have
+    // reported this decoy instead of the session's real registered profile.
+    delete process.env.BLOG_MCP_READ_ONLY;
+    process.env.BLOG_MCP_ALLOW_REMOTE = '1';
+    let result: ToolResult;
+    try {
+      result = await call(fakeServer, 'blog_repo_status', {});
+    } finally {
+      if (originalReadOnly === undefined) delete process.env.BLOG_MCP_READ_ONLY;
+      else process.env.BLOG_MCP_READ_ONLY = originalReadOnly;
+      if (originalAllowRemote === undefined) delete process.env.BLOG_MCP_ALLOW_REMOTE;
+      else process.env.BLOG_MCP_ALLOW_REMOTE = originalAllowRemote;
+    }
+
+    expect(result.ok).toBe(true);
+    const data = result.data as Record<string, unknown>;
+    expect(data.capabilities).toEqual({ write: false, remote: false, monitor: true, scheduler: false });
+    expect(data.capabilityProfile).toBe('monitor');
   });
 });
 

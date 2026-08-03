@@ -7,6 +7,7 @@ import { registerMonitorTools } from './tools/monitor.js';
 import { registerRepoInfoTools } from './tools/repoInfo.js';
 import { registerSchedulerTools } from './tools/scheduler.js';
 import { defaultCapabilities, type Capabilities, type ToolContext } from './tools/context.js';
+import { runtimeInfo, formatServerVersion } from './runtimeInfo.js';
 
 export interface CreateServerOptions {
   repoRoot?: string;
@@ -17,8 +18,6 @@ export interface CreateServerOptions {
   /** Overrides the env-derived registration profile. Omit for stdio/`/mcp` HTTP -- both keep using defaultCapabilities(), unchanged. The serve-mode UI and cron scheduler each pass their own profile explicitly (src/serve/capabilities.ts). */
   capabilities?: Capabilities;
 }
-
-const SERVER_VERSION = '0.1.0';
 
 const SERVER_INSTRUCTIONS = [
   [
@@ -78,7 +77,7 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
   const server = new McpServer(
     {
       name: 'subzerodev-blog-mcp',
-      version: SERVER_VERSION
+      version: formatServerVersion(runtimeInfo.version, runtimeInfo.revision)
     },
     { instructions: SERVER_INSTRUCTIONS }
   );
@@ -88,6 +87,7 @@ export function createServer(options: CreateServerOptions = {}): McpServer {
     repoRoot,
     config,
     capabilities,
+    runtime: runtimeInfo,
     ...(options.auditLogPath ? { auditLogPath: options.auditLogPath } : {}),
     ...(options.stateDir ? { stateDir: options.stateDir } : {})
   };

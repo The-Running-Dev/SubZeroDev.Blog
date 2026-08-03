@@ -55,7 +55,34 @@ describe('serve mode', () => {
   it('GET /healthz works without auth, same as plain HTTP mode', async () => {
     const res = await fetch(`${baseUrl}/healthz`);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true });
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body).toMatchObject({
+      schema: 'blog-mcp-health/v1',
+      ok: true,
+      service: 'subzerodev-blog-mcp',
+      version: '0.1.0',
+      revision: 'development',
+      catalogRevision: 'development'
+    });
+  });
+
+  it('GET /healthz on serve mode is byte-identical to plain HTTP mode', async () => {
+    // Both modes delegate to the same handler (src/http.ts's
+    // createMcpRequestHandler) -- this asserts that's actually still true,
+    // not just documented as true in README.md, since revision/instanceId
+    // etc. come from the one shared process-wide runtimeInfo singleton and
+    // must match exactly across both request paths.
+    const [serveRes, httpMod] = await Promise.all([fetch(`${baseUrl}/healthz`), import('../src/http.js')]);
+    const httpServer = httpMod.createHttpServer({ repoRoot: REPO_ROOT, host: '127.0.0.1', port: 0 });
+    try {
+      await new Promise<void>((resolve) => httpServer.once('listening', resolve));
+      const address = httpServer.address() as AddressInfo;
+      const plainRes = await fetch(`http://127.0.0.1:${address.port}/healthz`);
+      expect(await plainRes.json()).toEqual(await serveRes.json());
+    } finally {
+      httpServer.close();
+    }
   });
 
   it('GET / redirects to /login when not authenticated', async () => {

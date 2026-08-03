@@ -526,6 +526,52 @@ if (Test-FixtureIncluded -Name 'dockerignore/no-exception-rule') {
     }
 }
 
+# --- image/build-revision-parity/* : issue #109's runtime-identity wiring --
+
+if (Test-FixtureIncluded -Name 'image/build-revision-parity') {
+    # Deliberately the same plain text/regex approach as the rest of this
+    # file (Get-DockerfileCopyInstruction above), not a Dockerfile or YAML
+    # parser dependency: this only needs to prove one literal argument name
+    # stays identical everywhere it's declared, not understand either
+    # file's full grammar.
+    $buildRevisionArgName = 'BLOG_MCP_BUILD_REVISION'
+    $dockerfileText = [IO.File]::ReadAllText($dockerfilePath)
+    $workflowPath = Join-Path $repositoryRoot '.github' 'workflows' 'blog-mcp-image.yml'
+
+    $argDeclaration = [regex]::Matches($dockerfileText, "(?m)^ARG\s+$buildRevisionArgName=development\s*$")
+    if ($argDeclaration.Count -ne 2) {
+        $findings.Add((New-ImageContractFinding -Fixture 'image/build-revision-parity' -Severity 'Error' `
+                    -Message "Expected exactly 2 'ARG $buildRevisionArgName=development' declarations in the Dockerfile (build stage + runtime stage re-declaration), found $($argDeclaration.Count)."))
+    }
+
+    if ($dockerfileText -notmatch [regex]::Escape("LABEL org.opencontainers.image.revision=`${$buildRevisionArgName}")) {
+        $findings.Add((New-ImageContractFinding -Fixture 'image/build-revision-parity' -Severity 'Error' `
+                    -Message "Dockerfile is missing 'LABEL org.opencontainers.image.revision=`${$buildRevisionArgName}' in the runtime stage."))
+    }
+
+    if ($dockerfileText -notmatch [regex]::Escape("ENV $buildRevisionArgName=`${$buildRevisionArgName}")) {
+        $findings.Add((New-ImageContractFinding -Fixture 'image/build-revision-parity' -Severity 'Error' `
+                    -Message "Dockerfile is missing 'ENV $buildRevisionArgName=`${$buildRevisionArgName}' in the runtime stage -- src/runtimeInfo.ts reads this at process start."))
+    }
+
+    if (-not (Test-Path -LiteralPath $workflowPath)) {
+        $findings.Add((New-ImageContractFinding -Fixture 'image/build-revision-parity' -Severity 'Error' -Message "Expected workflow file not found: '$workflowPath'."))
+    }
+    else {
+        $workflowText = [IO.File]::ReadAllText($workflowPath)
+        $buildArgPattern = [regex]::Escape("$buildRevisionArgName=`${{ github.sha }}")
+        $buildArgMatch = [regex]::Matches($workflowText, $buildArgPattern)
+        # One in the image-pr job's "Build image (never pushed)" step, one in
+        # the publish job's "Build and push" step -- both must pass the exact
+        # source commit through, or a PR build and a real publish would prove
+        # different things about this wiring.
+        if ($buildArgMatch.Count -ne 2) {
+            $findings.Add((New-ImageContractFinding -Fixture 'image/build-revision-parity' -Severity 'Error' `
+                        -Message "Expected exactly 2 occurrences of '$buildRevisionArgName=`${{ github.sha }}' as a build-args value in blog-mcp-image.yml (image-pr + publish build steps), found $($buildArgMatch.Count)."))
+        }
+    }
+}
+
 # ---------------------------------------------------------------------------
 # Report
 # ---------------------------------------------------------------------------

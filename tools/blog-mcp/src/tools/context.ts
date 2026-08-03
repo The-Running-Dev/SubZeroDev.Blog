@@ -6,6 +6,7 @@ import { PreconditionError, InfrastructureError } from '../errors.js';
 import { withRepoLock } from '../exec/repoLock.js';
 import { appendAuditLog } from '../exec/auditLog.js';
 import { DEFAULT_ALLOWED_PREFIXES } from '../domain/paths.js';
+import type { RuntimeInfo } from '../runtimeInfo.js';
 
 /**
  * A consumer's registration profile. `POST /mcp` (and stdio) always uses
@@ -43,6 +44,8 @@ export interface ToolContext {
    * anywhere.
    */
   clock?: () => Date;
+  /** Optional -- unset in tests that build a ToolContext by hand. Process-wide build/instance identity; see runtimeInfo.ts. Every real server (src/server.ts) attaches the same shared object to each ToolContext it builds. */
+  runtime?: RuntimeInfo;
 }
 
 export function isReadOnly(): boolean {
