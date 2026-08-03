@@ -112,3 +112,13 @@ architecture:
   label: Architecture
   permalink: /architecture
   description: "System design and structural decisions — how the pieces fit together and why."
+
+bulgaria:
+  label: Bulgaria
+  permalink: /bulgaria
+  description: Life, places, and everyday absurdity observed from Bulgaria.
+
+family:
+  label: Family
+  permalink: /family
+  description: Family dynamics, unsolicited directives, and the drama built around them.
