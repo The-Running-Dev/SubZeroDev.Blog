@@ -122,3 +122,13 @@ family:
   label: Family
   permalink: /family
   description: Family dynamics, unsolicited directives, and the drama built around them.
+
+game-engine:
+  label: Game Engine
+  permalink: /game-engine
+  description: Designing and building reusable game systems, mechanics, and engine architecture.
+
+docusaurus:
+  label: Docusaurus
+  permalink: /docusaurus
+  description: Building documentation and publishing sites with Docusaurus.
