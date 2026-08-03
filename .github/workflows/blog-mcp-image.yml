@@ -55,6 +55,7 @@ name: blog-mcp Image
             - "build/Get-WorkflowChangeArea.ps1"
             - "build/Test-WorkflowChangeAreas.ps1"
             - "build/Test-BlogMcpImageContract.ps1"
+            - "build/Confirm-BlogMcpDeployment.ps1"
             - ".github/workflows/blog-mcp-image.yml"
     pull_request:
         paths: *blog-mcp-path
