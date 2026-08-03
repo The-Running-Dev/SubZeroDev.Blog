@@ -102,3 +102,13 @@ knowledge-management:
   label: Knowledge Management
   permalink: /knowledge-management
   description: Capturing, organizing, and searching personal notes, ideas, and decisions.
+
+workflow:
+  label: Workflow
+  permalink: /workflow
+  description: Defining and running repeatable pipelines that transform one artifact into the next.
+
+architecture:
+  label: Architecture
+  permalink: /architecture
+  description: "System design and structural decisions — how the pieces fit together and why."
