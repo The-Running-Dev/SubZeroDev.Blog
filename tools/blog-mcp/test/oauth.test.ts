@@ -196,12 +196,53 @@ describe('OAuth remote MCP authorization', () => {
     expect(names).toContain('blog_list_posts');
     expect(names).not.toContain('blog_create_post');
 
+    // blog_repo_status must report this session's own read-only profile
+    // (READONLY_CAPABILITIES, via oauth.ts's scope->capabilities mapping),
+    // not whatever the process-wide BLOG_MCP_READ_ONLY/BLOG_MCP_ALLOW_REMOTE
+    // env vars happen to be -- issue #109's blog_repo_status fix.
+    const readStatus = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${tokens.access_token}`,
+        'mcp-session-id': sessionId as string,
+        'content-type': 'application/json',
+        accept: 'application/json, text/event-stream'
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'blog_repo_status', arguments: {} } })
+    });
+    const readStatusBody = await responseJson<{ result: { structuredContent: { data: Record<string, unknown> } } }>(readStatus);
+    const readData = readStatusBody.result.structuredContent.data;
+    expect(readData.capabilities).toEqual({ write: false, remote: false, monitor: true, scheduler: false });
+    expect(readData.capabilityProfile).toBe('monitor');
+    expect(readData.revision).toBe('development'); // no BLOG_MCP_BUILD_REVISION in this test process
+
     const legacy = await fetch(`${baseUrl}/mcp`, {
       method: 'POST',
       headers: { authorization: 'Bearer legacy-static-token', 'content-type': 'application/json', accept: 'application/json, text/event-stream' },
       body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'legacy', version: '0' } } })
     });
     expect(legacy.status).toBe(200);
+    const legacySessionId = legacy.headers.get('mcp-session-id');
+    expect(legacySessionId).toBeTruthy();
+
+    // A full/write-capable legacy session reports a different profile than
+    // the read-grant session above, while sharing the same build/instance
+    // identity -- both are the same server process.
+    const legacyStatus = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer legacy-static-token',
+        'mcp-session-id': legacySessionId as string,
+        'content-type': 'application/json',
+        accept: 'application/json, text/event-stream'
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'blog_repo_status', arguments: {} } })
+    });
+    const legacyStatusBody = await responseJson<{ result: { structuredContent: { data: Record<string, unknown> } } }>(legacyStatus);
+    const legacyData = legacyStatusBody.result.structuredContent.data;
+    expect(legacyData.capabilityProfile).not.toBe(readData.capabilityProfile);
+    expect(legacyData.instanceId).toBe(readData.instanceId);
+    expect(legacyData.revision).toBe(readData.revision);
   });
 
   describe('unauthenticated endpoints are bounded against unbounded memory growth', () => {

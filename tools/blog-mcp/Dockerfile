@@ -11,6 +11,14 @@
 
 ARG NODE_IMAGE=node:22-bookworm-slim
 
+# Source commit this image was built from -- 'development' for every local/
+# non-CI build. Re-declared in the runtime stage below (a build ARG does not
+# cross stage boundaries on its own) and baked into BLOG_MCP_BUILD_REVISION
+# (see src/runtimeInfo.ts) and the OCI revision label. See issue #109: this is
+# the image's own source SHA, deliberately never derived from the persistent,
+# possibly-diverged /workspace clone at container start.
+ARG BLOG_MCP_BUILD_REVISION=development
+
 # ---- build: compile TypeScript ---------------------------------------------
 FROM ${NODE_IMAGE} AS build
 WORKDIR /app
@@ -41,6 +49,13 @@ RUN npm ci --omit=dev
 
 # ---- runtime -----------------------------------------------------------------
 FROM ${NODE_IMAGE} AS runtime
+
+# ARG scope does not cross the FROM above -- re-declare to pick the build-time
+# value back up, then bake it into both an OCI label (inspectable without
+# starting the container) and an env var (read by src/runtimeInfo.ts at
+# process start, surfaced through /healthz and blog_repo_status).
+ARG BLOG_MCP_BUILD_REVISION=development
+LABEL org.opencontainers.image.revision=${BLOG_MCP_BUILD_REVISION}
 
 # git: version control. gh: GitHub CLI (Tier C remote tools, Tier D
 # monitoring). pwsh: runs build/Test-Documentation.ps1 and
@@ -73,6 +88,8 @@ RUN mkdir -p /workspace && chown node:node /workspace
 USER node
 ENV HOME=/home/node
 ENV BLOG_MCP_WORKSPACE=/workspace
+ENV BLOG_MCP_BUILD_REVISION=${BLOG_MCP_BUILD_REVISION}
+ENV NODE_ENV=production
 
 # Documentation only -- EXPOSE does not publish the port by itself. Both
 # http and serve modes bind 127.0.0.1 by default, which `-p` cannot forward

@@ -57,10 +57,26 @@ describe('HTTP transport', () => {
     server.close();
   });
 
-  it('GET /healthz returns 200 without auth', async () => {
+  it('GET /healthz returns 200 without auth, with the versioned health contract', async () => {
     const res = await fetch(`${baseUrl}/healthz`);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true });
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body).toMatchObject({
+      schema: 'blog-mcp-health/v1',
+      ok: true,
+      service: 'subzerodev-blog-mcp',
+      version: '0.1.0',
+      // No BLOG_MCP_BUILD_REVISION is set for the unit-test process, so this
+      // process falls back to the same sentinel a non-image execution always
+      // uses -- see runtimeInfo.ts.
+      revision: 'development',
+      catalogRevision: 'development'
+    });
+    expect(typeof body.startedAt).toBe('string');
+    expect(() => new Date(body.startedAt as string).toISOString()).not.toThrow();
+    expect(body.instanceId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
   });
 
   it('unknown paths return 404', async () => {

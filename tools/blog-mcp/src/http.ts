@@ -3,6 +3,7 @@ import http, { type IncomingMessage, type ServerResponse } from 'node:http';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { createServer, type CreateServerOptions } from './server.js';
 import { READONLY_CAPABILITIES, type Capabilities } from './tools/context.js';
+import { runtimeInfo } from './runtimeInfo.js';
 
 export interface HttpServerOptions {
   repoRoot?: string;
@@ -46,10 +47,30 @@ function timingSafeEqual(a: string, b: string): boolean {
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
-function sendJson(res: ServerResponse, status: number, body: unknown): void {
+function sendJson(res: ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}): void {
   const text = JSON.stringify(body);
-  res.writeHead(status, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(text) });
+  res.writeHead(status, { 'content-type': 'application/json', 'content-length': Buffer.byteLength(text), ...headers });
   res.end(text);
+}
+
+/**
+ * `GET /healthz`'s versioned, additive contract (blog-mcp-health/v1, issue
+ * #109) -- lets a deployment workflow or operator prove the public runtime
+ * is serving an exact build/instance, independent of and prior to any MCP
+ * session. Deliberately excludes anything env/credential/repo-state shaped;
+ * see runtimeInfo.ts for what `revision`/`catalogRevision`/`instanceId` mean.
+ */
+function healthPayload(): Record<string, unknown> {
+  return {
+    schema: 'blog-mcp-health/v1',
+    ok: true,
+    service: 'subzerodev-blog-mcp',
+    version: runtimeInfo.version,
+    revision: runtimeInfo.revision,
+    catalogRevision: runtimeInfo.catalogRevision,
+    startedAt: runtimeInfo.startedAt,
+    instanceId: runtimeInfo.instanceId
+  };
 }
 
 function rpcError(res: ServerResponse, status: number, code: number, message: string, headers: Record<string, string> = {}): void {
@@ -235,7 +256,14 @@ export function createMcpRequestHandler(options: HttpServerOptions = {}): McpReq
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? `${host}:${port}`}`);
 
     if (url.pathname === '/healthz') {
-      sendJson(res, 200, { ok: true });
+      // no-store plus a caller-supplied unique query value (the verifier
+      // adds ?probe=<random>) together stop a reverse proxy or intermediary
+      // cache from ever satisfying a redeploy-verification poll with a
+      // stale response.
+      sendJson(res, 200, healthPayload(), {
+        'cache-control': 'no-store',
+        'x-content-type-options': 'nosniff'
+      });
       return;
     }
 

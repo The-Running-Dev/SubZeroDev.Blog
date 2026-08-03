@@ -55,6 +55,7 @@ name: blog-mcp Image
             - "build/Get-WorkflowChangeArea.ps1"
             - "build/Test-WorkflowChangeAreas.ps1"
             - "build/Test-BlogMcpImageContract.ps1"
+            - "build/Confirm-BlogMcpDeployment.ps1"
             - ".github/workflows/blog-mcp-image.yml"
     pull_request:
         paths: *blog-mcp-path
@@ -361,6 +362,13 @@ jobs:
                   push: false
                   tags: subzerodev-blog-mcp:pr-${{ github.event.pull_request.number }}
                   cache-from: type=gha
+                  # Same build-arg name/value as the publish job's build step
+                  # below (build/Test-BlogMcpImageContract.ps1 asserts the
+                  # two stay in parity) -- a PR build should prove the same
+                  # runtime-identity wiring a real publish would use, even
+                  # though this image is never pushed or deployed.
+                  build-args: |
+                      BLOG_MCP_BUILD_REVISION=${{ github.sha }}
 
     publish:
         name: Publish image (ghcr.io)
@@ -420,7 +428,12 @@ jobs:
                       type=raw,value=latest,enable={{is_default_branch}}
                       type=sha,prefix=sha-,format=short
 
+            # id: build -- steps.build.outputs.digest below records exactly
+            # which content-addressed image this run published, independent
+            # of which mutable tags (latest, sha-<short>) happen to point at
+            # it later.
             - name: Build and push
+              id: build
               uses: docker/build-push-action@v6
               with:
                   context: tools/blog-mcp
@@ -429,6 +442,32 @@ jobs:
                   labels: ${{ steps.meta.outputs.labels }}
                   cache-from: type=gha
                   cache-to: type=gha,mode=max
+                  # The full source commit SHA, baked into the image as
+                  # BLOG_MCP_BUILD_REVISION (see Dockerfile) and surfaced at
+                  # runtime by src/runtimeInfo.ts through /healthz and
+                  # blog_repo_status -- this is what "Verify deployed build
+                  # and MCP catalog" below polls the public endpoint for.
+                  build-args: |
+                      BLOG_MCP_BUILD_REVISION=${{ github.sha }}
+
+            # First writer to $GITHUB_STEP_SUMMARY in this job (the `changes`
+            # job already writes its own, unrelated summary). Records what
+            # was actually published -- content digest, source SHA, and every
+            # resolved tag -- as durable evidence independent of the
+            # redeploy/verify steps below succeeding or failing.
+            - name: Record image publish summary
+              run: |
+                  {
+                    echo '### blog-mcp image published'
+                    echo ''
+                    echo "Source SHA: \`${{ github.sha }}\`"
+                    echo "Digest: \`${{ steps.build.outputs.digest }}\`"
+                    echo ''
+                    echo 'Tags:'
+                    echo '```'
+                    echo "${{ steps.meta.outputs.tags }}"
+                    echo '```'
+                  } >> "$GITHUB_STEP_SUMMARY"
 
             # The deployment stack pulls the floating `latest` tag, so only
             # trigger it after a successful publish from main. A manual run
@@ -457,6 +496,26 @@ jobs:
                     --retry 3 --retry-delay 5 --retry-max-time 120 \
                     --request POST \
                     "$BLOG_MCP_REDEPLOY_WEBHOOK_URL"
+
+            # issue #109: the redeploy webhook above only proves Portainer
+            # accepted the request, not that the public stack is actually
+            # serving this build. Same if: guard as the redeploy step --
+            # only meaningful right after a redeploy was actually triggered.
+            # Fails closed (build/Confirm-BlogMcpDeployment.ps1 throws
+            # immediately) if BLOG_MCP_DEPLOY_VERIFY_TOKEN isn't configured,
+            # by design -- a successful webhook call must never again be
+            # treated as proof of a completed deployment.
+            - name: Verify deployed build and MCP catalog
+              if: >-
+                  github.ref == 'refs/heads/main'
+                  && (github.event_name == 'push' || inputs.redeploy)
+              env:
+                  BLOG_MCP_DEPLOY_VERIFY_TOKEN: ${{ secrets.BLOG_MCP_DEPLOY_VERIFY_TOKEN }}
+              shell: pwsh
+              run: |
+                  ./build/Confirm-BlogMcpDeployment.ps1 `
+                    -BaseUri 'https://blogging.subzerodev.com' `
+                    -ExpectedRevision '${{ github.sha }}'
 
     compose:
         name: Validate Compose files
