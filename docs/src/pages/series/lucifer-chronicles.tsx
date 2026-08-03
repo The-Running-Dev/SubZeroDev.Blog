@@ -50,6 +50,11 @@ export default function LuciferChronicles(): React.JSX.Element {
             'A project brief for an awake, amused Neo and a recurring Lucifer who refuses to let the system stay dramatic.',
           href: '/the-absurd-adventures-of-neo/',
           variant: 'related'
+        },
+        {
+          title: 'Much Ado About Nothing',
+          description: 'A dramatic declaration granting permission for something that was already happening.',
+          href: '/much-ado-about-nothing/'
         }
       ]}
     />
