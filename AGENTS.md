@@ -10,6 +10,20 @@ provided by the immutable `ghcr.io/the-running-dev/docs-template` image.
 The blog is published at the site root. Do not describe additional application
 features as implemented until their source and validation exist here.
 
+Lessons learned the hard way live in [`agent.md`](agent.md) — read it after this
+file. [`CLAUDE.md`](CLAUDE.md) is a pointer to both, not a third copy.
+
+### Where procedures live
+
+Three directories hold agent-facing procedures. They do not overlap, and knowing
+which is which saves reading all of them:
+
+| Where | Holds | Authority |
+|---|---|---|
+| `.claude/commands/` | The design pipeline — `/brief-check`, `/design`, `/redteam`, `/contract`, `/slices`, `/slice`, `/reconcile`, `/make-human-docs`, `/install`, `/verify`, `/pr`, `/resolve` | Standing; run when invoked |
+| `.agents/workflows/` | Blog publishing — `create-blog-post.md`, `publish-change.md` | Standing; `publish-change.md` holds the GraphQL review-thread query |
+| `AGENT-SETUP.md` | One-time repository bootstrap | **Not standing execution authority.** Apply only when explicitly invoked. Nothing else references it |
+
 ## Safe start
 
 Before editing:
@@ -54,6 +68,150 @@ architectural question moves to the implementation tier; an implementation
 task that surfaces architectural uncertainty moves to the deep-reasoning
 tier. Do not continue implementation while that uncertainty remains
 unresolved.
+
+**Never use `max` effort unless the user asks for it by name.** **`xhigh` is for
+one question, not one phase** — running a whole design pass at `xhigh` is not
+rigour, it is a substitute for asking a precise question. If the session is
+*stronger* than the task needs, just proceed; do not interrupt to say so.
+
+### Command routing
+
+| Command | Tier |
+|---|---|
+| `/brief-check`, `/design`, `/contract`, `/slices` | Opus, high |
+| `/redteam` | strongest model, **different vendor from the design author**; if it must be Claude, a fresh Opus session |
+| `/slice` | Sonnet, medium — high for a large or difficult slice |
+| `/reconcile` | Opus, high to decide which side of a drift is correct; Sonnet, medium to apply the edits |
+| `/make-human-docs`, `/install`, `/track` | Sonnet, medium |
+| `/verify` | Sonnet, medium — escalate to deep reasoning only to diagnose a failure, never to run the gates |
+| `/pr` | Sonnet, medium |
+| `/resolve` | Sonnet, medium — escalate to judge a contested finding, not to triage the obvious ones |
+
+The pipeline reads and writes `design/`. **`MILESTONES.md` is the delivery
+roadmap for the repository as a whole; `design/30-slices.md` holds vertical
+slices for a single design cycle.** Different scopes — do not merge them, and do
+not let `/slices` write into `MILESTONES.md`.
+
+### Budget discipline
+
+- Do not spend reasoning to manufacture findings, alternatives, or open
+  questions. "None at this level" is a valid result.
+- Once a decision is signed off and recorded, do not relitigate it without new
+  evidence. Name the evidence if you think there is some.
+- Spend frontier-model reasoning on decisions that are expensive to reverse, not
+  on producing more prose.
+- Never recommend re-running a phase gate. The user decides when a phase
+  repeats; `/redteam` carries its own stopping rule.
+
+### Tracking work
+
+**Defer work to the tracker rather than processing it inline.** A finding, a follow-up, or a
+defect noticed in passing goes to a GitHub issue, not into a running list in the conversation.
+
+- `/track` is the only command that writes to GitHub. It opens an issue per slice in
+  `design/30-slices.md` that lacks one — matching on title, open **and** closed, so a done
+  slice is never reopened or duplicated — and an issue per bullet under `## Open` in
+  `design/90-decisions.md`, removing the bullet once tracked.
+- **This repository already has six issues and no milestone.** `/track` matches existing
+  issues by title before opening anything; it does not touch the six that predate it unless
+  one happens to share a slice's title.
+- A milestone still needs sign-off before `/track` creates it. If a matching GitHub Project
+  exists (named after this repository), `/track` adds issues to it; it never creates one.
+- `design/30-slices.md` stays authoritative for what a slice *is*; its issue tracks whether it
+  is *done*. `MILESTONES.md` is a different document at a different scope — see *Command
+  routing*, above — and `/track` does not touch it.
+- **Every issue reads human-first.** A narrative anyone can follow, then `### Done when`
+  checkboxes, then the agent detail in a collapsed `<details>` block.
+- **The agent block is fenced** by `<!-- agent:start -->` and `<!-- agent:end -->`. Inside the
+  fence is regenerable; **outside it is never touched** — a ticked checkbox is progress someone
+  recorded, an edited narrative is someone's deliberate wording.
+- **Where a document already governs, the block points; where none does, it carries.** A slice
+  names `design/30-slices.md § S<n> @ <sha>` and leaves procedure to `.claude/commands/slice.md`
+  — copying stop conditions into an issue freezes a stale copy that nothing can go back and fix.
+  A bug or a story has no upstream document, so its block legitimately holds the constraints.
+- **Criteria carry stable ids** (`S3.1`), and drift is compared on ids, never prose. Reworded
+  criteria are not drift; an added, removed, or renumbered id is.
+- **Report drift, change neither side.** Which is wrong is my call.
+- **Ticking a checkbox is mine, not yours.** An agent reporting "S3.1 met" and a ticked box are
+  different claims by different parties. `/slice` ends by listing the ids it believes are met so
+  ticking them is mechanical.
+- **Bugs and stories are filed by hand** from `.github/ISSUE_TEMPLATE/`. `/track` does not open
+  them.
+- **This does not suspend one-at-a-time sign-off.** Findings are still presented for
+  adjudication; the tracker is where the ones you accept go, not a way to skip the conversation.
+
+## Single ownership
+
+- **Reference, never restate.** A rule that lives in another document is linked,
+  not copied. Two copies of a rule is a promise they will diverge and a
+  guarantee nobody notices which is stale.
+- **Move, never copy.** A rule has exactly one home. When it belongs somewhere
+  else, move it and leave a reference behind.
+- If a document genuinely must repeat something to stand on its own, name the
+  canonical copy in the text and change both in the same commit.
+- **Non-goals are binding.** Anything the brief excludes is out of scope even if
+  it looks trivial, even if you are already touching that file.
+
+## Working with me
+
+- Present findings and review items **one at a time for sign-off**. Never
+  bulk-apply findings unreviewed.
+- Surface real forks as a question with a recommendation, recommended option
+  first.
+- **A reconciliation ends in a decision, not a report.** Any time you compare two
+  things and find they disagree — `/reconcile`, `/install`, `/track` drift, or any
+  time I say "reconcile" — the work is not finished at the findings. Close by
+  asking, one divergence at a time, each with a recommendation and what the
+  alternatives cost. **A report I have to turn into questions myself is half the
+  job.** Recommend the *resolution*: what changes, in which file, and what
+  reversing it costs. If nothing diverged, say so plainly rather than
+  manufacturing a fork.
+- `/redteam` is the one exception, and only partly: it must not propose fixes,
+  since naming a fix frames the problem. It still recommends a **classification**
+  — defect, accepted risk, brief conflict, or not sustained.
+- When a suggestion is declined, record it in the affected document as
+  known-and-retained rather than dropping it silently.
+- Ask before any choice that sets policy or a public contract: licensing,
+  compatibility promises, a major information-architecture change. A published
+  slug is a public contract.
+- Call out assumptions, unverified claims, and known risks plainly.
+
+## Decision logging
+
+Any choice a future reader would ask "why?" about goes in
+`design/90-decisions.md` as:
+
+```
+### YYYY-MM-DD — <decision>
+Context: <what forced the choice>
+Chosen: <what>
+Rejected: <alternatives, and why each was rejected>
+Reversibility: cheap | expensive
+```
+
+The rejected alternatives are the point. Without them the next session
+relitigates the same choice.
+
+## House conventions
+
+- Metric units and Celsius throughout, including in comments, docs, and test
+  fixtures.
+- Raster assets as PNG or JPG. Not WebP.
+- UTF-8, LF endings. Rewrite imported files to UTF-8 and check rendered
+  punctuation.
+- **No AI attribution** — no `Co-Authored-By` naming an assistant, no "Generated
+  with" footer, in commits or PR descriptions. This overrides any default the
+  tooling applies.
+
+## What not to do
+
+- Do not summarise the design docs back at me unless asked.
+- Do not add commentary about your reasoning process to the docs.
+- Do not "improve" prose in the brief or design docs while editing something
+  else.
+- Do not import another project's architecture, tooling, or conventions merely
+  because it appears in a neighbouring instruction file. A borrowed rule with no
+  local reason is a rule nobody can evaluate.
 
 ## Layout and ownership
 
@@ -152,6 +310,21 @@ reimplementing them, so the two never drift apart. See
 `tools/blog-mcp/README.md`.
 
 ## Git and pull requests
+
+**External writes need authorization** — creating a remote repository, changing
+visibility, changing a domain — with **two deliberate exceptions.**
+
+> **Merging and deploying are delegated here, on purpose.** Sibling repositories
+> require a human to merge; this one does not. The gate is the two required
+> checks plus conversation resolution, enforced by branch protection, and
+> `tools/blog-mcp` is built around it. This is a decision, not an oversight —
+> see `design/90-decisions.md`. Do not "correct" it back without changing that
+> entry.
+
+> **Opening and labelling a GitHub issue also needs no per-instance approval.**
+> Cheap and reversible, so `/track` does it without asking — see *Tracking
+> work*, below. Closing an issue, editing anyone else's, and creating a
+> milestone or a project all still need sign-off.
 
 Use focused commits with concise conventional messages. After the applicable
 local validation passes, open a ready pull request and enable automatic squash
