@@ -86,11 +86,38 @@ rigour, it is a substitute for asking a precise question. If the session is
 | `/verify` | Sonnet, medium — escalate to deep reasoning only to diagnose a failure, never to run the gates |
 | `/pr` | Sonnet, medium |
 | `/resolve` | Sonnet, medium — escalate to judge a contested finding, not to triage the obvious ones |
+| `/refine` | Sonnet, medium — never escalates; an architectural ask is routed to the command that owns it, not refined |
+| `/kit-help` | Haiku, low — orientation from file existence and a tracker listing; escalate only where the repository's state matches no stage |
 
 The pipeline reads and writes `design/`. **`MILESTONES.md` is the delivery
 roadmap for the repository as a whole; `design/30-slices.md` holds vertical
 slices for a single design cycle.** Different scopes — do not merge them, and do
 not let `/slices` write into `MILESTONES.md`.
+
+### Session boundaries
+
+Routing says which model runs a command. This says **when a session must end.** A
+boundary exists wherever carrying context would corrupt the next step's
+judgement, or wherever the next step must read the tree rather than remember it.
+**The artifact is the handoff, not the conversation** — a stage that writes one
+has already handed over everything the next stage is entitled to.
+
+| Boundary | Rule | Why |
+|---|---|---|
+| `/design` → `/redteam` | **Fresh session, and a different vendor.** | A model recognises its own output distribution and defends it. Fresh context on the same model is already the weak form; the same session is not a review at all. |
+| Any stage that writes an artifact → the next | Fresh. | The next stage's input is the committed file. A session that also remembers the arguments behind it will design against the arguments. |
+| `/slices` → `/slice` | Fresh, and **one slice per session**. | A slice that does not fit one session without compaction is too large — that is a `/slices` defect, so say so rather than pressing on. |
+| `/slice` → `/verify` → `/pr` → `/resolve` | **Same session.** | These act on the branch and worktree the slice just produced, and `/pr` must carry `/verify`'s did-not-run list into the description **verbatim**. A fresh session would restate it from a summary, which is the fabricated gate result verification exists to prevent. |
+| merge → `/track` | Fresh. | `/track` reads the tracker and `design/` as they now stand. The session that just implemented the slice holds an opinion about whether it is done, and doneness is my mark, not an agent's. |
+| implementation → `/reconcile` | Fresh. | It compares the tree against the docs. The session that wrote the code carries what it *intended* to write, which is the one thing the comparison must not be given. |
+
+**Compaction is a boundary you did not choose.** If a session compacts mid-slice,
+report it — the slice was mis-sized, and the work after the compaction was done
+against a summary of the contract rather than the contract.
+
+Publishing a post is not a design cycle and does not inherit this table.
+`.agents/workflows/create-blog-post.md` and `publish-change.md` run end to end in
+one session by design; the boundaries above govern the `design/` pipeline.
 
 ### Budget discipline
 
@@ -102,6 +129,37 @@ not let `/slices` write into `MILESTONES.md`.
   on producing more prose.
 - Never recommend re-running a phase gate. The user decides when a phase
   repeats; `/redteam` carries its own stopping rule.
+
+### What should stop being model work
+
+Routing decides *which* model does a job. This decides whether a model should be
+doing it at all.
+
+| | Work | Where it belongs |
+|---|---|---|
+| 🟢 **Necessary** | Architecture, contracts, root-cause analysis, design tradeoffs, adjudicating findings, writing a post | A model, at the tier above |
+| 🟡 **Maybe avoidable** | Regenerating context already established, duplicate repository scans, rewriting boilerplate | A model, but the repetition is a signal — say so |
+| 🔴 **Definitely avoidable** | Formatting, mechanical text transformation, arithmetic over files, counting, collecting metrics | Code. It should leave the model entirely |
+
+**A red item is a defect in the tooling, not in the run.** Noticing one is worth a
+line; performing it repeatedly and never saying so is the failure. When a red
+item recurs, put it in `## Open` in `design/90-decisions.md` so `/track` can turn
+it into an issue — that is the existing path, and there is no separate mechanism
+for this. `tools/blog-mcp` is where this repository has already taken that route:
+front-matter checks, duplicate-slug detection and published-URL verification are
+red items that left the model entirely.
+
+Two distinctions that are easy to get wrong:
+
+- **The mechanical half of a task is red; the judgement half is not.** Opening an
+  issue is an API call, but deciding what warrants one is not. Writing a PR
+  description is a template, but which merge convention governs is not. Do not
+  classify a whole command by its cheapest step.
+- **Do not report a cost you did not measure.** A model is not given its own token
+  counts or elapsed time, so any figure it states about its own run is an estimate
+  presented as a measurement. `tools/Measure-Session.ps1` reads the real per-call
+  usage from the session transcript, and runs as a `SessionEnd` hook. Use it, or
+  say nothing.
 
 ### Tracking work
 

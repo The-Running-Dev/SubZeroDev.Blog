@@ -38,3 +38,21 @@ Context: Installing `.claude/commands/` created a third place procedures live, a
 Chosen: They coexist and `AGENTS.md` carries a table saying which is which — the design pipeline, blog publishing, one-time bootstrap. `AGENT-SETUP.md` is marked non-authoritative unless explicitly invoked, which is the fix for the orphan regardless of the rest.
 Rejected: **Fold `.agents/workflows/` into `.claude/commands/`** — one home, discoverable as slash commands; rejected as a real migration whose path is cited from `AGENTS.md` today, and the two sets serve different jobs. **Install and leave the others alone** — smallest change, but leaves a fresh agent three unexplained places to look and an orphan that reads as binding.
 Reversibility: cheap
+
+### 2026-08-04 — Kit upgrade to `8d4ffdb`: `/refine` and `/kit-help` install verbatim
+Context: Upgrading the agent kit from `dcd0d8f` to `8d4ffdb`, which adds two commands and makes `/slice`'s argument optional. This repository runs the kit's own arrangement — `AGENTS.md` holds the contract, `CLAUDE.md` points at it, slice ids are `S<n>` — so both new commands' citations and examples are already correct here.
+Chosen: Copy both byte-identical, and overwrite `slice.md` with the kit's, which this repository had not locally edited. The one repository-specific addition is a line under **Session boundaries** saying the table governs the `design/` pipeline and not post publishing: `.agents/workflows/create-blog-post.md` and `publish-change.md` are deliberately end-to-end in one session, and a boundary table with no scope note reads as forbidding that.
+Rejected: **Overlay the new commands the way the engine repository does** — unnecessary here; an overlay that restates what is already true is the duplication `Single ownership` forbids. **Omit the scope note** — smaller diff, but leaves a fresh agent to infer that publishing a post needs six sessions.
+Reversibility: cheap
+
+### 2026-08-04 — `Measure-Session.ps1` shares `tools/` with `blog-mcp`
+Context: The installer treats a root `tools/` as commonly occupied and says to stop rather than share it if it holds something unrelated. Here it holds `tools/blog-mcp/`, a 132-file MCP server that `AGENTS.md` documents at length.
+Chosen: Share it. `tools/` in this repository is a tools directory holding a tool, not a directory that happens to be named `tools`; a session-cost reporter is another tool and sits alongside without ambiguity. The installer's rule targets a `tools/` that is not a tools directory at all.
+Rejected: **Stop and relocate** — the rule read literally; rejected because the hazard it guards against (writing into something structurally unrelated) is absent, and a second scripts directory would be the actual duplication.
+Reversibility: cheap
+
+### 2026-08-04 — Created a tracked `settings.json` holding only the `SessionEnd` hook
+Context: `tools/Measure-Session.ps1` can only run from `hooks.SessionEnd`, which lives in `settings.json`. This repository had none, and the installer permits creating one containing only that hook.
+Chosen: Create it with the hook and nothing else — no model pin, no permissions block, so nothing is asserted about how sessions here should run beyond measuring what they cost. `.claude/settings.local.json` and `.claude/session-costs.tsv` are both gitignored; neither existed in `.gitignore` before, and a tracked `settings.json` makes the distinction matter.
+Rejected: **Install the script without the hook** — a reporting tool nothing invokes is a tool nobody runs, and the rule it serves ("do not report a cost you did not measure") then has no mechanism behind it. **Copy the kit's whole `settings.json`** — it carries only this hook upstream too, so the result is identical; recording the narrower intent is what stops a later install widening it by habit.
+Reversibility: cheap
