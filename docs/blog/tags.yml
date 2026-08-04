@@ -132,3 +132,13 @@ docusaurus:
   label: Docusaurus
   permalink: /docusaurus
   description: Building documentation and publishing sites with Docusaurus.
+
+determinism:
+  label: Determinism
+  permalink: /determinism
+  description: Reproducible state, replay, and systems that behave identically every time they run.
+
+well-why-not:
+  label: Well Why Not
+  permalink: /well-why-not
+  description: Building the thing first and justifying it afterwards, if at all.
