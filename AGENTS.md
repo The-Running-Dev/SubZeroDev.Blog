@@ -83,6 +83,7 @@ rigour, it is a substitute for asking a precise question. If the session is
 | `/slice` | Sonnet, medium — high for a large or difficult slice |
 | `/reconcile` | Opus, high to decide which side of a drift is correct; Sonnet, medium to apply the edits |
 | `/make-human-docs`, `/install`, `/track` | Sonnet, medium |
+| `/install-all` | Sonnet, medium — escalate only to judge whether a per-repo hard stop is actually safe to resolve; never to resolve it unattended |
 | `/verify` | Sonnet, medium — escalate to deep reasoning only to diagnose a failure, never to run the gates |
 | `/pr` | Sonnet, medium |
 | `/resolve` | Sonnet, medium — escalate to judge a contested finding, not to triage the obvious ones |
