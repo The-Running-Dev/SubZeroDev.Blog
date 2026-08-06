@@ -142,3 +142,13 @@ well-why-not:
   label: Well Why Not
   permalink: /well-why-not
   description: Building the thing first and justifying it afterwards, if at all.
+
+state-of-dev:
+  label: State of Dev
+  permalink: /state-of-dev
+  description: Weekly development journals covering what shipped, what escalated, and what appeared unannounced.
+
+subzerodev:
+  label: SubZeroDev
+  permalink: /subzerodev
+  description: "The SubZeroDev ecosystem — the engine, the agents, the git tooling, and the platform underneath them."
