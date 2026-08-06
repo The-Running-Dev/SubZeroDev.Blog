@@ -136,9 +136,12 @@ const config: Config = {
         }
       ]
     },
+    // SubZeroDev.com's presentation layer defines one dark palette, not a
+    // light/dark pair -- the switch is disabled so the blog can't drift into
+    // a light theme this palette was never designed against.
     colorMode: {
       defaultMode: 'dark',
-      disableSwitch: false,
+      disableSwitch: true,
       respectPrefersColorScheme: false
     },
     footer: { style: 'dark', links: [] }
