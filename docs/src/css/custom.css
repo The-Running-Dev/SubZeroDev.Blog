@@ -64,26 +64,37 @@ body {
  * overlay intentionally owns only the Docusaurus-specific markup and menu.
  */
 .site-masthead {
+  --site-masthead-inline-padding: clamp(1.25rem, 5vw, 4rem);
+
+  padding-top: 8px;
   background: var(--bg);
   color: var(--fg);
 }
 
-.site-masthead__identity,
-.site-masthead .navbar {
-  box-sizing: border-box;
-  width: min(100%, 1120px);
+.site-masthead__frame {
+  box-sizing: content-box;
+  width: min(
+    calc(
+      100% - var(--site-masthead-inline-padding) - var(--site-masthead-inline-padding) - 1rem
+    ),
+    1120px
+  );
   margin: 0 auto;
-  padding-right: clamp(1.25rem, 5vw, 4rem);
-  padding-left: clamp(1.25rem, 5vw, 4rem);
+  padding: clamp(2rem, 5vw, 4rem) var(--site-masthead-inline-padding) 0;
+}
+
+.site-masthead__stack {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.1rem, 2.2vw, 1.9rem);
 }
 
 .site-masthead__identity {
   display: flex;
   flex-direction: column;
   gap: clamp(0.6rem, 1.5vw, 1.1rem);
-  max-width: 1120px;
-  padding-top: clamp(2rem, 5vw, 4rem);
-  padding-bottom: clamp(1.1rem, 2.2vw, 1.9rem);
+  max-width: 880px;
+  margin-top: clamp(0.5rem, 1vw, 0.9rem);
 }
 
 .site-masthead__brand {
@@ -127,12 +138,14 @@ body {
    in normal document flow so every route opens with the complete identity. */
 .site-masthead .navbar.navbar--fixed-top {
   position: static;
+  box-sizing: content-box;
+  width: 100%;
   height: auto;
   min-height: 0;
-  padding-top: 0;
-  padding-bottom: 0.9rem;
+  margin: 0;
+  padding: 0;
   border-top: 0;
-  border-bottom: 1px solid var(--rule);
+  border-bottom: 0;
   background: var(--bg);
   box-shadow: none;
 }
@@ -148,6 +161,13 @@ body {
 
 .site-masthead .navbar__items--right {
   margin-left: auto;
+}
+
+.site-masthead__rule {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--rule);
 }
 
 .site-masthead .navbar__link,
@@ -179,6 +199,12 @@ body {
 .site-masthead .navbar__link--active svg,
 .site-masthead .site-masthead__ecosystem-active svg {
   fill: currentColor;
+}
+
+/* The apex header renders plain text links. Docusaurus adds an external-link
+   glyph automatically; hiding it here keeps the shared link row identical. */
+.site-masthead .navbar__link > svg {
+  display: none;
 }
 
 .site-masthead .dropdown > .navbar__link::after {
@@ -604,19 +630,20 @@ input:focus-visible {
 
 @media (max-width: 996px) {
   .site-masthead .navbar.navbar--fixed-top {
-    padding-top: 0.7rem;
-    padding-bottom: 0.7rem;
+    padding: 0;
   }
 
   .site-masthead .navbar__inner {
+    flex-wrap: wrap;
     gap: 0.75rem;
   }
 
   .site-masthead .navbar__items--right {
     display: flex;
-    flex: 1 1 auto;
-    justify-content: flex-end;
+    flex: 1 1 100%;
+    justify-content: flex-start;
     min-width: 0;
+    margin-left: 0;
     gap: clamp(0.45rem, 2.2vw, 0.75rem);
   }
 
@@ -643,11 +670,6 @@ input:focus-visible {
 }
 
 @media (max-width: 576px) {
-  .site-masthead__identity {
-    padding-top: 2rem;
-    padding-bottom: 1.1rem;
-  }
-
   .site-masthead .navbar__items--right {
     gap: 0.5rem;
   }
