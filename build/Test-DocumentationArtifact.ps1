@@ -54,6 +54,24 @@ function Assert-ArtifactFile {
     }
 }
 
+function Assert-ArtifactContent {
+    param (
+        [Parameter(Mandatory)]
+        [string] $RelativePath,
+
+        [Parameter(Mandatory)]
+        [string[]] $ExpectedText
+    )
+
+    $fullPath = Join-Path $output $RelativePath
+    $content = Get-Content -LiteralPath $fullPath -Raw
+    foreach ($text in $ExpectedText) {
+        if (-not $content.Contains($text)) {
+            throw "Expected documentation artifact '$RelativePath' to contain '$text'."
+        }
+    }
+}
+
 # Line-based extraction with optional trailing YAML comments. A tag entry
 # this cannot read fails the key/permalink count check below rather than
 # being skipped silently.
@@ -111,6 +129,31 @@ $requiredRoutes = @(
 
 foreach ($route in $requiredRoutes) {
     Assert-ArtifactFile -RelativePath $route
+}
+
+# The custom Navbar is server-rendered into every route. Assert its canonical
+# identity and the two navigation groups on representative blog, hub and docs
+# pages so a Docusaurus theme upgrade cannot silently restore the default bar.
+$mastheadRequiredText = @(
+    'class="site-masthead"',
+    '>SubZeroDev</a>',
+    'Professional uncertainty since 2026.',
+    'Well… Why not?',
+    'https://subzerodev.com/',
+    'https://blog.subzerodev.com/',
+    'https://github.com/The-Running-Dev?tab=repositories',
+    'https://portfolio.subzerodev.com/',
+    '>Latest</a>',
+    '>Archive</a>',
+    '>Topics</a>',
+    '>Series</a>',
+    '>Builds</a>',
+    '>About</a>',
+    '>Docs</a>'
+)
+
+foreach ($route in @('index.html', 'lucifer-discovers-recursive-bureaucracy/index.html', 'about/index.html', 'docs/index.html')) {
+    Assert-ArtifactContent -RelativePath $route -ExpectedText $mastheadRequiredText
 }
 
 foreach ($permalink in $tagPermalinks) {
