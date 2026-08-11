@@ -137,6 +137,11 @@ const config: Config = {
           label: 'Docs'
         },
         {
+          href: 'https://subzerodev.com/',
+          position: 'right',
+          label: 'SubZeroDev.com'
+        },
+        {
           href: 'https://blog.subzerodev.com/',
           position: 'right',
           label: 'Blog',

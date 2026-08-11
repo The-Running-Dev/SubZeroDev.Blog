@@ -136,10 +136,14 @@ foreach ($route in $requiredRoutes) {
 # pages so a Docusaurus theme upgrade cannot silently restore the default bar.
 $mastheadRequiredText = @(
     'class="site-masthead"',
+    'class="site-masthead__frame"',
+    'class="site-masthead__stack"',
+    'class="site-masthead__rule"',
     '>SubZeroDev</a>',
     'Professional uncertainty since 2026.',
     'Well… Why not?',
     'https://subzerodev.com/',
+    '>SubZeroDev.com<',
     'https://blog.subzerodev.com/',
     'https://github.com/The-Running-Dev?tab=repositories',
     'https://portfolio.subzerodev.com/',
