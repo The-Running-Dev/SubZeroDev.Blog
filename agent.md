@@ -45,6 +45,11 @@ and preferences belong in `AGENTS.md`.
 - **Pull the real artifact before reasoning about it.** Guessing how two builds interact
   cost a sibling repo a wrong conclusion that a single `docker pull` and one real build
   settled.
+- **Running the code beats recalling it.** A golden-test vector written from memory was
+  wrong; executing the reference implementation caught it before it became the expected
+  value everything else was checked against.
+- **Several confident recollections were wrong.** Every claim about an external contract
+  should be checked against the published spec, not remembered.
 - **Verify a regression test by reverting the fix.** A test that passes with and without the
   fix guards nothing. `tools/blog-mcp` runs vitest, so this is cheap here.
 - **A fix that only changed the odds is not a fix.** An intermittent failure went away when
