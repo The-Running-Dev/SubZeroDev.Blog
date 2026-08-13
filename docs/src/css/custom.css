@@ -1,41 +1,52 @@
-:root {
-  --sz-accent: #0876c9;
-  --sz-accent-strong: #5a38c7;
-  --sz-accent-soft: rgb(8 118 201 / 12%);
-  --sz-panel: rgb(255 255 255 / 82%);
-  --sz-panel-strong: rgb(255 255 255 / 94%);
-  --sz-border: rgb(52 89 122 / 18%);
-  --sz-border-strong: rgb(8 118 201 / 38%);
-  --sz-muted: #5c6c80;
-  --sz-code: #f6f9fc;
-  --sz-shadow: 0 18px 42px rgb(22 42 64 / 12%);
-  --sz-shadow-raised: 0 26px 62px rgb(22 42 64 / 18%);
-}
-
+/*
+ * Design tokens lifted from SubZeroDev.com's landing-page presentation layer
+ * (src/presentation/palette.ts, stylesheet.ts, primitives.ts): a flat,
+ * single dark theme — near-black background, off-white text, one cyan link
+ * colour, Inter with system-ui fallbacks, and a fixed type/space scale. No
+ * gradients, glassmorphism, or box-shadow glow — separation comes from a
+ * single 1px rule colour, matching the .com aesthetic.
+ */
+:root,
 html[data-theme='dark'] {
-  --ifm-background-color: #080d17;
-  --ifm-background-surface-color: #101827;
-  --ifm-navbar-background-color: rgb(8 13 23 / 88%);
-  --ifm-color-primary: #7cddff;
-  --ifm-color-primary-dark: #57d2ff;
-  --ifm-color-primary-darker: #3dcaff;
-  --ifm-color-primary-darkest: #08abe8;
-  --ifm-color-primary-light: #a1e7ff;
-  --ifm-color-primary-lighter: #b7edff;
-  --ifm-color-primary-lightest: #e5f9ff;
-  --ifm-font-color-base: #e5edf8;
-  --ifm-font-color-secondary: #a9b7ca;
-  --sz-accent: #7cddff;
-  --sz-accent-strong: #a996ff;
-  --sz-accent-soft: rgb(124 221 255 / 13%);
-  --sz-panel: linear-gradient(145deg, rgb(19 31 51 / 94%), rgb(12 20 35 / 94%));
-  --sz-panel-strong: linear-gradient(145deg, rgb(24 39 63 / 98%), rgb(13 22 38 / 98%));
-  --sz-border: rgb(152 213 255 / 18%);
-  --sz-border-strong: rgb(124 221 255 / 48%);
-  --sz-muted: #a9b7ca;
-  --sz-code: #090f1c;
-  --sz-shadow: 0 18px 42px rgb(0 0 0 / 28%);
-  --sz-shadow-raised: 0 28px 70px rgb(0 0 0 / 46%);
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, "Cascadia Code", Consolas, monospace;
+  --step--1: 0.8rem;
+  --step-0: 1rem;
+  --step-1: 1.25rem;
+  --step-2: 1.563rem;
+  --step-3: 1.953rem;
+  --space-0: 0.75rem;
+  --space-1: 1.17rem;
+  --space-2: 1.83rem;
+  --space-3: 2.86rem;
+  --space-4: 4.47rem;
+  --measure: 34rem;
+
+  --bg: #111113;
+  --fg: #F3F1EC;
+  --fg-muted: #9A989F;
+  --rule: #2B2B31;
+  --link: #6FD3FF;
+
+  --ifm-background-color: var(--bg);
+  --ifm-background-surface-color: #17171A;
+  --ifm-navbar-background-color: var(--bg);
+  --ifm-font-family-base: var(--font-sans);
+  --ifm-font-color-base: var(--fg);
+  --ifm-font-color-secondary: var(--fg-muted);
+  --ifm-heading-color: var(--fg);
+  --ifm-color-primary: var(--link);
+  --ifm-color-primary-dark: var(--link);
+  --ifm-color-primary-darker: var(--link);
+  --ifm-color-primary-darkest: var(--link);
+  --ifm-color-primary-light: var(--link);
+  --ifm-color-primary-lighter: var(--link);
+  --ifm-color-primary-lightest: var(--link);
+  --ifm-code-background: #17171A;
+  --ifm-code-border-radius: 0.35rem;
+  --ifm-table-border-color: var(--rule);
+  --ifm-toc-border-color: var(--rule);
+  --ifm-hr-border-color: var(--rule);
 }
 
 html {
@@ -43,214 +54,400 @@ html {
 }
 
 body {
-  background: var(--ifm-background-color);
+  background: var(--bg);
+  color: var(--fg);
 }
 
-.main-wrapper {
-  background:
-    radial-gradient(circle at 10% -10%, var(--sz-accent-soft), transparent 29rem),
-    radial-gradient(circle at 100% 10%, rgb(169 150 255 / 10%), transparent 27rem);
+/*
+ * The blog's global identity is a local translation of SubZeroDev.com's
+ * `composeApex` header and `bar` primitive. The apex remains canonical; this
+ * overlay intentionally owns only the Docusaurus-specific markup and menu.
+ */
+.site-masthead {
+  --site-masthead-inline-padding: clamp(1.25rem, 5vw, 4rem);
+
+  padding-top: 8px;
+  background: var(--bg);
+  color: var(--fg);
 }
 
-.navbar {
-  border-bottom: 1px solid var(--sz-border);
-  box-shadow: 0 8px 30px rgb(0 0 0 / 8%);
-  backdrop-filter: blur(18px);
+.site-masthead__frame {
+  box-sizing: content-box;
+  width: min(
+    calc(
+      100% - var(--site-masthead-inline-padding) - var(--site-masthead-inline-padding) - 1rem
+    ),
+    1120px
+  );
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 4rem) var(--site-masthead-inline-padding) 0;
 }
 
-.navbar__title {
-  letter-spacing: -0.025em;
+.site-masthead__stack {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.1rem, 2.2vw, 1.9rem);
 }
 
-.navbar__link {
-  border-radius: 0.5rem;
-  font-weight: 600;
-  transition: background-color 160ms ease, color 160ms ease;
+.site-masthead__identity {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.6rem, 1.5vw, 1.1rem);
+  max-width: 880px;
+  margin-top: clamp(0.5rem, 1vw, 0.9rem);
 }
 
-.navbar__link:hover,
-.navbar__link--active {
-  background: var(--sz-accent-soft);
+.site-masthead__brand {
+  width: fit-content;
+  max-width: 16ch;
+  color: var(--fg);
+  font-size: clamp(1.9rem, 3.6vw, 2.75rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  text-decoration: none;
+}
+
+.site-masthead__brand:hover,
+.site-masthead__brand:focus-visible {
+  color: var(--link);
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.2em;
+}
+
+.site-masthead__meta {
+  margin: 0;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: 0.1em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.site-masthead__slogan {
+  max-width: 40ch;
+  margin: 0;
+  font-size: clamp(1.05rem, 1.6vw, 1.2rem);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+/* The standard theme applies a fixed top bar. This masthead is deliberately
+   in normal document flow so every route opens with the complete identity. */
+.site-masthead .navbar.navbar--fixed-top {
+  position: static;
+  box-sizing: content-box;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border-top: 0;
+  border-bottom: 0;
+  background: var(--bg);
+  box-shadow: none;
+}
+
+.site-masthead .navbar__inner {
+  min-height: 0;
+}
+
+.site-masthead .navbar__items {
+  flex-wrap: wrap;
+  gap: clamp(0.5rem, 1.5vw, var(--space-0));
+}
+
+.site-masthead .navbar__items--right {
+  margin-left: auto;
+}
+
+.site-masthead__rule {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--rule);
+}
+
+.site-masthead .navbar__link,
+.site-masthead .navbar__item {
+  padding: 0;
+  color: var(--link);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  line-height: 1.4;
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.2em;
+  text-transform: uppercase;
+  transition: color 120ms ease;
+}
+
+.site-masthead .navbar__link:hover,
+.site-masthead .navbar__link:focus-visible,
+.site-masthead .navbar__link--active,
+.site-masthead .site-masthead__ecosystem-active {
+  background: transparent;
+  color: var(--fg);
+}
+
+.site-masthead .navbar__link:hover svg,
+.site-masthead .navbar__link:focus-visible svg,
+.site-masthead .navbar__link--active svg,
+.site-masthead .site-masthead__ecosystem-active svg {
+  fill: currentColor;
+}
+
+/* The apex header renders plain text links. Docusaurus adds an external-link
+   glyph automatically; hiding it here keeps the shared link row identical. */
+.site-masthead .navbar__link > svg {
+  display: none;
+}
+
+.site-masthead .dropdown > .navbar__link::after {
+  border-top-color: currentColor;
+}
+
+.site-masthead .dropdown__menu {
+  min-width: max-content;
+  margin-top: 0.55rem;
+  border: 1px solid var(--rule);
+  border-radius: 0;
+  background: var(--bg);
+  box-shadow: none;
+}
+
+.site-masthead .dropdown__link {
+  color: var(--link);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.site-masthead .dropdown__link:hover,
+.site-masthead .dropdown__link:focus-visible,
+.site-masthead .dropdown__link--active {
+  background: transparent;
+  color: var(--fg);
+}
+
+.site-masthead .navbar-sidebar {
+  background: var(--bg);
+}
+
+.site-masthead .navbar-sidebar .menu__link {
+  color: var(--link);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.site-masthead .navbar-sidebar .menu__link:hover,
+.site-masthead .navbar-sidebar .menu__link:focus-visible,
+.site-masthead .navbar-sidebar .menu__link--active {
+  background: transparent;
+  color: var(--fg);
+}
+
+.site-masthead .navbar-sidebar__close {
+  color: var(--fg);
+}
+
+.site-masthead .navbar__toggle {
+  color: var(--fg);
+}
+
+.site-masthead .navbar__toggle::after {
+  margin-left: 0.55rem;
+  content: 'Explore';
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.footer {
+  border-top: 1px solid var(--rule);
+  background: var(--bg);
 }
 
 main h1 {
-  font-size: clamp(1.875rem, 3vw, 2.5rem);
-  letter-spacing: -0.045em;
-  line-height: 1.15;
+  font-size: clamp(1.9rem, 3.6vw, 2.75rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  font-weight: 800;
 }
 
 .blog-list-page main h2,
 .blog-post-page main h1 {
-  font-size: clamp(1.6rem, 2.5vw, 2rem);
-  letter-spacing: -0.03em;
-  line-height: 1.2;
+  font-size: clamp(1.3rem, 2vw, 1.75rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-weight: 700;
 }
 
 .blog-list-page main h3 {
-  font-size: 1.4rem;
-  line-height: 1.35;
+  font-size: 1.15rem;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
+/* Flat entries, not glassy cards: a top rule between items rather than a
+   bordered/shadowed panel, matching the .com `entry` primitive. */
 .blog-post-page main > article {
-  position: relative;
-  overflow: hidden;
-  padding: clamp(1.25rem, 3vw, 2rem);
-  border: 1px solid var(--sz-border);
-  border-radius: 1.25rem;
-  background: var(--sz-panel);
-  box-shadow: var(--sz-shadow-raised);
-}
-
-.blog-post-page main > article::before {
-  position: absolute;
-  inset: 0 0 auto;
-  height: 3px;
-  content: '';
-  background: linear-gradient(90deg, var(--sz-accent), var(--sz-accent-strong), transparent 82%);
+  padding-bottom: clamp(1.25rem, 3vw, 2rem);
 }
 
 .blog-post-page main > article > header {
   padding-bottom: 1.5rem;
-  border-bottom: 1px solid var(--sz-border);
+  border-bottom: 1px solid var(--rule);
 }
 
 .blog-post-page main > article > footer {
   margin-top: 2.5rem;
   padding-top: 1.25rem;
-  border-top: 1px solid var(--sz-border);
+  border-top: 1px solid var(--rule);
 }
 
 .blog-list-page main article {
-  position: relative;
-  margin-bottom: 1.25rem !important;
-  padding: clamp(1.25rem, 3vw, 2rem);
-  border: 1px solid var(--sz-border);
-  border-radius: 1rem;
-  background: var(--sz-panel);
-  box-shadow: var(--sz-shadow);
-  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  margin-bottom: 0 !important;
+  padding: clamp(1.1rem, 2.4vw, 1.9rem) 0;
+  border-top: 1px solid var(--rule);
 }
 
-.blog-list-page main article::before {
-  position: absolute;
-  top: 1.15rem;
-  bottom: 1.15rem;
-  left: 0;
-  width: 3px;
-  border-radius: 0 999px 999px 0;
-  content: '';
-  background: linear-gradient(var(--sz-accent), var(--sz-accent-strong));
-}
-
-@media (hover: hover) {
-  .blog-list-page main article:hover {
-    border-color: var(--sz-border-strong);
-    box-shadow: var(--sz-shadow-raised);
-    transform: translateY(-3px);
-  }
+.blog-list-page main article:first-child {
+  border-top: none;
+  padding-top: 0;
 }
 
 .blog-list-page main article h2 a,
 .blog-post-page main h1 {
-  text-decoration-color: rgb(124 221 255 / 0%);
-  text-underline-offset: 0.18em;
-  transition: text-decoration-color 160ms ease;
+  text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
+  transition: text-decoration-color 120ms ease;
 }
 
 .blog-list-page main article h2 a:hover {
-  text-decoration-color: var(--sz-accent);
+  text-decoration-color: var(--link);
 }
 
+/* `.meta` primitive: mono, muted, tracked-out, uppercase — reserved for
+   labels (dates, reading time), never prose. */
 .blog-post-page main time,
 .blog-list-page main time,
 .blog-post-page main [class*='container_'],
 .blog-list-page main [class*='container_'] {
-  color: var(--sz-muted);
-  font-size: 0.86rem;
-  font-weight: 700;
-  letter-spacing: 0.025em;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .markdown h2,
 .markdown h3 {
-  scroll-margin-top: calc(var(--ifm-navbar-height) + 1.25rem);
+  scroll-margin-top: 1.25rem;
 }
 
 .markdown h2 {
   margin-top: 2.5rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--sz-border);
-  font-size: clamp(1.375rem, 2vw, 1.625rem);
-  letter-spacing: -0.025em;
+  border-bottom: 1px solid var(--rule);
+  font-size: clamp(1.3rem, 1.7vw, 1.75rem);
+  letter-spacing: -0.02em;
 }
 
 .blog-post-page .markdown,
 .blog-list-page .markdown {
   font-size: 1.0625rem;
-  line-height: 1.75;
+  line-height: 1.7;
 }
 
 .markdown blockquote {
   margin: 1.75rem 0;
   padding: 1rem 1.25rem;
-  border: 1px solid var(--sz-border);
-  border-left: 3px solid var(--sz-accent);
-  border-radius: 0 0.75rem 0.75rem 0;
-  background: var(--sz-accent-soft);
-  box-shadow: inset 0 1px rgb(255 255 255 / 5%);
+  border: none;
+  border-left: 1px solid var(--link);
+  border-radius: 0;
+  background: transparent;
+  color: var(--fg-muted);
 }
 
 .markdown :not(pre) > code {
   padding: 0.16em 0.42em;
-  border: 1px solid var(--sz-border);
+  border: 1px solid var(--rule);
   border-radius: 0.35rem;
-  background: var(--sz-accent-soft);
-  color: var(--ifm-font-color-base);
+  background: var(--ifm-code-background);
+  color: var(--fg);
   font-size: 0.88em;
 }
 
 .markdown [class*='codeBlockContainer'] {
   margin: 1.75rem 0;
   overflow: hidden;
-  border: 1px solid var(--sz-border-strong);
-  border-radius: 0.9rem;
-  background: var(--sz-code);
-  box-shadow: 0 18px 40px rgb(0 0 0 / 30%), inset 0 1px rgb(255 255 255 / 7%);
+  border: 1px solid var(--rule);
+  border-radius: 0.5rem;
+  background: var(--ifm-code-background);
+  box-shadow: none;
 }
 
 .markdown [class*='codeBlockContainer'] pre {
   margin: 0;
-  background: var(--sz-code);
+  background: var(--ifm-code-background);
 }
 
 .markdown pre:not([class]) {
   margin: 1.75rem 0;
   padding: 1.25rem;
   overflow-x: auto;
-  border: 1px solid var(--sz-border-strong);
-  border-radius: 0.9rem;
-  background: var(--sz-code);
-  box-shadow: 0 18px 40px rgb(0 0 0 / 30%), inset 0 1px rgb(255 255 255 / 7%);
+  border: 1px solid var(--rule);
+  border-radius: 0.5rem;
+  background: var(--ifm-code-background);
+  box-shadow: none;
 }
 
 .markdown table {
   display: table;
   overflow: hidden;
   width: 100%;
-  border: 1px solid var(--sz-border);
+  border: 1px solid var(--rule);
   border-collapse: separate;
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
   border-spacing: 0;
-  box-shadow: var(--sz-shadow);
+  box-shadow: none;
 }
 
 .markdown th {
-  background: var(--sz-accent-soft);
+  background: var(--ifm-background-surface-color);
 }
 
 .markdown th,
 .markdown td {
-  border-color: var(--sz-border);
+  border-color: var(--rule);
+}
+
+/* `.link` primitive: underline is load-bearing (S4.2's colour-alone check —
+   --link against --bg reads clearly, but touch/no-hover still needs the
+   line), colour shifts to --fg on hover/focus rather than a second hue. */
+.markdown a,
+.content-hub__link {
+  color: var(--link);
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.2em;
+  transition: color 120ms ease;
+}
+
+.markdown a:hover,
+.content-hub__link:hover {
+  color: var(--fg);
+  text-decoration-color: var(--fg);
 }
 
 nav[aria-label='Blog recent posts navigation'] {
@@ -274,32 +471,29 @@ nav[aria-label='Blog recent posts navigation'] [class*='sidebarItemLink'] {
   border-left: 2px solid transparent;
   border-radius: 0;
   background: transparent;
-  color: var(--ifm-font-color-base);
+  color: var(--fg);
   font-size: 0.9rem;
   font-weight: 400;
   line-height: 1.65;
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
 nav[aria-label='Blog recent posts navigation'] [class*='sidebarItemLink']:hover {
-  border-left-color: var(--sz-accent);
-  background: var(--sz-accent-soft);
-  color: var(--ifm-font-color-base);
+  border-left-color: var(--link);
+  color: var(--link);
   text-decoration: none;
 }
 
 nav[aria-label='Blog recent posts navigation'] [aria-current='page'] {
-  border-left-color: var(--sz-accent);
-  background: var(--sz-accent-soft);
-  color: var(--ifm-font-color-base);
+  border-left-color: var(--link);
+  color: var(--link);
 }
 
 .blog-post-page [class*='tableOfContents'] {
   padding: 0.75rem;
-  border: 1px solid var(--sz-border);
-  border-radius: 0.9rem;
-  background: var(--sz-panel);
-  box-shadow: var(--sz-shadow);
+  border-left: 1px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
 }
 
 .content-hub {
@@ -308,20 +502,18 @@ nav[aria-label='Blog recent posts navigation'] [aria-current='page'] {
 
 .content-hub__hero {
   margin-bottom: 2.25rem;
-  padding: clamp(1.5rem, 4vw, 2.75rem);
-  border: 1px solid var(--sz-border);
-  border-radius: 1.25rem;
-  background: var(--sz-panel);
-  box-shadow: var(--sz-shadow-raised);
+  padding-bottom: clamp(1.5rem, 4vw, 2.75rem);
+  border-bottom: 1px solid var(--rule);
 }
 
 .content-hub__eyebrow,
 .content-hub__entry > p:first-child {
   margin-bottom: 0.45rem;
-  color: var(--sz-accent);
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  font-weight: 400;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
@@ -330,85 +522,70 @@ nav[aria-label='Blog recent posts navigation'] [aria-current='page'] {
 }
 
 .content-hub__hero > p:last-child {
-  max-width: 44rem;
+  max-width: var(--measure);
   margin-bottom: 0;
-  color: var(--ifm-font-color-secondary);
+  color: var(--fg-muted);
   font-size: 1.08rem;
 }
 
 .content-hub__list {
-  display: grid;
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .content-hub__entry {
-  padding: 1.35rem 1.5rem;
-  border: 1px solid var(--sz-border);
-  border-radius: 1rem;
-  background: var(--sz-panel);
-  box-shadow: var(--sz-shadow);
-  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  padding: clamp(1.1rem, 2.4vw, 1.9rem) 0;
+  border-top: 1px solid var(--rule);
+}
+
+.content-hub__list > .content-hub__entry:first-child {
+  border-top: none;
+  padding-top: 0;
 }
 
 .content-hub__entry h2 {
   margin-bottom: 0.55rem;
-  font-size: clamp(1.25rem, 2vw, 1.5rem);
-  letter-spacing: -0.025em;
+  font-size: clamp(1.15rem, 2vw, 1.4rem);
+  letter-spacing: -0.02em;
 }
 
 .content-hub__entry h2 a {
-  color: var(--ifm-font-color-base);
+  color: var(--fg);
   text-decoration: none;
 }
 
 .content-hub__entry > p:not(:first-child) {
   margin-bottom: 1rem;
-  color: var(--ifm-font-color-secondary);
+  color: var(--fg-muted);
 }
 
 .content-hub__entry--related {
-  border-left: 3px solid var(--sz-accent);
-  background: var(--sz-accent-soft);
+  padding-left: clamp(0.6rem, 1.6vw, 1.1rem);
+  border-left: 1px solid var(--link);
 }
 
 .content-hub__badge {
   display: inline-block;
   margin-bottom: 0.7rem;
-  padding: 0.3rem 0.75rem;
-  border: 1px solid var(--sz-border-strong);
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--rule);
   border-radius: 999px;
-  background: var(--sz-accent-soft);
-  color: var(--sz-accent);
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  font-weight: 400;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
-.content-hub__link {
-  color: var(--sz-accent);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-@media (hover: hover) {
-  .content-hub__entry:hover {
-    border-color: var(--sz-border-strong);
-    box-shadow: var(--sz-shadow-raised);
-    transform: translateY(-2px);
-  }
-
-  .content-hub__entry h2 a:hover,
-  .content-hub__link:hover {
-    color: var(--sz-accent);
-    text-decoration: underline;
-    text-decoration-color: var(--sz-accent);
-    text-underline-offset: 0.18em;
-  }
+.content-hub__entry h2 a:hover {
+  color: var(--link);
 }
 
 a[class*='tagRegular'],
 .blog-post-page [class*='tag_'] a {
+  border: 1px solid var(--rule);
   border-radius: 999px;
 }
 
@@ -447,11 +624,42 @@ a[class*='tagRegular'],
 a:focus-visible,
 button:focus-visible,
 input:focus-visible {
-  outline: 2px solid var(--sz-accent);
+  outline: 2px solid var(--link);
   outline-offset: 3px;
 }
 
 @media (max-width: 996px) {
+  .site-masthead .navbar.navbar--fixed-top {
+    padding: 0;
+  }
+
+  .site-masthead .navbar__inner {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .site-masthead .navbar__items--right {
+    display: flex;
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    min-width: 0;
+    margin-left: 0;
+    gap: clamp(0.45rem, 2.2vw, 0.75rem);
+  }
+
+  .site-masthead .navbar__items--right .navbar__item {
+    display: block;
+    flex: 0 0 auto;
+  }
+
+  .site-masthead .navbar__items--right .navbar__link {
+    font-size: clamp(0.66rem, 2.8vw, var(--step--1));
+  }
+
+  .site-masthead .navbar-sidebar {
+    top: 0;
+  }
+
   nav[aria-label='Blog recent posts navigation'] {
     position: static;
     max-height: none;
@@ -462,23 +670,12 @@ input:focus-visible {
 }
 
 @media (max-width: 576px) {
-  .blog-post-page main > article,
-  .blog-list-page main article {
-    padding: 1.2rem;
-    border-radius: 0.85rem;
-  }
-
-  .blog-list-page main article::before {
-    top: 0.9rem;
-    bottom: 0.9rem;
+  .site-masthead .navbar__items--right {
+    gap: 0.5rem;
   }
 
   .markdown h2 {
     margin-top: 2rem;
-  }
-
-  .content-hub__entry {
-    padding: 1.2rem;
   }
 }
 

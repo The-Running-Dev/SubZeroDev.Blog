@@ -66,12 +66,12 @@ const config: Config = {
 
   themeConfig: {
     navbar: {
-      title: 'SubZeroDev Blog',
       items: [
         {
           to: '/',
           position: 'left',
-          label: 'Blog'
+          label: 'Latest',
+          exact: true
         },
         {
           to: '/archive/',
@@ -81,11 +81,12 @@ const config: Config = {
         {
           to: '/tags/',
           position: 'left',
-          label: 'Tags'
+          label: 'Topics'
         },
         {
           label: 'Series',
           position: 'left',
+          activeBasePath: '/series/',
           items: [
             {
               to: '/series/ai-assisted-engineering/',
@@ -110,8 +111,9 @@ const config: Config = {
           ]
         },
         {
-          label: 'Projects',
+          label: 'Builds',
           position: 'left',
+          activeBasePath: '/projects/',
           items: [
             {
               to: '/projects/game-engine/',
@@ -126,19 +128,43 @@ const config: Config = {
         {
           to: '/about/',
           position: 'left',
-          label: 'About Me'
+          label: 'About'
         },
         {
           type: 'docSidebar',
           sidebarId: 'docs',
           position: 'left',
           label: 'Docs'
+        },
+        {
+          href: 'https://subzerodev.com/',
+          position: 'right',
+          label: 'SubZeroDev.com'
+        },
+        {
+          href: 'https://blog.subzerodev.com/',
+          position: 'right',
+          label: 'Blog',
+          className: 'site-masthead__ecosystem-active'
+        },
+        {
+          href: 'https://github.com/The-Running-Dev?tab=repositories',
+          position: 'right',
+          label: 'Projects'
+        },
+        {
+          href: 'https://portfolio.subzerodev.com/',
+          position: 'right',
+          label: 'Portfolio'
         }
       ]
     },
+    // SubZeroDev.com's presentation layer defines one dark palette, not a
+    // light/dark pair -- the switch is disabled so the blog can't drift into
+    // a light theme this palette was never designed against.
     colorMode: {
       defaultMode: 'dark',
-      disableSwitch: false,
+      disableSwitch: true,
       respectPrefersColorScheme: false
     },
     footer: { style: 'dark', links: [] }
