@@ -160,6 +160,22 @@ foreach ($route in @('index.html', 'lucifer-discovers-recursive-bureaucracy/inde
     Assert-ArtifactContent -RelativePath $route -ExpectedText $mastheadRequiredText
 }
 
+# The footer bar mirrors the masthead's outbound group on the same
+# representative routes, so a Docusaurus theme upgrade or a reverted config
+# edit cannot silently collapse it back to its previous empty state.
+$footerRequiredText = @(
+    'class="footer',
+    'https://subzerodev.com/',
+    '>SubZeroDev.com<',
+    'https://blog.subzerodev.com/',
+    'https://github.com/The-Running-Dev?tab=repositories',
+    'https://portfolio.subzerodev.com/'
+)
+
+foreach ($route in @('index.html', 'lucifer-discovers-recursive-bureaucracy/index.html', 'about/index.html', 'docs/index.html')) {
+    Assert-ArtifactContent -RelativePath $route -ExpectedText $footerRequiredText
+}
+
 foreach ($permalink in $tagPermalinks) {
     Assert-ArtifactFile -RelativePath "tags/$permalink/index.html"
 }
