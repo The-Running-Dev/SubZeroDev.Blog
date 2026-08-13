@@ -167,7 +167,32 @@ const config: Config = {
       disableSwitch: true,
       respectPrefersColorScheme: false
     },
-    footer: { style: 'dark', links: [] }
+    // Mirrors the masthead's outbound group (same four links, same active
+    // marker) so the ecosystem row survives a scroll to the bottom of a
+    // long post. No quote or copyright: apexFooterQuote is apex-authored
+    // prose with no claim on this repository.
+    footer: {
+      style: 'dark',
+      links: [
+        {
+          href: 'https://subzerodev.com/',
+          label: 'SubZeroDev.com'
+        },
+        {
+          href: 'https://blog.subzerodev.com/',
+          label: 'Blog',
+          className: 'site-masthead__ecosystem-active'
+        },
+        {
+          href: 'https://github.com/The-Running-Dev?tab=repositories',
+          label: 'Projects'
+        },
+        {
+          href: 'https://portfolio.subzerodev.com/',
+          label: 'Portfolio'
+        }
+      ]
+    }
   } satisfies Preset.ThemeConfig
 };
 

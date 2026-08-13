@@ -276,6 +276,49 @@ body {
   background: var(--bg);
 }
 
+/* Infima's own `.footer__links` is `display: block` with plain inline text
+   flow; matching the masthead's `.navbar__items` (a real flex row) needs an
+   explicit flex container here rather than relying on that default. */
+.footer .footer__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(0.5rem, 1.5vw, var(--space-0));
+}
+
+/* The dot separators the Simple layout inserts between items read as list
+   punctuation; the masthead's outbound row uses gap-based spacing instead,
+   and this is the same row repeated. */
+.footer .footer__link-separator {
+  display: none;
+}
+
+.footer .footer__link-item {
+  color: var(--link);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  line-height: 1.4;
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.2em;
+  text-transform: uppercase;
+  transition: color 120ms ease;
+}
+
+.footer .footer__link-item:hover,
+.footer .footer__link-item:focus-visible,
+.footer .site-masthead__ecosystem-active {
+  color: var(--fg);
+}
+
+/* Same rationale as the masthead's svg suppression above: plain text links,
+   no Docusaurus external-link glyph. */
+.footer .footer__link-item > svg {
+  display: none;
+}
+
 main h1 {
   font-size: clamp(1.9rem, 3.6vw, 2.75rem);
   line-height: 1.05;
