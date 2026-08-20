@@ -4,7 +4,7 @@ slug: quick-question-became-44-work-units
 description: A week ago I asked an LLM how Jones in the Fast Lane worked. Somehow that became a deterministic game engine, a public landing page, a roadmap, and 44 completed work units.
 authors:
   - subzerodev
-date: 2026-08-03
+date: 2026-08-03T14:14:44Z
 tags:
   - game-engine
   - ai
@@ -29,6 +29,8 @@ Then I look at the commit history.
 Nope.
 
 One week.
+
+<!-- truncate -->
 
 ---
 
