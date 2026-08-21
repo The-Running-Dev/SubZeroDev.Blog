@@ -200,8 +200,12 @@ foreach ($route in $representativeRoutes) {
     $content = Get-ArtifactContent -RelativePath $route
     Assert-Content -Content $content -ExpectedText $mastheadRequiredText -Label "documentation artifact '$route'"
 
-    if ($content -notmatch '(?s)<footer\b[^>]*>(.*?)</footer>') {
-        throw "Expected documentation artifact '$route' to contain a <footer> element."
+    # Blog list pages also render a per-article <footer> (post tags), which a
+    # bare <footer>...</footer> match would find first. `theme-layout-footer`
+    # is the class @docusaurus/theme-classic puts only on the site-wide
+    # footer landmark, so anchor on that instead.
+    if ($content -notmatch '(?s)<footer\b[^>]*\btheme-layout-footer\b[^>]*>(.*?)</footer>') {
+        throw "Expected documentation artifact '$route' to contain the site footer (class ``theme-layout-footer``)."
     }
     Assert-Content -Content $Matches[1] -ExpectedText $footerLinkText -Label "documentation artifact '$route' footer"
 }
