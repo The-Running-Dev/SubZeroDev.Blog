@@ -18,6 +18,10 @@ coverage/
 artifacts/
 build-output/
 dist/
+# tools/git-service-consumer's compiled registry artifact -- regenerable via
+# tools/git-service-consumer/scripts/build-registry.ts, same convention as
+# SubZeroDev.GitService's own gitignored build/.
+tools/git-service-consumer/build/
 
 # Per-machine Claude Code settings; the tracked settings.json is deliberate
 .claude/settings.local.json

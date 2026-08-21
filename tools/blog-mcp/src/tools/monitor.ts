@@ -8,14 +8,15 @@ import { listPostFiles, loadPost } from '../domain/validate.js';
 import { canonicalUrl } from '../domain/post.js';
 import { wrapTool, type ToolContext } from './context.js';
 
-const DEFAULT_POLL_SECONDS = 15;
+export const DEFAULT_POLL_SECONDS = 15;
 const MAX_TIMEOUT_SECONDS = 1800;
 
-function clampTimeout(requested: number | undefined, fallback: number): number {
+/** Exported (unchanged) for tools/git-service-consumer/extra-declarations.ts's wait_for_merge/wait_for_deploy -- S20's cutover reuses this poll/timeout shape rather than reimplementing it. */
+export function clampTimeout(requested: number | undefined, fallback: number): number {
   return Math.min(requested ?? fallback, MAX_TIMEOUT_SECONDS);
 }
 
-function sleep(ms: number): Promise<void> {
+export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
@@ -68,13 +69,13 @@ export async function checkStatus(ctx: ToolContext, ref: string, required: strin
   return { ref, checks, requiredMissing, requiredFailed, allRequiredPassed };
 }
 
-interface PrMergeView {
+export interface PrMergeView {
   state: string;
   mergeCommit: { oid: string } | null;
   mergedAt: string | null;
 }
 
-interface DeployRun {
+export interface DeployRun {
   databaseId: number;
   headSha: string;
   status: string;
@@ -82,7 +83,8 @@ interface DeployRun {
   url: string;
 }
 
-async function deployStatus(ctx: ToolContext, mergeCommitSha: string): Promise<{ found: boolean; run?: DeployRun }> {
+/** Exported (unchanged) for tools/git-service-consumer/extra-declarations.ts's deploy_status/wait_for_deploy -- see the DEFAULT_POLL_SECONDS export note above. */
+export async function deployStatus(ctx: ToolContext, mergeCommitSha: string): Promise<{ found: boolean; run?: DeployRun }> {
   const runs = await ghJson<DeployRun[]>(
     ['run', 'list', '--workflow', ctx.config.deployWorkflow, '--json', 'databaseId,headSha,status,conclusion,url', '--limit', '30'],
     { repoRoot: ctx.repoRoot }
@@ -364,13 +366,13 @@ export function registerMonitorTools(ctx: ToolContext): void {
   );
 }
 
-interface FetchResult {
+export interface FetchResult {
   status: number;
   body: string;
 }
 
-/** Follows at most maxRedirects hops manually so a redirect chain can never be unbounded. */
-async function fetchWithBoundedRedirects(url: string, maxRedirects: number): Promise<FetchResult> {
+/** Exported (unchanged) for tools/git-service-consumer/extra-declarations.ts's publish_report -- see the DEFAULT_POLL_SECONDS export note above. Follows at most maxRedirects hops manually so a redirect chain can never be unbounded. */
+export async function fetchWithBoundedRedirects(url: string, maxRedirects: number): Promise<FetchResult> {
   let current = url;
   for (let hop = 0; hop <= maxRedirects; hop++) {
     const response = await fetch(current, {
