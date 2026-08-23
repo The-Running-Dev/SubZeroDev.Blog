@@ -170,8 +170,11 @@ body {
   border-top: 1px solid var(--rule);
 }
 
+/* Shared with the footer's outbound link row below (.footer .footer__link-item)
+   -- same mono-uppercase-underline treatment, one place to change both. */
 .site-masthead .navbar__link,
-.site-masthead .navbar__item {
+.site-masthead .navbar__item,
+.footer .footer__link-item {
   padding: 0;
   color: var(--link);
   font-family: var(--font-mono);
@@ -189,7 +192,10 @@ body {
 .site-masthead .navbar__link:hover,
 .site-masthead .navbar__link:focus-visible,
 .site-masthead .navbar__link--active,
-.site-masthead .site-masthead__ecosystem-active {
+.site-masthead .site-masthead__ecosystem-active,
+.footer .footer__link-item:hover,
+.footer .footer__link-item:focus-visible,
+.footer .site-masthead__ecosystem-active {
   background: transparent;
   color: var(--fg);
 }
@@ -202,8 +208,10 @@ body {
 }
 
 /* The apex header renders plain text links. Docusaurus adds an external-link
-   glyph automatically; hiding it here keeps the shared link row identical. */
-.site-masthead .navbar__link > svg {
+   glyph automatically; hiding it here keeps the shared link row identical.
+   Applies to the footer's mirrored row too (.footer .footer__link-item). */
+.site-masthead .navbar__link > svg,
+.footer .footer__link-item > svg {
   display: none;
 }
 
@@ -290,32 +298,6 @@ body {
    punctuation; the masthead's outbound row uses gap-based spacing instead,
    and this is the same row repeated. */
 .footer .footer__link-separator {
-  display: none;
-}
-
-.footer .footer__link-item {
-  color: var(--link);
-  font-family: var(--font-mono);
-  font-size: var(--step--1);
-  font-weight: 400;
-  letter-spacing: 0.1em;
-  line-height: 1.4;
-  text-decoration: underline;
-  text-decoration-thickness: 0.08em;
-  text-underline-offset: 0.2em;
-  text-transform: uppercase;
-  transition: color 120ms ease;
-}
-
-.footer .footer__link-item:hover,
-.footer .footer__link-item:focus-visible,
-.footer .site-masthead__ecosystem-active {
-  color: var(--fg);
-}
-
-/* Same rationale as the masthead's svg suppression above: plain text links,
-   no Docusaurus external-link glyph. */
-.footer .footer__link-item > svg {
   display: none;
 }
 

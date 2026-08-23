@@ -54,6 +54,35 @@ function Assert-ArtifactFile {
     }
 }
 
+function Get-ArtifactContent {
+    param (
+        [Parameter(Mandatory)]
+        [string] $RelativePath
+    )
+
+    $fullPath = Join-Path $output $RelativePath
+    return Get-Content -LiteralPath $fullPath -Raw
+}
+
+function Assert-Content {
+    param (
+        [Parameter(Mandatory)]
+        [string] $Content,
+
+        [Parameter(Mandatory)]
+        [string[]] $ExpectedText,
+
+        [Parameter(Mandatory)]
+        [string] $Label
+    )
+
+    foreach ($text in $ExpectedText) {
+        if (-not $Content.Contains($text)) {
+            throw "Expected $Label to contain '$text'."
+        }
+    }
+}
+
 function Assert-ArtifactContent {
     param (
         [Parameter(Mandatory)]
@@ -63,13 +92,8 @@ function Assert-ArtifactContent {
         [string[]] $ExpectedText
     )
 
-    $fullPath = Join-Path $output $RelativePath
-    $content = Get-Content -LiteralPath $fullPath -Raw
-    foreach ($text in $ExpectedText) {
-        if (-not $content.Contains($text)) {
-            throw "Expected documentation artifact '$RelativePath' to contain '$text'."
-        }
-    }
+    $content = Get-ArtifactContent -RelativePath $RelativePath
+    Assert-Content -Content $content -ExpectedText $ExpectedText -Label "documentation artifact '$RelativePath'"
 }
 
 # Line-based extraction with optional trailing YAML comments. A tag entry
@@ -156,15 +180,15 @@ $mastheadRequiredText = @(
     '>Docs</a>'
 )
 
-foreach ($route in @('index.html', 'lucifer-discovers-recursive-bureaucracy/index.html', 'about/index.html', 'docs/index.html')) {
-    Assert-ArtifactContent -RelativePath $route -ExpectedText $mastheadRequiredText
-}
+$representativeRoutes = @('index.html', 'lucifer-discovers-recursive-bureaucracy/index.html', 'about/index.html', 'docs/index.html')
 
 # The footer bar mirrors the masthead's outbound group on the same
 # representative routes, so a Docusaurus theme upgrade or a reverted config
-# edit cannot silently collapse it back to its previous empty state.
-$footerRequiredText = @(
-    'class="footer',
+# edit cannot silently collapse it back to its previous empty state. Checked
+# against the <footer> element's own markup, not the whole page -- the four
+# links are also required page-wide by $mastheadRequiredText, so a page-wide
+# check here couldn't tell a correctly-populated footer from an empty one.
+$footerLinkText = @(
     'https://subzerodev.com/',
     '>SubZeroDev.com<',
     'https://blog.subzerodev.com/',
@@ -172,8 +196,18 @@ $footerRequiredText = @(
     'https://portfolio.subzerodev.com/'
 )
 
-foreach ($route in @('index.html', 'lucifer-discovers-recursive-bureaucracy/index.html', 'about/index.html', 'docs/index.html')) {
-    Assert-ArtifactContent -RelativePath $route -ExpectedText $footerRequiredText
+foreach ($route in $representativeRoutes) {
+    $content = Get-ArtifactContent -RelativePath $route
+    Assert-Content -Content $content -ExpectedText $mastheadRequiredText -Label "documentation artifact '$route'"
+
+    # Blog list pages also render a per-article <footer> (post tags), which a
+    # bare <footer>...</footer> match would find first. `theme-layout-footer`
+    # is the class @docusaurus/theme-classic puts only on the site-wide
+    # footer landmark, so anchor on that instead.
+    if ($content -notmatch '(?s)<footer\b[^>]*\btheme-layout-footer\b[^>]*>(.*?)</footer>') {
+        throw "Expected documentation artifact '$route' to contain the site footer (class ``theme-layout-footer``)."
+    }
+    Assert-Content -Content $Matches[1] -ExpectedText $footerLinkText -Label "documentation artifact '$route' footer"
 }
 
 foreach ($permalink in $tagPermalinks) {

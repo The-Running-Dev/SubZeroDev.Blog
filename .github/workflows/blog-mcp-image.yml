@@ -292,11 +292,13 @@ jobs:
               run: npm ci
               working-directory: tools/blog-mcp/ui
 
+            # verification: true
             - name: Build server (tsc)
               run: npm run build
 
             # npm test's own pretest hook builds the UI (npm run build:ui) --
             # see tools/blog-mcp/package.json.
+            # verification: true
             - name: Run test suite
               run: npm test
 
@@ -306,10 +308,12 @@ jobs:
             # root regardless, but running them from the root keeps that
             # explicit rather than relying on the self-location fallback.
             # pwsh is preinstalled on ubuntu-latest.
+            # verification: true
             - name: Run change-area classifier fixtures
               run: pwsh -NoProfile -File ./build/Test-WorkflowChangeAreas.ps1
               working-directory: ${{ github.workspace }}
 
+            # verification: true
             - name: Verify image contract (Dockerfile / .dockerignore / classifier parity)
               run: pwsh -NoProfile -File ./build/Test-BlogMcpImageContract.ps1
               working-directory: ${{ github.workspace }}
@@ -551,6 +555,7 @@ jobs:
             # profiles, leaving half of each file unvalidated. Safe to print
             # the resolved config unquieted: every value in play comes from
             # the fixture file, never a real secret.
+            # verification: true
             - name: Validate deployment Compose file
               run: >-
                   docker compose
@@ -563,6 +568,7 @@ jobs:
             # path that `build: context: .`, `env_file: .env`, and the
             # ./watch bind mount resolve against, but Compose's file
             # discovery still starts from the current directory.
+            # verification: true
             - name: Validate local-development Compose file
               run: >-
                   docker compose

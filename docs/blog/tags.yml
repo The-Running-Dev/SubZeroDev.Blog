@@ -152,3 +152,8 @@ subzerodev:
   label: SubZeroDev
   permalink: /subzerodev
   description: "The SubZeroDev ecosystem — the engine, the agents, the git tooling, and the platform underneath them."
+
+react:
+  label: React
+  permalink: /react
+  description: Building, composing, and abusing React components and the tooling around them.

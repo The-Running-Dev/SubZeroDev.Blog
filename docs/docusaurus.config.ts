@@ -8,6 +8,30 @@ import type * as Preset from '@docusaurus/preset-classic';
  *
  * Site identity and route contract for the custom-domain deployment.
  */
+
+// The masthead's right-aligned outbound group and the footer's link row are
+// the same four links to the same destinations -- one source list so an edit
+// to a URL or label can't update one and silently miss the other.
+const ecosystemLinks: Array<{ href: string; label: string; className?: string }> = [
+  {
+    href: 'https://subzerodev.com/',
+    label: 'SubZeroDev.com'
+  },
+  {
+    href: 'https://blog.subzerodev.com/',
+    label: 'Blog',
+    className: 'site-masthead__ecosystem-active'
+  },
+  {
+    href: 'https://github.com/The-Running-Dev?tab=repositories',
+    label: 'Projects'
+  },
+  {
+    href: 'https://portfolio.subzerodev.com/',
+    label: 'Portfolio'
+  }
+];
+
 const config: Config = {
   title: 'SubZeroDev Blog',
   tagline: 'The source and project documentation for the SubZeroDev technical blog.',
@@ -136,27 +160,7 @@ const config: Config = {
           position: 'left',
           label: 'Docs'
         },
-        {
-          href: 'https://subzerodev.com/',
-          position: 'right',
-          label: 'SubZeroDev.com'
-        },
-        {
-          href: 'https://blog.subzerodev.com/',
-          position: 'right',
-          label: 'Blog',
-          className: 'site-masthead__ecosystem-active'
-        },
-        {
-          href: 'https://github.com/The-Running-Dev?tab=repositories',
-          position: 'right',
-          label: 'Projects'
-        },
-        {
-          href: 'https://portfolio.subzerodev.com/',
-          position: 'right',
-          label: 'Portfolio'
-        }
+        ...ecosystemLinks.map((link) => ({ ...link, position: 'right' as const }))
       ]
     },
     // SubZeroDev.com's presentation layer defines one dark palette, not a
@@ -173,25 +177,7 @@ const config: Config = {
     // prose with no claim on this repository.
     footer: {
       style: 'dark',
-      links: [
-        {
-          href: 'https://subzerodev.com/',
-          label: 'SubZeroDev.com'
-        },
-        {
-          href: 'https://blog.subzerodev.com/',
-          label: 'Blog',
-          className: 'site-masthead__ecosystem-active'
-        },
-        {
-          href: 'https://github.com/The-Running-Dev?tab=repositories',
-          label: 'Projects'
-        },
-        {
-          href: 'https://portfolio.subzerodev.com/',
-          label: 'Portfolio'
-        }
-      ]
+      links: ecosystemLinks
     }
   } satisfies Preset.ThemeConfig
 };
