@@ -4,6 +4,7 @@ import { composeAndStart } from '../../../SubZeroDev.GitService/src/composition-
 import { toModuleHandler } from '../../../SubZeroDev.GitService/src/module-adapter/module-adapter.ts';
 import { EXTRA_TOOL_DECLARATIONS, EXTRA_MODULE_HANDLERS } from './declarations.ts';
 import { EXTRA_GIT_UTILITY_DECLARATIONS, EXTRA_GIT_UTILITY_MODULE_HANDLERS } from './extra-declarations.ts';
+import { WATCHED_POST_TOOL_DECLARATIONS, WATCHED_POST_MODULE_HANDLERS } from './watched-post.ts';
 
 /**
  * S20's composition root for the blog's derived image: calls the base's
@@ -21,9 +22,10 @@ await composeAndStart({
   // published console package (registers the blog's post-list and compose
   // screens) rather than the base's unmodified one S20 used.
   consoleDir: path.join(repoRoot, 'tools', 'git-service-consumer', 'console', 'dist'),
-  extraToolDeclarations: [...EXTRA_TOOL_DECLARATIONS, ...EXTRA_GIT_UTILITY_DECLARATIONS],
+  extraToolDeclarations: [...EXTRA_TOOL_DECLARATIONS, ...EXTRA_GIT_UTILITY_DECLARATIONS, ...WATCHED_POST_TOOL_DECLARATIONS],
   extraModuleHandlers: [
     ...EXTRA_MODULE_HANDLERS.map(({ target, handler }) => ({ target, handler: toModuleHandler(handler as never) })),
     ...EXTRA_GIT_UTILITY_MODULE_HANDLERS.map(({ target, handler }) => ({ target, handler: toModuleHandler(handler as never) })),
+    ...WATCHED_POST_MODULE_HANDLERS.map(({ target, handler }) => ({ target, handler: toModuleHandler(handler as never) })),
   ],
 });
