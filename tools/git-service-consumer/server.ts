@@ -15,15 +15,12 @@ import { EXTRA_GIT_UTILITY_DECLARATIONS, EXTRA_GIT_UTILITY_MODULE_HANDLERS } fro
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-const gitserviceRoot = path.resolve(repoRoot, '..', 'SubZeroDev.GitService');
-
 await composeAndStart({
   buildDir: path.join(repoRoot, 'tools', 'git-service-consumer', 'build'),
-  // The base's own, unmodified console bundle (S20 adds no new views --
-  // that is S37's job) -- the sibling checkout's own built console, the
-  // same sibling-checkout convention the *.ts import specifiers already
-  // use (2026-08-21 decision log entry).
-  consoleDir: path.join(gitserviceRoot, 'console', 'dist'),
+  // S37: this workspace's own console bundle, consuming the base's
+  // published console package (registers the blog's post-list and compose
+  // screens) rather than the base's unmodified one S20 used.
+  consoleDir: path.join(repoRoot, 'tools', 'git-service-consumer', 'console', 'dist'),
   extraToolDeclarations: [...EXTRA_TOOL_DECLARATIONS, ...EXTRA_GIT_UTILITY_DECLARATIONS],
   extraModuleHandlers: [
     ...EXTRA_MODULE_HANDLERS.map(({ target, handler }) => ({ target, handler: toModuleHandler(handler as never) })),
