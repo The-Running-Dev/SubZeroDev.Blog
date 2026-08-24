@@ -32,10 +32,11 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 COPY --from=gitservice tsconfig.json ./
 COPY --from=gitservice scripts ./scripts
 COPY --from=gitservice src ./src
+# Not built here (S37 builds this workspace's own console below, on top of
+# it) -- present only as the sibling-checkout target this workspace's own
+# console package.json resolves its `@subzerodev-git/console` `file:`
+# dependency against.
 COPY --from=gitservice console ./console
-# The base's own, unmodified console -- S20 adds no new views (that is
-# S37's job); this consumer just needs a valid, boot-verifiable bundle.
-RUN npm run build:console
 
 # The blog repository (this Dockerfile's own build context).
 WORKDIR /repos/SubZeroDev.Blog-S20
@@ -50,6 +51,17 @@ COPY tools/git-service-consumer/declarations.ts ./tools/git-service-consumer/dec
 COPY tools/git-service-consumer/extra-declarations.ts ./tools/git-service-consumer/extra-declarations.ts
 COPY tools/git-service-consumer/scripts ./tools/git-service-consumer/scripts
 RUN node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/git-service-consumer/scripts/build-registry.ts
+
+# S37: this workspace's own console -- the blog's post-list and compose
+# screens, registered on top of the base's published console package (its
+# source is already present above, at /repos/SubZeroDev.GitService/console,
+# which this workspace's own package.json resolves its `file:` dependency
+# against).
+COPY tools/git-service-consumer/console/package.json tools/git-service-consumer/console/package-lock.json ./tools/git-service-consumer/console/
+RUN --mount=type=cache,target=/root/.npm npm ci --prefix tools/git-service-consumer/console
+COPY tools/git-service-consumer/console/tsconfig.json tools/git-service-consumer/console/vite.config.ts tools/git-service-consumer/console/index.html ./tools/git-service-consumer/console/
+COPY tools/git-service-consumer/console/src ./tools/git-service-consumer/console/src
+RUN node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/git-service-consumer/scripts/build-console-manifest.ts
 
 FROM builder AS trimmed
 RUN rm -f /repos/SubZeroDev.GitService/src/contract/compiler.ts
@@ -79,7 +91,6 @@ WORKDIR /repos/SubZeroDev.GitService
 COPY --from=gitservice package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY --from=trimmed /repos/SubZeroDev.GitService/src ./src
-COPY --from=builder /repos/SubZeroDev.GitService/console/dist ./console/dist
 
 WORKDIR /repos/SubZeroDev.Blog-S20
 COPY tools/blog-mcp/package.json ./tools/blog-mcp/package.json
@@ -89,6 +100,10 @@ COPY --from=trimmed /repos/SubZeroDev.Blog-S20/tools/git-service-consumer/server
 COPY --from=trimmed /repos/SubZeroDev.Blog-S20/tools/git-service-consumer/declarations.ts ./tools/git-service-consumer/declarations.ts
 COPY --from=trimmed /repos/SubZeroDev.Blog-S20/tools/git-service-consumer/extra-declarations.ts ./tools/git-service-consumer/extra-declarations.ts
 COPY --from=builder /repos/SubZeroDev.Blog-S20/tools/git-service-consumer/build ./tools/git-service-consumer/build
+# S37: this workspace's own built console (blog screens included), not the
+# base's unmodified one -- the base's own console/dist is no longer copied
+# into this runtime image at all.
+COPY --from=builder /repos/SubZeroDev.Blog-S20/tools/git-service-consumer/console/dist ./tools/git-service-consumer/console/dist
 
 ENV VOLUME_ROOT=/data
 ENV CREDENTIAL_MOUNT_ROOT=/credentials
