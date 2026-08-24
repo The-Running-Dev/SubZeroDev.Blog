@@ -228,3 +228,11 @@ export function enableAutoMerge(declarationId: string, number: number): Promise<
 export function prStatus(declarationId: string, number: number): Promise<{ status: PullRequestStatus }> {
   return dispatch(declarationId, 'pr_status', { number });
 }
+
+export function reconcileAfterMerge(
+  declarationId: string,
+  pullRequestNumber: number,
+  expectedHeadSha: string | null,
+): Promise<{ baseBranch: string; baseSha: string; mergeCommitSha: string; deletedBranch: string | null }> {
+  return dispatch(declarationId, 'reconcile_after_merge', { pullRequestNumber, expectedHeadSha });
+}

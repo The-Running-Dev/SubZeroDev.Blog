@@ -15,7 +15,7 @@ export const BLOG_VIEWS: readonly ConsoleViewRegistration[] = [
   {
     id: 'blog-posts',
     title: 'Blog posts',
-    capabilities: ['content.post.read'],
+    capabilities: ['content.post.read', 'content.post.write'],
     render: (props) => <BlogPostsView {...props} />,
   },
   {

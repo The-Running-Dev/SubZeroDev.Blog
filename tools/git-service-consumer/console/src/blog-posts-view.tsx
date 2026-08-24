@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ConsoleViewProps } from '@subzerodev-git/console';
-import { commit, deletePost, listPosts, openPullRequest, prepareBranch, push, stagePaths, type PostSummary } from './lib/tool-api.ts';
+import { commit, deletePost, listPosts, openPullRequest, prepareBranch, push, type PostSummary } from './lib/tool-api.ts';
 import Table from './lib/Table.tsx';
 import { formatDate } from './lib/format-date.ts';
 
@@ -44,8 +44,9 @@ export default function BlogPostsView({ declarationId }: ConsoleViewProps) {
     setError(null);
     try {
       const branchResult = await prepareBranch(declarationId, `blog/${slug}`);
-      const deleteResult = await deletePost(declarationId, slug);
-      await stagePaths(declarationId, [deleteResult.path]);
+      // delete_post runs `git rm -f`, which deletes and stages the removal in one step -- staging it
+      // again here would fail (`git add` on a path already removed from the index and working tree).
+      await deletePost(declarationId, slug);
       const commitResult = await commit(declarationId, `chore(blog): remove ${slug}`);
       const pushResult = await push(declarationId, commitResult.branch ?? branchResult.branch);
       const { ref } = await openPullRequest(declarationId, `Remove ${slug}`, 'Deletion published via the console.', pushResult.branch);

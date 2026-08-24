@@ -14,7 +14,9 @@ import {
   openPullRequest,
   parseMarkdown,
   prepareBranch,
+  prStatus,
   push,
+  reconcileAfterMerge,
   stagePaths,
   updatePost,
   type AuthorRecord,
@@ -71,10 +73,16 @@ function titleCaseFromKey(key: string): string {
  * same order blog-mcp's own `/api/*` sequence used.
  *
  * Dropped from the original: the `/compose/:slug` route prefill (no router
- * -- `ConsoleViewProps` carries only `declarationId`) and the cross-check
- * `headSha` on auto-merge (`pr_enable_auto_merge`'s input is `{ number }`
- * only, `production-declarations.ts:732-744` -- the base tool has no
- * equivalent of blog-mcp's own expected-SHA guard).
+ * -- `ConsoleViewProps` carries only `declarationId`). The `headSha`
+ * cross-check on auto-merge is reconstructed client-side instead of dropped:
+ * `pr_enable_auto_merge`'s own input is `{ number }` only
+ * (`production-declarations.ts:732-744` -- the base tool has no equivalent
+ * of blog-mcp's own expected-SHA guard), so `handlePublish` calls `pr_status`
+ * immediately before enabling auto-merge and compares its `headSha` against
+ * the sha `git_push` just returned, skipping auto-merge (rather than racing
+ * it) if the branch moved in between. Post-merge reconciliation is also
+ * wired up via the base's `reconcile_after_merge` composite, called from
+ * `onPrMerged` with the last pushed `headSha` as its expected-sha guard.
  */
 export default function BlogComposeView({ declarationId }: ConsoleViewProps) {
   const [existingSlugs, setExistingSlugs] = useState<string[]>([]);
@@ -104,6 +112,7 @@ export default function BlogComposeView({ declarationId }: ConsoleViewProps) {
 
   const [exists, setExists] = useState(false);
   const [pr, setPr] = useState<number | null>(null);
+  const [pushHeadSha, setPushHeadSha] = useState<string | null>(null);
   const [log, setLog] = useState<LogLine[]>([]);
   const [isPublishing, setIsPublishing] = useState(false);
   const [autoMerge, setAutoMerge] = useState(true);
@@ -116,9 +125,16 @@ export default function BlogComposeView({ declarationId }: ConsoleViewProps) {
     setLog((prev) => [...prev, { text, isError }]);
   }, []);
 
-  const onPrMerged = useCallback(() => {
-    logLine('Merged. Nothing further to reconcile from this screen.');
-  }, [logLine]);
+  const onPrMerged = useCallback(async () => {
+    if (pr === null) return;
+    try {
+      const result = await reconcileAfterMerge(declarationId, pr, pushHeadSha);
+      logLine(`Reconciled: local base fast-forwarded to ${result.mergeCommitSha}${result.deletedBranch ? `, deleted branch '${result.deletedBranch}'` : ''}.`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      logLine(`Merged, but reconciling the local branch afterward failed: ${message}`, true);
+    }
+  }, [declarationId, pr, pushHeadSha, logLine]);
   usePrWatcher(declarationId, pr, logLine, onPrMerged);
 
   const dismissLog = useCallback((index: number) => {
@@ -447,16 +463,29 @@ export default function BlogComposeView({ declarationId }: ConsoleViewProps) {
 
       logLine('Pushing...');
       const pushResult = await push(declarationId, commitResult.branch);
+      setPushHeadSha(pushResult.headSha);
 
       logLine('Opening pull request...');
       const { ref } = await openPullRequest(declarationId, `${exists ? 'Update' : 'Add'} ${title || trimmedSlug}`, 'Published via the console.', pushResult.branch);
+      if (pr !== null && pr !== ref.number) {
+        logLine(`No longer watching PR #${pr} from an earlier publish in this session -- check its status directly if it hasn't merged yet.`, true);
+      }
       setPr(ref.number);
       logLine(`Opened PR #${ref.number}: ${ref.url}`);
 
       if (autoMerge) {
-        logLine('Enabling auto-merge...');
-        const autoMergeResult = await enableAutoMerge(declarationId, ref.number);
-        logLine(`Auto-merge enabled: ${autoMergeResult.autoMergeEnabled}`);
+        logLine('Verifying the PR head is still what was pushed...');
+        const { status } = await prStatus(declarationId, ref.number);
+        if (status.headSha !== pushResult.headSha) {
+          logLine(
+            `PR head changed since push (expected ${pushResult.headSha}, found ${status.headSha}) -- someone else may have pushed. Skipping auto-merge; enable it manually after reviewing the new commits.`,
+            true,
+          );
+        } else {
+          logLine('Enabling auto-merge...');
+          const autoMergeResult = await enableAutoMerge(declarationId, ref.number);
+          logLine(`Auto-merge enabled: ${autoMergeResult.autoMergeEnabled}`);
+        }
       }
 
       resetForm();
