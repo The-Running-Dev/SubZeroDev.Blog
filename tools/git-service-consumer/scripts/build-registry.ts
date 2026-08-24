@@ -6,6 +6,7 @@ import { compiler } from '../../../../SubZeroDev.GitService/src/contract/compile
 import { PRODUCTION_TOOL_DECLARATIONS } from '../../../../SubZeroDev.GitService/src/composition-root/production-declarations.ts';
 import { EXTRA_TOOL_DECLARATIONS } from '../declarations.ts';
 import { EXTRA_GIT_UTILITY_DECLARATIONS } from '../extra-declarations.ts';
+import { WATCHED_POST_TOOL_DECLARATIONS } from '../watched-post.ts';
 
 /**
  * S20.7: compiles `PRODUCTION_TOOL_DECLARATIONS` unioned with this
@@ -24,7 +25,7 @@ function fail(message: string): never {
   process.exit(1);
 }
 
-const extraDeclarations = [...EXTRA_TOOL_DECLARATIONS, ...EXTRA_GIT_UTILITY_DECLARATIONS];
+const extraDeclarations = [...EXTRA_TOOL_DECLARATIONS, ...EXTRA_GIT_UTILITY_DECLARATIONS, ...WATCHED_POST_TOOL_DECLARATIONS];
 const declarations = [...PRODUCTION_TOOL_DECLARATIONS, ...extraDeclarations];
 const result = compiler.compile(declarations);
 if (!result.ok) {
@@ -49,6 +50,6 @@ await writeFile(path.join(buildDir, 'registry.json.sha256'), `${registryHash}\n`
 
 await writeFile(path.join(buildDir, 'registry.md'), result.value.documentation.markdown, 'utf8');
 
-console.log(`git-service-consumer build-registry: base tools: ${PRODUCTION_TOOL_DECLARATIONS.length}, blog tools: ${extraDeclarations.length} (16 content-authoring + 5 git-utility), total: ${declarations.length}`);
+console.log(`git-service-consumer build-registry: base tools: ${PRODUCTION_TOOL_DECLARATIONS.length}, blog tools: ${extraDeclarations.length} (16 content-authoring + 5 git-utility + 2 file-watcher), total: ${declarations.length}`);
 console.log(`git-service-consumer build-registry: emitted ${registryPath}`);
 console.log(`git-service-consumer build-registry: registry fingerprint: ${result.value.fingerprint}`);
