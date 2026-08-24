@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 // ---- GitService contract types (base) --------------------------------------
@@ -7,7 +8,7 @@ import { repoRelativePath } from '../../../SubZeroDev.GitService/src/shared/bran
 import type { ToolDeclaration } from '../../../SubZeroDev.GitService/src/contract/tool-declaration.ts';
 import type { CallContext } from '../../../SubZeroDev.GitService/src/shared/call-context.ts';
 import type { Diagnostics, ToolResult } from '../../../SubZeroDev.GitService/src/result/envelope.ts';
-import { success, validation, authorization, infrastructure } from '../../../SubZeroDev.GitService/src/result/envelope.ts';
+import { success, validation, precondition, authorization, infrastructure } from '../../../SubZeroDev.GitService/src/result/envelope.ts';
 import type { FileWatcherApplyData, FileWatcherApplyInput, FileWatcherPlanData, FileWatcherPlanInput } from '../../../SubZeroDev.GitService/src/watcher/types.ts';
 
 // ---- blog-mcp domain functions (reused, not reimplemented) -----------------
@@ -35,6 +36,19 @@ import { writeFilesAtomically } from '../blog-mcp/dist/domain/atomicWrite.js';
  * clone.
  */
 const BLOG_DIR = 'docs/blog';
+
+/**
+ * Copied from `blog-mcp/src/domain/validate.ts`'s own `SLUG_PATTERN` and
+ * `FILENAME_PATTERN` date prefix -- neither is exported there for a consumer
+ * to import. Presence alone is not enough for these two fields: `slug`
+ * becomes a git branch name (`watcher/post-<slug>`) and `date` becomes the
+ * filename's date prefix (`buildFilename` slices the first ten characters
+ * verbatim), so a value this plan tool accepts but git or the blog's own
+ * validator rejects would reach `prepare_branch`, or open a pull request for
+ * a file the blog reports as malformed.
+ */
+const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const DATE_PREFIX_PATTERN = /^\d{4}-\d{2}-\d{2}/;
 
 function diag(ctx: CallContext, durationMs = 0): Diagnostics {
   return { operationId: ctx.operationId, declarationId: ctx.declarationId, generation: ctx.generation, durationMs };
@@ -136,6 +150,11 @@ async function watchedPostPlanHandler(ctx: CallContext, input: FileWatcherPlanIn
   if (typeof fm.slug !== 'string' || fm.slug.length === 0) missing.push('slug');
   if (typeof fm.date !== 'string' || fm.date.length === 0) missing.push('date');
   if (!Array.isArray(fm.tags) || fm.tags.length === 0 || !fm.tags.every((t) => typeof t === 'string')) missing.push('tags');
+  // `authors` is one of blog-mcp's own REQUIRED_FIELDS
+  // (`src/domain/validate.ts`); a post published without it is one the
+  // blog's validator reports as incomplete, so the watcher refuses it here
+  // rather than opening a pull request for it.
+  if (!Array.isArray(fm.authors) || fm.authors.length === 0 || !fm.authors.every((a) => typeof a === 'string')) missing.push('authors');
 
   if (missing.length > 0) {
     return validation(
@@ -143,7 +162,7 @@ async function watchedPostPlanHandler(ctx: CallContext, input: FileWatcherPlanIn
       missing.map((field) => ({
         path: field,
         rule: 'RequiredFrontMatterField',
-        message: `'${field}' is required and must be a non-empty ${field === 'tags' ? 'array of strings' : 'string'}.`,
+        message: `'${field}' is required and must be a non-empty ${field === 'tags' || field === 'authors' ? 'array of strings' : 'string'}.`,
       })),
     );
   }
@@ -151,6 +170,17 @@ async function watchedPostPlanHandler(ctx: CallContext, input: FileWatcherPlanIn
   const slug = fm.slug as string;
   const title = fm.title as string;
   const date = fm.date as string;
+
+  if (!SLUG_PATTERN.test(slug)) {
+    return validation(`'${input.sourceFile}' has slug '${slug}', which is not lowercase kebab-case.`, [
+      { path: 'slug', rule: 'Slug', message: `Slug '${slug}' must be lowercase kebab-case with no slashes -- it also becomes this post's branch name.` },
+    ]);
+  }
+  if (!DATE_PREFIX_PATTERN.test(date)) {
+    return validation(`'${input.sourceFile}' has date '${date}', which does not start with YYYY-MM-DD.`, [
+      { path: 'date', rule: 'Date', message: `Date '${date}' must start with YYYY-MM-DD -- it becomes the post filename's date prefix.` },
+    ]);
+  }
 
   const filename = buildFilename(date, slug);
   const targetPath = `${BLOG_DIR}/${filename}`;
@@ -211,7 +241,19 @@ const WATCHED_POST_APPLY_OUTPUT_SCHEMA = {
  * separate dispatched tool calls after this returns.
  */
 async function watchedPostApplyHandler(ctx: CallContext, input: FileWatcherApplyInput<WatchedPostPlan>): Promise<ToolResult<FileWatcherApplyData>> {
-  const candidatePaths = [...new Set<string>([...(input.permittedPaths as unknown as readonly string[]), input.plan.path])];
+  const permitted = input.permittedPaths as unknown as readonly string[];
+  if (!permitted.includes(input.plan.path)) {
+    // The watcher's own protocol (`src/watcher/watcher.ts`) rejects the run
+    // after this returns if what was written is not a subset of the plan's
+    // permitted paths -- but only after the write has already dirtied the
+    // clone, which then stalls every later tick at `clone-not-clean`.
+    // Refusing here keeps the working tree untouched.
+    return validation(`'${input.plan.path}' is not among the plan's permitted paths.`, [
+      { path: input.plan.path, rule: 'PlanPathPermitted', message: 'The plan\'s path must be one of permittedPaths.' },
+    ]);
+  }
+
+  const candidatePaths = [...new Set<string>([...permitted, input.plan.path])];
   const validated: RepoRelativePath[] = [];
 
   for (const rawPath of candidatePaths) {
@@ -230,7 +272,27 @@ async function watchedPostApplyHandler(ctx: CallContext, input: FileWatcherApply
   if (!root.ok) return root.result;
 
   const absolutePath = path.join(root.repoRoot, input.plan.path);
-  writeFilesAtomically([{ absolutePath, content: input.plan.content }]);
+  try {
+    // A byte-identical file already in the working tree means this write
+    // changes nothing, so the `repo_status` observation `runProtocol`
+    // (`src/watcher/watcher.ts`) takes right after this returns would see no
+    // changed paths and reject the run with 'the independently observed
+    // changed paths do not equal the apply result' -- a message about the
+    // symptom, not the cause. Report the cause here instead, before writing.
+    if (existsSync(absolutePath) && readFileSync(absolutePath, 'utf8') === input.plan.content) {
+      return precondition(`'${input.plan.path}' already has exactly this content; there is nothing to publish.`, [
+        { path: input.plan.path, rule: 'AlreadyPublished', message: 'The working tree already carries this file byte for byte.' },
+      ]);
+    }
+    writeFilesAtomically([{ absolutePath, content: input.plan.content }]);
+  } catch (err) {
+    // blog-mcp's exception-based control flow (`InfrastructureError`), the
+    // same conversion `declarations.ts`'s own `fromThrown` performs. Without
+    // it the throw escapes the module handler entirely -- dispatch does not
+    // envelope it -- stranding the claimed file in `processing/` with no
+    // audit entry and no attention notification.
+    return infrastructure(err instanceof Error ? err.message : String(err));
+  }
 
   const changedPaths = [input.plan.path as unknown as RepoRelativePath];
   return success(`Wrote '${input.plan.path}'`, { changedPaths }, diag(ctx));

@@ -195,6 +195,89 @@ test('S38.6 — watched_post_apply refuses a malformed path with validation, cal
   }
 });
 
+// =============================================================================
+// Review regressions -- values the plan tool derives a branch name and a
+// filename from, and the two ways the apply tool can be handed something it
+// must refuse rather than write.
+// =============================================================================
+
+test('a slug that is not lowercase kebab-case is refused by validation, before any branch name is derived from it', async () => {
+  const ctx = fixtureCallContext({ cloneRoot: null });
+  const result = await WATCHED_POST_PLAN_HANDLER(ctx, { sourceFile: 'spaced.md' as never, content: postFile({ slug: 'My Post' }) });
+  assert.equal(result.ok, false);
+  assert.equal(result.kind, 'validation');
+  assert.match(result.summary, /kebab-case/);
+});
+
+test('a date that does not start with YYYY-MM-DD is refused by validation, before any filename is derived from it', async () => {
+  const ctx = fixtureCallContext({ cloneRoot: null });
+  const result = await WATCHED_POST_PLAN_HANDLER(ctx, { sourceFile: 'undated.md' as never, content: postFile({ date: 'soon' }) });
+  assert.equal(result.ok, false);
+  assert.equal(result.kind, 'validation');
+  assert.match(result.summary, /YYYY-MM-DD/);
+});
+
+test("a post without an 'authors' block is refused -- blog-mcp's own validator requires it", async () => {
+  const ctx = fixtureCallContext({ cloneRoot: null });
+  const content = ['---', 'title: "No Author"', 'description: "A description."', 'slug: no-author', 'date: 2026-08-24', 'tags:', '  - ai-assisted-engineering', '---', '', 'Body text.', ''].join('\n');
+  const result = await WATCHED_POST_PLAN_HANDLER(ctx, { sourceFile: 'no-author.md' as never, content });
+  assert.equal(result.ok, false);
+  assert.equal(result.kind, 'validation');
+  assert.match(result.summary, /authors/);
+});
+
+test('watched_post_apply refuses a plan path absent from permittedPaths, leaving the working tree clean', async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 's38-apply-unpermitted-'));
+  try {
+    const ctx = fixtureCallContext({ cloneRoot: tmp as never, writablePathPrefixes: ['docs/blog/'] as unknown as readonly PathPrefix[] });
+    const plan: WatchedPostPlan = { path: 'docs/blog/2026-08-24-b.md', content: 'x' };
+
+    const result = await WATCHED_POST_APPLY_HANDLER(ctx, { permittedPaths: ['docs/blog/2026-08-24-a.md' as never], plan });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.kind, 'validation');
+    assert.equal(fs.existsSync(path.join(tmp, plan.path)), false, 'nothing was written, so the clone stays clean');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('watched_post_apply refuses a write that would change nothing, naming the real cause', async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 's38-apply-noop-'));
+  try {
+    const ctx = fixtureCallContext({ cloneRoot: tmp as never, writablePathPrefixes: ['docs/blog/'] as unknown as readonly PathPrefix[] });
+    const content = postFile({ slug: 'already-published', date: '2026-08-24' });
+    const plan: WatchedPostPlan = { path: 'docs/blog/2026-08-24-already-published.md', content };
+
+    const first = await WATCHED_POST_APPLY_HANDLER(ctx, { permittedPaths: [plan.path as never], plan });
+    assert.equal(first.ok, true);
+
+    const second = await WATCHED_POST_APPLY_HANDLER(ctx, { permittedPaths: [plan.path as never], plan });
+    assert.equal(second.ok, false);
+    assert.equal(second.kind, 'precondition');
+    assert.match(second.summary, /already has exactly this content/);
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('watched_post_apply reports a failed write as infrastructure rather than throwing out of the handler', async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 's38-apply-throws-'));
+  try {
+    const ctx = fixtureCallContext({ cloneRoot: tmp as never, writablePathPrefixes: ['docs/blog/'] as unknown as readonly PathPrefix[] });
+    const plan: WatchedPostPlan = { path: 'docs/blog/2026-08-24-blocked.md', content: 'x' };
+    // A directory where the post file belongs: every write attempt fails.
+    fs.mkdirSync(path.join(tmp, plan.path), { recursive: true });
+
+    const result = await WATCHED_POST_APPLY_HANDLER(ctx, { permittedPaths: [plan.path as never], plan });
+
+    assert.equal(result.ok, false);
+    assert.equal(result.kind, 'infrastructure');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
 test('watched_post_apply writes the file and reports changedPaths when the path is within a writable prefix', async () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 's38-apply-ok-'));
   try {

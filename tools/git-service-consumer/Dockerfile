@@ -49,6 +49,7 @@ RUN npx --prefix tools/blog-mcp tsc -p tools/blog-mcp/tsconfig.json
 COPY tools/git-service-consumer/server.ts ./tools/git-service-consumer/server.ts
 COPY tools/git-service-consumer/declarations.ts ./tools/git-service-consumer/declarations.ts
 COPY tools/git-service-consumer/extra-declarations.ts ./tools/git-service-consumer/extra-declarations.ts
+COPY tools/git-service-consumer/watched-post.ts ./tools/git-service-consumer/watched-post.ts
 COPY tools/git-service-consumer/scripts ./tools/git-service-consumer/scripts
 RUN node --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON tools/git-service-consumer/scripts/build-registry.ts
 
@@ -99,6 +100,7 @@ COPY --from=builder /repos/SubZeroDev.Blog-S20/tools/blog-mcp/dist ./tools/blog-
 COPY --from=trimmed /repos/SubZeroDev.Blog-S20/tools/git-service-consumer/server.ts ./tools/git-service-consumer/server.ts
 COPY --from=trimmed /repos/SubZeroDev.Blog-S20/tools/git-service-consumer/declarations.ts ./tools/git-service-consumer/declarations.ts
 COPY --from=trimmed /repos/SubZeroDev.Blog-S20/tools/git-service-consumer/extra-declarations.ts ./tools/git-service-consumer/extra-declarations.ts
+COPY --from=trimmed /repos/SubZeroDev.Blog-S20/tools/git-service-consumer/watched-post.ts ./tools/git-service-consumer/watched-post.ts
 COPY --from=builder /repos/SubZeroDev.Blog-S20/tools/git-service-consumer/build ./tools/git-service-consumer/build
 # S37: this workspace's own built console (blog screens included), not the
 # base's unmodified one -- the base's own console/dist is no longer copied
