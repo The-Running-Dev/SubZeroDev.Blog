@@ -50,7 +50,7 @@ param(
     [switch]$BuildOnly,
     [int]$Port = 3000,
     [string]$Tag = 'subzerodev-blog-docs',
-    [string]$BaseImage = 'ghcr.io/the-running-dev/docs-template@sha256:7b7623dd7c7a3f49cce7c9778f1e9a98ca87af0d4d2abc0ec7c98145b1ffc792',
+    [string]$BaseImage = 'ghcr.io/the-running-dev/docs-template@sha256:f2e9df531a4347c1312805ac907f37d41671975945b03de9f7b74b467a06d925',
     [switch]$NoHomepage
 )
 
