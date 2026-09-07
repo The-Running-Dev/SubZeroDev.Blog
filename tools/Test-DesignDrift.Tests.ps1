@@ -80,6 +80,35 @@ Describe 'Test-DesignDrift' {
             Get-DriftExitCode -State $r.State | Should -Be 0
         }
 
+        It 'a slice nested as a third-level heading under Outstanding is compared, not silently dropped' {
+            # design/90-decisions.md, 2026-08-30: slices from S19 on sit as `### S<n>` under the
+            # `## Outstanding` section rather than as their own `## S<n>` section. A parser that
+            # only recognises `##` sees zero slices here and reports Clean for the wrong reason.
+            $path = New-SlicesDoc -Content @'
+# Slices
+
+## Outstanding
+
+### S19 — A slice
+
+Delivers: something a reader can follow.
+
+Acceptance:
+  - S19.1 The first criterion holds.
+  - S19.2 The second criterion holds.
+
+## Landed
+'@
+            Mock Get-TrackerIssue { New-Tracker -Issues @(
+                New-Issue -Number 171 -Title 'S19 — A slice' -Body "- [ ] **S19.1** first`n- [ ] **S19.2** second"
+            ) }
+
+            $r = Invoke-DriftCheck -SlicesPath $path
+
+            $r.State | Should -Be 'Clean'
+            $r.SlicesCompared | Should -Be 1
+        }
+
         It 'reworded criteria with the same ids are not drift' {
             $path = New-SlicesDoc -Content $script:TwoCriterionDoc
             Mock Get-TrackerIssue { New-Tracker -Issues @(

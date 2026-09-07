@@ -9,6 +9,14 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-09-07 — AgentKit sync adopts applicable routing and lessons only
+Context: Syncing AgentKit from `d57880d` to `ac828a3` adds shell-backed `/next` and `/clean` helpers, three broadly applicable lessons, a record-writing sequence required by a newly added citation test, and an unrelated Videowright instruction block. The repository's `AGENTS.md` and `agent.md` are maintained artifacts, so the additions were presented individually rather than merged wholesale.
+Chosen: Add concise `/next` and `/clean` routing rows that name the new helper scripts; the record-writing sequence that makes the updated command citations valid; and the lessons on checking narrowed table rows, revisiting deferred work when its blocker disappears, and asserting correspondence rather than a fixed set size. Do not add the Videowright block: this repository has no `videos/` project.
+Rejected: **Take upstream `AGENTS.md` wholesale** — would install an irrelevant video policy and overwrite repository-owned guidance. **Keep the existing files unchanged** — would defer the helper routing and applicable regression-prevention lessons, and leave the new citation test invalid.
+Reversibility: cheap
+
+---
+
 ### 2026-09-05 — Site search via `@easyops-cn/docusaurus-search-local`, a new dependency on the base image, not this repository
 Context: The blog had no search. This repository does not own the shared Docusaurus runtime (`AGENTS.md`, *Project identity and boundary*) — there is no `package.json` under `docs/`, and every npm dependency the site can use comes baked into the immutable `ghcr.io/the-running-dev/docs-template` image built from the sibling `Docs-Template` repository. Adding a search theme therefore means adding a dependency there, not here, plus a decision entry here since it is this repository's `docusaurus.config.ts` that will register and configure it.
 Chosen: `@easyops-cn/docusaurus-search-local` (resolved `0.55.3`), added to `Docs-Template`'s `package.json`/`pnpm-lock.yaml` on branch `feature/search-local-theme` (pushed; PR not yet opened/merged). Verified locally in that repo by temporarily enabling it in its own `docusaurus.config.ts` and running `pnpm run build:prod` against Docusaurus 3.10.1 — it built cleanly and produced `search-index.json` and a `/search` route; the temporary config enable was then reverted there since consumer sites (this one) own their own `docusaurus.config.ts` and the template's `COPY . .` overlay (`docs/Dockerfile`) replaces it entirely. This repository's `docusaurus.config.ts` gains the `themes` entry once the new image is published and `docs/Dockerfile`'s `BASE_IMAGE` digest is bumped to it — that step is sequenced after the `Docs-Template` PR merges and its release workflow publishes the new image (`Docs-Template/.github/workflows/release.yml`).
