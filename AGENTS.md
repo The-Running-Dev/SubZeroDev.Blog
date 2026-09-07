@@ -102,6 +102,8 @@ Tier: Deep reasoning → Opus, high
 | `/resolve` | Sonnet, medium — escalate to judge a contested finding, not to triage the obvious ones |
 | `/refine` | Sonnet, medium — never escalates; an architectural ask is routed to the command that owns it, not refined |
 | `/kit-help` | Haiku, low — orientation from file existence and a tracker listing; escalate only where the repository's state matches no stage |
+| `/next` | Sonnet, medium — orients as `/kit-help` does, then acts only where the next step is legal in this session. Its six orientation reads run from `tools/RepoAliases.ps1`'s `Get-AgentKitNext`; this row governs choosing the next action. |
+| `/clean` | Sonnet, medium — mechanical branch housekeeping. The ordinary case runs with no model call via `tools/RepoAliases.ps1`'s `Invoke-AgentKitClean`; this row governs the judgement cases it returns. |
 | `/freeze` | Sonnet, medium — `Frozen because`/`Lifts when` come from the user, never invented |
 | `/unfreeze` | Sonnet, medium for the sequencing; runs `/reconcile` (Opus, high) and `/track` (Sonnet, medium) as its own phases; runs unattended, no confirmation prompt |
 | `/done` | Haiku, low — mechanical git housekeeping; escalate only to judge whether an unmerged-looking branch is safe to delete |
@@ -329,6 +331,34 @@ Reversibility: cheap | expensive
 
 The rejected alternatives are the point. Without them the next session
 relitigates the same choice.
+
+## Writing a design-state record
+
+Where this repository's own `design/state/` exists, a decision that changes it
+is written by this sequence — the citation `/reconcile`, `/contract`, and
+`/design` each point at instead of restating it:
+
+1. Append the entry to `design/90-decisions.md`, in the existing format
+   (*Decision logging*, above), unchanged. Nothing already there is touched.
+2. Write the decision record: anchor, status, claim.
+3. Update the affected unit records — adding the id to `Live`, and moving any id
+   this decision supersedes from `Live` to the companion's `Archival`.
+4. Where the same change writes the decision's terms into a site — a section of a
+   unit's own artifact, or a contract's `Semantics` — name that site in the
+   decision's `StatedIn` and leave the id out of that unit's `Live`.
+5. Regenerate projections — `tools/Update-DesignProjection.ps1`, a real run, not
+   `-DryRun`.
+6. Run the checker — `tools/Test-DesignState.ps1`.
+
+Step 5 before step 6 is not optional — checking before regenerating reports every
+projection as stale, which trains the reader to ignore the report.
+
+Absorption also happens without a decision being made, when an amendment finally
+writes an already-recorded decision into its site. That is step 4 in isolation:
+name the site, drop the id from `Live`, regenerate, check.
+
+Where `design/state/` does not exist, none of this applies — write the
+decision-log entry alone, per *Decision logging* above.
 
 ## House conventions
 

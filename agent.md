@@ -21,6 +21,10 @@ and preferences belong in `AGENTS.md`.
   edits, or at a phase boundary, reread the complete affected document set. One full-read
   pass over a sibling spec set found twelve inconsistencies, including a functional bug where
   a derived-path list omitted a field.
+- **Checking a table for missing rows has not checked the table.** A row also goes stale by
+  narrowing: the class it names widens, the row does not. Re-derive each row against the
+  source of truth, not just the omissions; a sibling failure-mode table required a second
+  reconciliation because its existing rows no longer described the checker.
 - **Search the concept, not the phrasing you just edited.** Striking a requirement from seven
   places, a grep for the exact removed phrase returned clean — it could not match the same
   requirement worded differently, and six stale statements survived a check reported as
@@ -36,6 +40,9 @@ and preferences belong in `AGENTS.md`.
 - **A stale cross-reference is invisible.** Section numbers rot silently when a document is
   restructured. `build/Test-Documentation.ps1` catches authored links and anchors; the
   production build catches routes. Neither catches a sentence that is merely now untrue.
+- **A deferral whose stated blocker is later removed is not re-checked by anything.** When
+  work is deferred on a named blocker, the change that removes it must sweep everything citing
+  that blocker; otherwise the deferred work persists after its reason has gone.
 
 ## Verification
 
@@ -48,6 +55,9 @@ and preferences belong in `AGENTS.md`.
 - **Running the code beats recalling it.** A golden-test vector written from memory was
   wrong; executing the reference implementation caught it before it became the expected
   value everything else was checked against.
+- **A test that hardcodes the size of a set the design lets grow guards the wrong thing.**
+  `tools/Test-DesignState.Tests.ps1` should assert correspondence between named surfaces and
+  records, not a fixed count that turns a legitimate addition into an unrelated red gate.
 - **Several confident recollections were wrong.** Every claim about an external contract
   should be checked against the published spec, not remembered.
 - **Verify a regression test by reverting the fix.** A test that passes with and without the

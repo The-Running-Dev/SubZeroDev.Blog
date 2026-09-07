@@ -101,10 +101,13 @@ function Get-SliceCriteria {
     $current = $null
 
     foreach ($line in (Get-Content -LiteralPath $Path)) {
-        if ($line -match '^##\s') {
-            # A new second-level heading always ends the previous slice's body, so an
-            # Acceptance line can never be attributed across a section boundary.
-            $current = if ($line -match '^##\s+S(?<n>\d+)\b') { [int]$Matches['n'] } else { $null }
+        if ($line -match '^#{2,3}\s') {
+            # A new second- or third-level heading always ends the previous slice's body, so an
+            # Acceptance line can never be attributed across a section boundary. Slices sit at
+            # `##` when they are top-level sections (S1-S18) and at `###` when nested under
+            # `## Outstanding` (S19 onward, design/90-decisions.md, 2026-08-30 revision) - both
+            # depths name the same thing and are compared the same way.
+            $current = if ($line -match '^#{2,3}\s+S(?<n>\d+)\b') { [int]$Matches['n'] } else { $null }
             if ($null -ne $current -and -not $slices.ContainsKey($current)) {
                 $slices[$current] = [System.Collections.Generic.List[string]]::new()
             }
