@@ -6,11 +6,8 @@ authors:
   - subzerodev
 date: 2026-09-14T14:00:00Z
 tags:
-  - ai
-  - llms
-  - agents
-  - claude
-  - context
+  - ai-assisted-engineering
+  - llm
   - development
 ---
 
