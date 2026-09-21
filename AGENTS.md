@@ -2,7 +2,6 @@
 
 **Read `AGENTS.shared.md` (home install: `C:/Users/Ben/.agent-kit/AGENTS.shared.md`) completely before this file.** It holds the rules every repository using the kit shares.
 
-
 ## Project identity and boundary
 
 This repository owns the SubZeroDev Blog site at
@@ -23,7 +22,7 @@ which is which saves reading all of them:
 
 | Where | Holds | Authority |
 |---|---|---|
-| `.claude/commands/` | The design pipeline — `/brief-check`, `/design`, `/redteam`, `/contract`, `/slices`, `/slice`, `/reconcile`, `/make-human-docs`, `/install`, `/verify`, `/pr`, `/resolve` | Standing; run when invoked |
+| Kit skills (`~/.claude/skills/`, no local copy) | The design pipeline — `/brief`, `/design`, `/redteam`, `/spec`, `/plan`, `/slice`, `/align`, `/docs`, `/install`, `/check`, `/pr`, `/resolve` | Standing; run when invoked |
 | `.agents/workflows/` | Blog publishing — `create-blog-post.md`, `publish-change.md` | Standing; `publish-change.md` holds the GraphQL review-thread query |
 | `AGENT-SETUP.md` | One-time repository bootstrap | **Not standing execution authority.** Apply only when explicitly invoked. Nothing else references it |
 
@@ -94,29 +93,28 @@ Tier: Deep reasoning → Opus, high
 
 | Command | Tier |
 |---|---|
-| `/brief-check`, `/design`, `/contract`, `/slices` | Opus, high |
+| `/brief`, `/design`, `/spec`, `/plan` | Opus, high |
 | `/redteam` | strongest model, **different vendor from the design author**; if it must be Claude, a fresh Opus session |
 | `/slice` | Sonnet, medium — high for a large or difficult slice |
-| `/reconcile` | Opus, high to decide which side of a drift is correct; Sonnet, medium to apply the edits |
-| `/make-human-docs`, `/install`, `/track` | Sonnet, medium |
+| `/align` | Opus, high to decide which side of a drift is correct; Sonnet, medium to apply the edits |
+| `/docs`, `/install`, `/track` | Sonnet, medium |
 | `/install-all` | Sonnet, medium — escalate only to judge whether a per-repo hard stop is actually safe to resolve; never to resolve it unattended |
-| `/verify` | Sonnet, medium — escalate to deep reasoning only to diagnose a failure, never to run the gates |
+| `/check` | Sonnet, medium — escalate to deep reasoning only to diagnose a failure, never to run the gates |
 | `/pr` | Sonnet, medium |
 | `/resolve` | Sonnet, medium — escalate to judge a contested finding, not to triage the obvious ones |
-| `/refine` | Sonnet, medium — never escalates; an architectural ask is routed to the command that owns it, not refined |
-| `/kit-help` | Haiku, low — orientation from file existence and a tracker listing; escalate only where the repository's state matches no stage |
-| `/next` | Sonnet, medium — orients as `/kit-help` does, then acts only where the next step is legal in this session. Its six orientation reads run from `tools/RepoAliases.ps1`'s `Get-AgentKitNext`; this row governs choosing the next action. |
-| `/clean` | Sonnet, medium — mechanical branch housekeeping. The ordinary case runs with no model call via `tools/RepoAliases.ps1`'s `Invoke-AgentKitClean`; this row governs the judgement cases it returns. |
-| `/freeze` | Sonnet, medium — `Frozen because`/`Lifts when` come from the user, never invented |
-| `/unfreeze` | Sonnet, medium for the sequencing; runs `/reconcile` (Opus, high) and `/track` (Sonnet, medium) as its own phases; runs unattended, no confirmation prompt |
-| `/done` | Haiku, low — mechanical git housekeeping; escalate only to judge whether an unmerged-looking branch is safe to delete |
-| `/fix` | Sonnet, medium — escalate only where the fix turns out to need a contract or public-interface change, which is `/contract`'s or `/design`'s |
-| `/kit-sync` | Sonnet, medium — escalate only to judge whether a refused fast-forward in `~/.agent-kit` is safe to resolve; never to force past it unattended |
+| `/tune` | Sonnet, medium — never escalates; an architectural ask is routed to the command that owns it, not refined |
+| `/help` | Haiku, low — orientation from file existence and a tracker listing; escalate only where the repository's state matches no stage |
+| `/next` | Sonnet, medium — orients as `/help` does, then acts only where the next step is legal in this session |
+| `/clean` | Sonnet, medium — mechanical branch and git housekeeping, including what a prior `/done` covered; escalate only to judge whether an unmerged-looking branch is safe to delete |
+| `/hold` | Sonnet, medium — `Frozen because`/`Lifts when` come from the user, never invented |
+| `/resume` | Sonnet, medium for the sequencing; runs `/align` (Opus, high) and `/track` (Sonnet, medium) as its own phases; runs unattended, no confirmation prompt |
+| `/fix` | Sonnet, medium — escalate only where the fix turns out to need a contract or public-interface change, which is `/spec`'s or `/design`'s |
+| `/sync` | Sonnet, medium — escalate only to judge whether a refused fast-forward in `~/.agent-kit` is safe to resolve; never to force past it unattended |
 
 The pipeline reads and writes `design/`. **`MILESTONES.md` is the delivery
 roadmap for the repository as a whole; `design/30-slices.md` holds vertical
 slices for a single design cycle.** Different scopes — do not merge them, and do
-not let `/slices` write into `MILESTONES.md`.
+not let `/plan` write into `MILESTONES.md`.
 
 ### Session boundaries
 
@@ -130,10 +128,10 @@ has already handed over everything the next stage is entitled to.
 |---|---|---|
 | `/design` → `/redteam` | **Fresh session, and a different vendor.** | A model recognises its own output distribution and defends it. Fresh context on the same model is already the weak form; the same session is not a review at all. |
 | Any stage that writes an artifact → the next | Fresh. | The next stage's input is the committed file. A session that also remembers the arguments behind it will design against the arguments. |
-| `/slices` → `/slice` | Fresh, and **one slice per session**. | A slice that does not fit one session without compaction is too large — that is a `/slices` defect, so say so rather than pressing on. |
-| `/slice` → `/verify` → `/pr` → `/resolve` | **Same session.** | These act on the branch and worktree the slice just produced, and `/pr` must carry `/verify`'s did-not-run list into the description **verbatim**. A fresh session would restate it from a summary, which is the fabricated gate result verification exists to prevent. |
+| `/plan` → `/slice` | Fresh, and **one slice per session**. | A slice that does not fit one session without compaction is too large — that is a `/plan` defect, so say so rather than pressing on. |
+| `/slice` → `/check` → `/pr` → `/resolve` | **Same session.** | These act on the branch and worktree the slice just produced, and `/pr` must carry `/check`'s did-not-run list into the description **verbatim**. A fresh session would restate it from a summary, which is the fabricated gate result verification exists to prevent. |
 | merge → `/track` | Fresh. | `/track` reads the tracker and `design/` as they now stand. The session that just implemented the slice holds an opinion about whether it is done, and doneness is my mark, not an agent's. |
-| implementation → `/reconcile` | Fresh. | It compares the tree against the docs. The session that wrote the code carries what it *intended* to write, which is the one thing the comparison must not be given. |
+| implementation → `/align` | Fresh. | It compares the tree against the docs. The session that wrote the code carries what it *intended* to write, which is the one thing the comparison must not be given. |
 
 **Compaction is a boundary you did not choose.** If a session compacts mid-slice,
 report it — the slice was mis-sized, and the work after the compaction was done
@@ -187,9 +185,8 @@ Two distinctions that are easy to get wrong:
   classify a whole command by its cheapest step.
 - **Do not report a cost you did not measure.** A model is not given its own token
   counts or elapsed time, so any figure it states about its own run is an estimate
-  presented as a measurement. `tools/Measure-Session.ps1` reads the real per-call
-  usage from the session transcript, and runs as a `SessionEnd` hook. Use it, or
-  say nothing.
+  presented as a measurement. No local tool currently reads real per-call usage
+  from the session transcript — say nothing rather than estimate.
 
 ### Tracking work
 
@@ -214,7 +211,7 @@ defect noticed in passing goes to a GitHub issue, not into a running list in the
   fence is regenerable; **outside it is never touched** — a ticked checkbox is progress someone
   recorded, an edited narrative is someone's deliberate wording.
 - **Where a document already governs, the block points; where none does, it carries.** A slice
-  names `design/30-slices.md § S<n> @ <sha>` and leaves procedure to `.claude/commands/slice.md`
+  names `design/30-slices.md § S<n> @ <sha>` and leaves procedure to the kit's `/slice` skill
   — copying stop conditions into an issue freezes a stale copy that nothing can go back and fix.
   A bug or a story has no upstream document, so its block legitimately holds the constraints.
 - **Criteria carry stable ids** (`S3.1`), and drift is compared on ids, never prose. Reworded
@@ -254,14 +251,14 @@ authorization to do something it did not ask for is not.
 
 `design/FROZEN.md`'s existence is the whole mechanism, and it is tracked, not ignored — a
 freeze is a statement to everyone working in the repository, not local state. While it
-exists: `/reconcile` and `/track` do not run and the tracker is deliberately allowed to go
-stale; `/design`, `/contract`, and `/slices` refuse; slices implement against
+exists: `/align` and `/track` do not run and the tracker is deliberately allowed to go
+stale; `/design`, `/spec`, and `/plan` refuse; slices implement against
 `20-contract.md` as a fixed artifact at the sha the marker names; a contradiction found while
 implementing is stated in that slice's pull request and left in the document rather than
 fixed in `design/`.
 
-`/freeze` writes the marker; `/unfreeze` lifts it — deletes the file, then runs one
-reconciliation pass, `/reconcile` then `/track`, in the same session, unattended. The freeze
+`/hold` writes the marker; `/resume` lifts it — deletes the file, then runs one
+reconciliation pass, `/align` then `/track`, in the same session, unattended. The freeze
 itself is still the user's decision; lifting it early is one command call away.
 
 The marker's format:
@@ -273,7 +270,7 @@ Frozen at: <sha>, <YYYY-MM-DD>
 Frozen because: <what the freeze is escaping>
 Lifts when: <the checkable condition>
 
-To lift: run `/unfreeze`, or delete this file by hand and run `/reconcile`, then `/track`.
+To lift: run `/resume`, or delete this file by hand and run `/align`, then `/track`.
 ```
 
 A command that refuses reports `Frozen because` and `Lifts when` **verbatim** rather than
@@ -298,7 +295,7 @@ paraphrasing them.
 - Surface real forks as a question with a recommendation, recommended option
   first.
 - **A reconciliation ends in a decision, not a report.** Any time you compare two
-  things and find they disagree — `/reconcile`, `/install`, `/track` drift, or any
+  things and find they disagree — `/align`, `/install`, `/track` drift, or any
   time I say "reconcile" — the work is not finished at the findings. Close by
   asking, one divergence at a time, each with a recommendation and what the
   alternatives cost. **A report I have to turn into questions myself is half the
@@ -316,7 +313,7 @@ paraphrasing them.
 - Call out assumptions, unverified claims, and known risks plainly.
 - **Never tell me to go edit `design/` or the brief myself.** State what needs to change and
   why, give a recommendation, ask me to decide — then make the edit. Where the change belongs
-  to a different command's tier (a contract amendment is `/contract`'s, a redesign is
+  to a different command's tier (a contract amendment is `/spec`'s, a redesign is
   `/design`'s), name that command and say the edit happens there.
 
 ## Decision logging
@@ -338,7 +335,7 @@ relitigates the same choice.
 ## Writing a design-state record
 
 Where this repository's own `design/state/` exists, a decision that changes it
-is written by this sequence — the citation `/reconcile`, `/contract`, and
+is written by this sequence — the citation `/align`, `/spec`, and
 `/design` each point at instead of restating it:
 
 1. Append the entry to `design/90-decisions.md`, in the existing format
