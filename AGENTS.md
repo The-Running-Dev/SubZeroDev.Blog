@@ -2,8 +2,7 @@
 
 # Repository Guidelines
 
-
-**Read [`AGENTS.shared.md`](C:/Users/Ben/.agent-kit/AGENTS.shared.md) completely before this file.** It holds the rules every repository using the kit shares.
+**Read `AGENTS.shared.md` (home install: `C:/Users/Ben/.agent-kit/AGENTS.shared.md`) completely before this file.** It holds the rules every repository using the kit shares.
 
 ## Project identity and boundary
 
