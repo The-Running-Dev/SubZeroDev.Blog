@@ -25,7 +25,8 @@ Lovely. Friends. A perfectly reasonable thing to want. Perhaps some conversation
 
 Then came the introduction:
 
-> I'm not doing sex, if you try something, i will rip your dick  
+> I'm not doing sex, if you try something, i will rip your dick
+>
 > Just backgammon and arcade 🙂🙃
 
 Well.
