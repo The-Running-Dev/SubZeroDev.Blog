@@ -103,6 +103,44 @@ Somewhere.
 
 Good enough.
 
+## I Forget to Remember
+
+That might be the better description.
+
+I forget to remember.
+
+The book wasn't part of the story I was actively telling myself about my life that day.
+
+Then a conversation touched the right thing, and there it was.
+
+This happens with more than books.
+
+Places I've lived.
+
+Jobs I've done.
+
+Vehicles.
+
+People.
+
+Somebody asks a question and another part of the archive lights up.
+
+Sometimes I am discovering which story I am about to tell at almost the same time as the person hearing it.
+
+Which makes "tell me about yourself" a slightly unreasonable loading instruction.
+
+All of it?
+
+Right now?
+
+I haven't even remembered which part is relevant yet.
+
+The person sitting here is real.
+
+So is the history that isn't currently in the room.
+
+It just doesn't all introduce itself at once.
+
 ## The Same Thing Happens with Sentences
 
 The funnier version is when I say something before I understand why it works.
