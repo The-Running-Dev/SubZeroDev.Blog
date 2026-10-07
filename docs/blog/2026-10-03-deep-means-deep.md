@@ -4,7 +4,7 @@ description: "Everybody says they want deep conversations until somebody actuall
 slug: deep-means-deep
 authors:
   - subzerodev
-date: 2026-10-03T21:00:00+03:00
+date: 2026-10-03T18:00:00Z
 tags:
   - philosophy
   - stories
@@ -208,6 +208,40 @@ Eventually I opened the fucking door.
 
 Now you're surprised there was a room back there.
 
+## You Asked Me a Question
+
+It doesn't always start with some grand invitation to discuss the meaning of existence.
+
+Where are you from?
+
+What do you do?
+
+How did you end up here?
+
+Ordinary questions.
+
+But I have lived in multiple countries, worked across different technical domains, built things, moved, returned, and changed direction.
+
+The first answer can be short.
+
+Then someone asks the second question.
+
+And the third.
+
+And the fourth.
+
+At some point the answer stops fitting in the category the first question seemed to offer.
+
+"That's a lot."
+
+Yes.
+
+You have been pulling the thread for a while.
+
+That is different from me arriving and dumping my entire history on the table unprompted.
+
+You brought a shovel too.
+
 ## What Does "Deep" Mean?
 
 This is where the word gets slippery.
@@ -383,6 +417,34 @@ Those are different problems.
 Or maybe not problems at all.
 
 Maybe just compatibility data.
+
+## Different, Within Reason
+
+Dating profiles make this particularly funny.
+
+People want unusual.
+
+Interesting.
+
+Unconventional.
+
+Different.
+
+Then sometimes "different" turns out to mean different within a comfortable range of familiar behavior.
+
+Fair enough.
+
+But that is a narrower request.
+
+The useful question becomes:
+
+Do I actually enjoy this person as he is?
+
+It is a much simpler question than trying to work out which parts should be removed so the interesting person becomes easier to process.
+
+Either answer is useful.
+
+Neither requires a renovation project.
 
 ## Deep Means Deep
 
