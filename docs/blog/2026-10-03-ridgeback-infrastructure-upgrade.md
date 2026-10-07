@@ -4,7 +4,7 @@ description: "The dog severed a shop-vac cable, triggered an unscheduled repair,
 slug: ridgeback-infrastructure-upgrade
 authors:
   - subzerodev
-date: 2026-10-03T20:41:00+03:00
+date: 2026-10-03T17:41:00Z
 tags:
   - absurd
   - stories
@@ -156,3 +156,19 @@ And several hours later I had a superior electrical system.
 The only remaining problem is that the new cable is weatherproof.
 
 It is not, as far as I can tell, Ridgeback-proof.
+
+## Performance Review
+
+Then I came home another time expecting destruction.
+
+Nothing.
+
+Apparently the employee had produced no work.
+
+After establishing such a dependable record of unauthorized demolition, Destroyer had failed her assignment.
+
+You had one job.
+
+I was not actually requesting more property damage.
+
+But it takes a particular kind of dog to train me to expect a repair bill and then make an intact house feel like a missed deadline.
