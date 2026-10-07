@@ -1,6 +1,6 @@
 ---
 title: "Are You Not Entertained?"
-description: "My favorite old shirt said offending you was a bonus. Years later, apparently the delivery system has evolved but the side effect remains."
+description: "An old shirt, an olive branch, a misunderstanding, and the surprisingly useful option of simply asking."
 slug: are-you-not-entertained
 authors:
   - subzerodev
@@ -179,6 +179,60 @@ The alternative is not cruelty.
 
 The alternative is accepting that occasionally a joke lands badly and then handling the actual event when it happens.
 
+## Same Weirdness, No Special Exemptions
+
+She also describes herself as weird.
+
+Unconventional.
+
+Someone who pushes buttons.
+
+Fine.
+
+I recognize some of that. I've done plenty of it myself.
+
+But this arrangement has to work in both directions.
+
+Bring your shit.
+
+I'll bring mine.
+
+If something lands badly, say so. If something doesn't make sense, ask.
+
+Neither person's weirdness comes with a special exemption from being understood, questioned, or occasionally finding the other person inconvenient.
+
+Otherwise we have one unconventional person and one full-time customer service department.
+
+I did not apply for that position.
+
+## Then We Actually Got an Answer
+
+Eventually she said she had misunderstood me.
+
+There it was.
+
+An actual piece of information.
+
+I offered to explain.
+
+She declined.
+
+Fine.
+
+I didn't need to turn that into another investigation.
+
+My point was simple:
+
+If you don't understand, ask.
+
+I'm very direct.
+
+That doesn't mean every sentence will arrive perfectly assembled in somebody else's head. Apparently the audience problem remains operational.
+
+But I can answer a question.
+
+I cannot clarify a misunderstanding that nobody tells me exists.
+
 ## The Current Version
 
 Old shirt:
@@ -189,36 +243,26 @@ Current version:
 
 > “Did I manage to offend you already?”
 
+And now there is another step.
+
+Ask.
+
+Find out what happened.
+
+Offer clarification.
+
+Move on.
+
 This may count as growth.
 
-Very small growth.
+Discount growth, obviously.
 
-Discount growth.
+Maximus can put his arms down.
 
-But growth.
+The conversation didn't need an arena.
 
-The basic system remains recognizable.
+It needed a question.
 
-Say the thing.
+Adulting is hard.
 
-See what happens.
-
-If somebody laughs, continue.
-
-If somebody says it hurt, deal with it.
-
-If somebody disappears forever, apparently the audience has left the arena.
-
-Discount Store Maximus looks around.
-
-Lucifer sighs.
-
-I raise both arms.
-
-> “ARE YOU NOT ENTERTAINED?”
-
-Somebody in the cheap seats is offended.
-
-Excellent.
-
-The franchise continues.
+Apparently.
