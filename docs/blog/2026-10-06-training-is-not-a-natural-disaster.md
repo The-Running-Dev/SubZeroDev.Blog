@@ -28,41 +28,19 @@ Then I remembered something.
 
 <!-- truncate -->
 
-Years ago, at a sports company, my product owner tried to put me into an all-day training session about sports betting.
+Years ago, at a sports company, my product owner tried to put me into an eight-hour training session about sports betting.
 
 I declined.
 
-This apparently surprised people.
+I already had people who knew the domain. That was part of how the team worked.
 
-## “No”
+But the part that came back to me during this conversation was how surprising the refusal apparently was.
 
 The training was scheduled.
 
 Everybody else seemed to treat that fact as sufficient.
 
-Training exists.
-
-Therefore attendance.
-
-I looked at it differently.
-
-Do I need this?
-
-Will I get value from it?
-
-Is eight hours of my life the correct price?
-
-No.
-
-So I said no.
-
-Not dramatically.
-
-Not as rebellion.
-
-Just:
-
-I am not doing that.
+I still wanted to know whether it was worth a day.
 
 ## She Was Furious
 
