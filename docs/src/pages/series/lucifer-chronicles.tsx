@@ -55,6 +55,12 @@ export default function LuciferChronicles(): React.JSX.Element {
           title: 'Much Ado About Nothing',
           description: 'A dramatic declaration granting permission for something that was already happening.',
           href: '/much-ado-about-nothing/'
+        },
+        {
+          title: 'Lucifer Talks to an Autoresponder',
+          description:
+            'Lucifer discovers a corporate SMS bot with one line of dialogue and enough stamina to turn spam into an existential relationship.',
+          href: '/lucifer-talks-to-an-autoresponder/'
         }
       ]}
     />
