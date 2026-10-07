@@ -174,6 +174,58 @@ But there is another version where continuing would require lying to yourself ab
 
 And I am increasingly bad at that.
 
+## It Doesn't Matter
+
+There is another distinction hiding in here.
+
+"I don't care" and "it doesn't matter" do different jobs.
+
+I am increasingly suspicious of the first one when it becomes a description of the person.
+
+I am someone who doesn't care.
+
+Excellent.
+
+Now you have an identity to maintain.
+
+Something bothers you, and suddenly you have two problems.
+
+The thing that bothered you.
+
+And the fact that being bothered is apparently off-brand.
+
+So now you have to explain how little you care.
+
+Possibly at considerable length.
+
+I have done versions of this myself.
+
+The announcement becomes work.
+
+"It doesn't matter" leaves me considerably more room.
+
+I noticed.
+
+I remember.
+
+I may even be irritated.
+
+It still doesn't matter enough to determine what I do next.
+
+That is a decision about this thing, in this situation.
+
+It doesn't require me to become an entirely different species of mammal.
+
+And sometimes it does matter.
+
+Fine.
+
+I can act on that too.
+
+No press conference about the collapse of my indifference.
+
+The useful freedom is being able to decide what deserves a response while admitting that I felt something.
+
 ## The Dog Does Not Care About My Philosophy
 
 Naturally, none of this matters to the Ridgeback.
