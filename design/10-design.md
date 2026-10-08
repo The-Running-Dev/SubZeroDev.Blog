@@ -99,9 +99,15 @@ The registry is one YAML document.
 - **`rules`**: optional. Automatic membership, using either or both of:
   - `tags`: a list of tag keys
   - `slugPrefix`: a string
+  - `mode` (required when `rules` is present):
+    - `suggest`: matching posts are only reported, as uncurated candidates in the build's
+      membership report and in blog-mcp's `HubCoverage` warning. They do not join the collection,
+      and curating them stays a required authoring step.
+    - `apply`: matching posts join the collection automatically.
 
   An absent or empty `rules` means membership is manual only. No tag is ever mapped to a
-  collection implicitly.
+  collection implicitly. Enabling a collection's automatic membership is a one-word reviewed
+  change from `suggest` to `apply`.
 - **`entries`**: an ordered list. Each item is an explicit inclusion and a curated position:
   - `ref` (required): a post reference.
   - `role`: `member` (the default) or `related`. A `related` entry is shown on the page but is not
@@ -142,11 +148,13 @@ existing `yaml` dependency, whose Document API preserves comments and layout.
 
 For a collection C:
 
-- **Members.** The explicit `member` entries, plus every public entry matching C's rules, minus
-  C's `exclude` list.
+- **Members.** The explicit `member` entries, plus every public entry matching C's rules when they
+  are in `apply` mode, minus C's `exclude` list and minus C's `related` entries.
 - **Precedence.**
   - An explicit inclusion beats having no matching rule.
   - An exclusion beats a matching rule.
+  - A `related` entry beats a matching rule. Curating a post as `related` is an explicit
+    statement that it is not a member, so a tag or slug-prefix match never promotes it.
   - Naming the same reference in both `entries` and `exclude` is a validation error, not a
     precedence question.
 - **Reading order.**
@@ -266,12 +274,15 @@ registry do not.
      `/projects/<id>/`.
    - **The editorial summary as global data.** It holds collection cards (id, kind, title,
      description, route, member count, start), the featured entries with title, permalink and
-     description, and the topic list with counts. Its size grows with the registry and the tag
-     count, never with the archive.
+     description, and the topic list with counts. It also holds each `section` collection's
+     resolved entries in order: permalink, effective title, effective description and label.
+     Section collections have no route of their own, so this is how `/about/` receives its
+     reading list. Every part is registry-bounded, so its size grows with the registry and the
+     tag count, never with the archive.
    - **The discovery index as one generated data module**, which the browser loads only on
      demand.
    - **A membership report in the build log**: per collection, the explicit members, the members
-     added by rules, and the exclusions.
+     added by `apply` rules, the uncurated candidates of `suggest` rules, and the exclusions.
 5. The home component, configured through `blogListComponent`, renders the Journal home on page 1
    and the stock list on page 2 onward.
 6. CI runs `Test-DocumentationArtifact.ps1` on the output (see *Verification*).
@@ -332,7 +343,7 @@ registry do not.
 | `/chronicles/` | Site plugin | Static landing page of `chronicle` collections | New |
 | `/series/<id>/` | Site plugin | Static collection page | The five existing routes keep their paths; their source moves from hand-written TSX to the registry. New chronicles use the same prefix. |
 | `/projects/game-engine/` | Site plugin | Static collection page, kind `project` | Same path; source moves to the registry |
-| `/about/` | Existing page | Its reading list is read from the editorial summary (`section` collection) | Same page; list source moves |
+| `/about/` | Existing page | Its reading list is read from the `section` entries in the editorial summary | Same page; list source moves |
 | `/random/` | Site plugin | Client-side redirect with a static fallback | New |
 | `/blog/*` compatibility stubs | Existing pages | Unchanged | Unchanged |
 
@@ -368,12 +379,16 @@ Everything ships inside things that already exist. Nothing new is installed or o
   GitHub Pages. No change to `Docs-Template` is needed. An upgrade is an ordinary PR, and a
   Docusaurus upgrade additionally trips the adapter's version guard (*Module boundaries*).
 - **blog-mcp.** The repointed hub tools ship in the next blog-mcp image built by the existing
-  `blog-mcp-image.yml`. MCP clients see the same tool names and inputs.
+  `blog-mcp-image.yml`. MCP clients see the same tool names. Their inputs are unchanged except
+  for two widenings, both supersets: the `hub` enum and the `href` pattern (*Verification*).
 - **Tests.**
   - The core's tests run in a new Docs CI step inside the base image, using Node 26's built-in
     test runner. That adds no dependency.
-  - blog-mcp's tests run in its existing workflow, whose path filters gain the shared
-    conformance fixture.
+  - blog-mcp's tests run in its existing workflow, which gates them twice: on the workflow's
+    trigger paths, and again in the test job's `blog_mcp_test` change area in
+    `build/WorkflowChangeAreas.psm1`. The shared conformance fixture's path joins both gates.
+    The classifier parity test gains a fixture-only change case asserting that blog-mcp's tests
+    run.
   - The artifact checks run where they run today.
 
 ## Failure modes
@@ -383,7 +398,7 @@ Everything ships inside things that already exist. Nothing new is installed or o
 | Docusaurus version | Base image bumped to an unverified version | Adapter version guard | Fails the build | A PR check naming the adapter and the fixture to re-capture |
 | Loaded-content shape | A field is missing, renamed or retyped; the plugin instance is missing | Adapter shape assertions and canaries | Fails the build | The field, the post's source path, and the expected type |
 | Registry syntax | Invalid YAML or an unknown `version` | Source loader | Fails the build; blog-mcp reports the same | File, line and column |
-| Registry references | Unknown or non-public post; unknown tag key; unknown related collection; duplicate entry; include and exclude conflict; `start` not a member; duplicate collection id | Core validation (build) and blog-mcp validation | Fails the build, reporting every error at once | Rule name, collection id and reference |
+| Registry references | Unknown or non-public post; unknown tag key; unknown related collection; duplicate entry; include and exclude conflict; `rules` without a valid `mode`; `start` not a member; duplicate collection id | Core validation (build) and blog-mcp validation | Fails the build, reporting every error at once | Rule name, collection id and reference |
 | Route collision | A new post's slug equals a reserved route | blog-mcp post validation (`ReservedSlug`) at authoring time; core check and `onDuplicateRoutes: 'throw'` at build time | Blocks the PR, or fails the build on `main`, so the deploy is skipped | The colliding route and both owners. The live site stays on the previous build. |
 | Post removed or slug changed | The registry still references it | Core validation | Fails the build | Treated like any published-slug change, which is already a hard rule |
 | Rules expanding a collection | A broad mapping quietly pulls in unrelated posts | Membership report; baseline comparison test during migration | The comparison test fails until the change is recorded as reviewed | The diff, collection by collection |
@@ -429,9 +444,9 @@ Fixed counts are never asserted. Tests assert correspondence between independent
 | Requirement | Layer | Assertion |
 |---|---|---|
 | All published posts appear in the Journal exactly once | Artifact | The post links on `/journal/` equal the post links on `/archive/`, as sets, with no duplicates. (Today that is 50; the count is not hard-coded.) |
-| A new qualifying post-only PR is discoverable after merge with no registry change | Core, artifact, one-time | Core: adding a synthetic tagged post to the captured real-shape fixture makes it a rule member with the registry unchanged. Artifact: for each collection, the members listed on its page equal the members the index assigns. One-time, in PR 4: a real queued `blog/*` branch is merged locally and built. |
+| A new qualifying post-only PR is discoverable after merge with no registry change | Core, artifact, one-time | Core: adding a synthetic tagged post to the captured real-shape fixture makes it a rule member with the registry unchanged. Artifact: for each collection, the members listed on its page equal the members the index assigns. One-time, at each cutover: a real queued `blog/*` branch with a qualifying tag is merged locally and built. In PR 3 the post must appear in the Journal, archive, topics and search, and as an uncurated candidate in the membership report, with the build green. In PR 4 it must also appear in its collection. |
 | Unlisted and draft posts are not exposed | Core, adapter | Fixture posts marked unlisted and draft are absent from the index, collections, related entries and the random pool. A registry reference to either fails validation. |
-| Include and exclude precedence | Core | The precedence table, case by case. Both on one reference is an error. |
+| Include and exclude precedence | Core, blog-mcp | The precedence table, case by case, in the shared conformance fixture. Both on one reference is an error. A `related` entry that matches the collection's tag rule, and one that matches its slug-prefix rule, stay non-members. A `suggest` rule adds no member. |
 | Deterministic ordering | Core | A shuffled input gives identical output; same-date ties break on permalink; curated items come before fallback items. |
 | Existing membership preserved, except for reviewed changes | Core, during migration | Resolved membership equals the baseline extracted from today's seven hub files, plus the reviewed changes recorded in the same PR. The baseline is retired after PR 4. |
 | Multiple memberships create no duplicate pages | Artifact | Each post permalink has exactly one HTML page and one sitemap entry. Every collection link targets a canonical permalink. No generated route sits below a collection route. |
@@ -439,7 +454,8 @@ Fixed counts are never asserted. Tests assert correspondence between independent
 | Generated routes do not collide | Core, build, blog-mcp | Reserved-route collision cases; `onDuplicateRoutes: 'throw'`; the `ReservedSlug` post rule. |
 | Existing URLs, tags, feeds, archive and pagination still work | Artifact | The existing route, feed and tag checks stay. New checks: every `/page/N` that the post count implies exists; the Latest section on `/` plus every `/page/N` equals the `/archive/` set with no duplicates; `/journal/`, `/chronicles/` and each collection route exist. |
 | Scheduled publishing continues without intervention | blog-mcp, review | The scheduler tests stay unchanged and green. The publish simulation adds a post with no registry change and preflight passes. The scheduler's code is not in any of these PRs' diffs. |
-| blog-mcp hub-tool compatibility | blog-mcp | `legacy-tool-parity.json` input schemas still match, with the enum widened as logged. Golden-file tests for registry writes cover comments preserved, position honoured, and a duplicate refused. |
+| blog-mcp hub-tool compatibility | blog-mcp | `legacy-tool-parity.json` and the `git-service-consumer` declarations are updated for the two logged widenings: the `hub` enum becomes the registry's collection ids, and `href` accepts `/<slug>/`, `/series/<id>/` and `/projects/<id>/`. Every input valid today stays valid. The handler then checks `href` against real post permalinks and registry collection routes. A collection route adds to `related`, and anything else is refused with a precondition error. Golden-file tests for registry writes cover comments preserved, position honoured, a duplicate refused, and a collection `href`. |
+| `/about/` reading list preserved | Artifact, core | The rendered `/about/` list has the same six links, in the same order, with the same labels and effective titles and descriptions as the baseline. |
 
 **Measurement before optimizing.** PR 1 records the discovery index's real size and the post
 page's initial JavaScript in its description. Putting the index in global data is reconsidered
@@ -454,7 +470,9 @@ workflow also runs wherever a PR touches blog-mcp.
    - The adapter, with its version guard and captured fixture; the source loader; the core; the
      site plugin wired in, emitting the index, the editorial summary and the build-log report.
    - The registry, seeded from the seven current hubs: explicit entries with their existing
-     labels, titles, descriptions and `related` roles, and **no rules**.
+     labels, titles, descriptions and `related` roles. Each hub's current `.config/blog.json`
+     match becomes that collection's `rules` in **`suggest` mode**, so nothing joins
+     automatically and the coverage warnings stay exactly as they are today.
    - The baseline membership snapshot and its comparison test.
    - `onDuplicateRoutes: 'throw'`, after confirming the current build has no duplicate-route
      warnings.
@@ -468,12 +486,19 @@ workflow also runs wherever a PR touches blog-mcp.
    - `/series/*`, `/projects/game-engine/` and the `/about/` list render from the registry, and
      the hand-written lists are deleted. The baseline test now compares rendered pages.
    - blog-mcp is repointed: `blog_add_hub_entry`, `blog_validate_hubs`, preflight,
-     `.config/blog.json` `hubs`, the config defaults, the `ReservedSlug` rule, the parity fixture
-     and the `git-service-consumer` tool descriptions.
-   - The `create-blog-post` workflow's hub step becomes optional curation.
+     `.config/blog.json` `hubs` (their `match` moves out; the registry's rules are the only
+     source), the config defaults, the `ReservedSlug` rule, the widened `href`, the parity
+     fixture and the `git-service-consumer` declarations.
+   - The `create-blog-post` workflow's hub step stays required. It now names the registry, and
+     it applies to every collection whose rules are still in `suggest` mode, which after this PR
+     is all of them. Reader-visible membership is therefore exactly as correct as it is today,
+     and curation is never made optional before automatic membership exists.
+   - The one-time queued-branch check (*Verification*).
    - The "Chronicles" menu is generated from the registry, and the masthead checks are updated.
-4. **Automatic membership.** Rules are enabled one chronicle at a time, each with its reviewed
-   membership diff recorded. The diffs known on 2026-10-08:
+4. **Automatic membership.** Rules move from `suggest` to `apply` one chronicle at a time, each
+   with its reviewed membership diff recorded. For each collection switched to `apply`, the
+   workflow's hub step becomes optional curation of reading order and labels. The diffs known on
+   2026-10-08:
 
    | Chronicle | Rule | Adds |
    |---|---|---|
@@ -484,8 +509,8 @@ workflow also runs wherever a PR touches blog-mcp.
    | `docker` | tag `docker` | 0 |
    | `game-engine` | tag `game-engine`, if wanted | 3 |
 
-   This PR also carries the one-time verification against a real queued branch. The baseline is
-   retired afterwards.
+   This PR repeats the one-time queued-branch check, now asserting collection membership. The
+   baseline is retired afterwards.
 5. **Home page.** The Journal home through `blogListComponent`, with the Latest section and the
    pagination chain checks. "Latest" in the navigation becomes "Journal". This PR carries the
    visual and copy work, presented for review.
@@ -539,8 +564,9 @@ change in PR 3, and the information-architecture change in PR 5.
      differently from production.
 6. **Who decides membership.**
    - **Chosen:** the build's core is the only resolver. blog-mcp validates references and reports
-     rule-matched entries that are not curated as information. Both run one shared conformance
-     fixture, which is data, not code.
+     rule-matched entries that are not curated: as a warning for `suggest` rules, and as
+     information for `apply` rules. Both run one shared conformance fixture, which is data, not
+     code.
    - **Rejected: blog-mcp importing the core.** Its image build context is `tools/blog-mcp` and
      its compiler root is `src/`, so it cannot reach `docs/`.
    - **Rejected: blog-mcp loading the core from the checkout at run time.** It would couple a

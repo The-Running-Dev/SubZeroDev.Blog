@@ -9,6 +9,31 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-10-08 — Red-team corrections: `related` beats rules, rules gain `suggest`/`apply`, `href` widens, sections carry entries
+Context: A red-team review of PR #228 by another vendor's model, made at `36c9719`, found four P2 defects and one CI gap. Each was confirmed against the code. This entry amends the related entries below, which were written in the same PR.
+1. A `related` entry matching the collection's rule would have become a member, and listing it in `exclude` too is a validation error.
+2. `blog_add_hub_entry`'s `href` regex (`authoring.ts`, `^/[a-z0-9-]+/$`) rejects `/series/<id>/` and `/projects/<id>/`, so the promised collection `href` was unreachable without changing the inputs.
+3. The editorial summary carried no ordered entries, so `/about/` could not render its list.
+4. PR 3 made curation optional while PR 4 had not yet enabled rules.
+5. blog-mcp's tests are gated a second time by the `blog_mcp_test` change area in `build/WorkflowChangeAreas.psm1`, not only by the workflow's path filters.
+
+Chosen:
+1. A `related` entry overrides rule membership. It is listed in the precedence table and covered by tag and slug-prefix conformance cases.
+2. `href` widens, as a superset, to also accept `/series/<id>/` and `/projects/<id>/`. The handler validates it against real permalinks and registry routes. This is a second recorded input change, alongside the `hub` enum, in the parity fixture and the consumer declarations.
+3. The summary carries each `section` collection's resolved entries, which stay registry-bounded. A test asserts the six `/about/` links, their order, labels and overrides.
+4. `rules` gains a required `mode`: `suggest` (report only) or `apply` (automatic). PR 1 seeds today's `.config/blog.json` matches as `suggest`. PR 3 keeps the workflow's hub step required, and `HubCoverage` keeps warning on `suggest` collections. PR 4 flips collections to `apply` one at a time, and only then does curation become optional for that collection. The queued-branch merge-and-build check runs at both cutovers, PR 3 and PR 4.
+5. The fixture path joins both gates, and the classifier parity test gains a fixture-only case.
+
+Rejected:
+- **Reject a `related` entry that matches a rule, as a validation error** — enabling a rule would then force removing a deliberate cross-link.
+- **Merge PR 3 and PR 4** — one PR would switch the source of truth and change membership at once, which defeats the reviewed per-chronicle diff.
+- **Keep `.config/blog.json` matches as the coverage source until PR 4** — two sources of membership rules for a release.
+- **A separate tool for collection links** — a new tool name for what the existing input almost expresses.
+
+Reversibility: cheap
+
+---
+
 ### 2026-10-08 — Membership is resolved only by the site build; blog-mcp shares a conformance fixture, not code
 Context: Two programs need the membership predicate: the site build, which renders it, and blog-mcp, which validates the registry and reports uncurated rule members. blog-mcp's image build context is `tools/blog-mcp` and its compiler root is `src/`, so it cannot import anything under `docs/`.
 Chosen: The build's discovery core is the only membership resolver. blog-mcp validates registry structure and references, and reports rule-matched posts that are not curated as information only. A shared data fixture of cases with expected memberships is read by both test suites. `blog-mcp-image.yml`'s path filters gain the fixture's path.
