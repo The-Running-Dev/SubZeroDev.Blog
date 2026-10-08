@@ -25,10 +25,11 @@ date still exists but does not determine the primary reading experience.
 ## What we do instead today (and what it costs)
 
 - `/` is a reverse-chronological feed; `/archive/` and `/page/N` are chronological too.
-- Five hand-maintained series pages under `/series/*` and one project page
-  (`/projects/game-engine/`) are the only curated collections. Each is a hand-written list;
-  `tools/blog-mcp` adds entries to them and checks that every post carrying the hub's tag appears.
-  A newly published post with a qualifying tag needs a hub edit to be listed.
+- Five hand-maintained series pages under `/series/*`, one project page
+  (`/projects/game-engine/`) and the reading list on `/about/` are the only curated collections.
+  Each is a hand-written list; `tools/blog-mcp` adds entries to them and warns when a post
+  carrying the hub's tag is missing. A newly published post with a qualifying tag needs a hub edit
+  to be listed, and on 2026-10-08 four hubs were already missing posts their own rules match.
 - Topics exist as 35 controlled tags with `/tags/*` pages, but nothing presents entries by
   subject, by story, or by relationship between entries.
 
@@ -54,6 +55,10 @@ pull-request queue and `tools/blog-mcp` scheduler.
   automatically; a registry adds explicit inclusion and exclusion of individual posts. A post with
   no matching relationship remains an ordinary Journal entry. A queued post carrying a qualifying
   tag appears in its chronicle when published, with no further pull request.
+- **Automatic membership arrives incrementally.** The existing hand-curated lists are the initial
+  authoritative membership. Tag relationships are enabled per chronicle, each as a reviewed change
+  backed by an old-versus-new membership comparison. No tag maps to a chronicle implicitly; broad
+  tags such as `stories` or `philosophy` join a chronicle only through an intentional mapping.
 - **Membership and reading order are separate concerns.** Membership can be automatic. Reading
   order is curated explicitly in the registry, with a deterministic fallback for entries not yet
   curated. Publication order is not assumed to be narrative order.
@@ -88,14 +93,18 @@ pull-request queue and `tools/blog-mcp` scheduler.
 
 ## Definition of done
 
-- The home page at `/` no longer presents a chronological feed as its primary experience.
+- The home page at `/` no longer presents a chronological feed as its primary experience, and
+  chronological browsing (`/`, `/page/N`, `/archive/`) still reaches every published entry with no
+  gap and no duplicate.
 - Every published entry is reachable through the Journal.
 - Chronicles are independently browsable; each has a landing page with title, description, its
   entries, optional reading order and starting point, and links to related chronicles.
 - An entry may belong to several chronicles without duplication, and may belong to none.
 - Chronicle membership follows configured tag relationships plus explicit registry inclusions and
-  exclusions; a post merged by the existing scheduler with a qualifying tag appears in that
-  chronicle with no manual synchronization step.
+  exclusions; once a chronicle's tag relationship is enabled, a post merged by the existing
+  scheduler with a qualifying tag appears in that chronicle with no manual synchronization step.
+- Only published, publicly listed entries appear in any discovery surface: the Journal, chronicles,
+  related entries and random selection. Generated links use each entry's canonical permalink.
 - Reading order within a chronicle does not depend on publication date; uncurated entries fall
   back to a deterministic order.
 - Unknown event dates remain unknown.
@@ -109,7 +118,11 @@ pull-request queue and `tools/blog-mcp` scheduler.
   topics, chronicle memberships, optional presentation metadata) for published entries only.
 - Every existing URL keeps working: post URLs, `/archive/`, `/page/N`, `/series/*`,
   `/projects/game-engine/`, `/tags/*`, RSS and Atom feeds, sitemap and canonical URLs. Legacy
-  routes the new routing must move are preserved or redirected.
+  routes the new routing must move are preserved or redirected; no redirect is introduced only
+  for naming consistency.
+- Routes: `/` is the Journal home, `/journal/` the Journal index, `/chronicles/` the chronicle
+  landing page, and `/series/<id>/` the canonical route of every individual chronicle, existing
+  and new. The interface calls them Chronicles; the `/series/` prefix stays.
 - The ~78 queued post-only pull requests merge without modification, and the scheduler works
   exactly as before. A post it merges becomes discoverable in the Journal, search, its topics and
   qualifying chronicles automatically.

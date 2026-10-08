@@ -9,6 +9,78 @@ Append-only. Newest at the top. The rejected alternatives are the point — with
 
 ---
 
+### 2026-10-08 — Membership is resolved only by the site build; blog-mcp shares a conformance fixture, not code
+Context: Two programs need the membership predicate: the site build, which renders it, and blog-mcp, which validates the registry and reports uncurated rule members. blog-mcp's image build context is `tools/blog-mcp` and its compiler root is `src/`, so it cannot import anything under `docs/`.
+Chosen: The build's discovery core is the only membership resolver. blog-mcp validates registry structure and references, and reports rule-matched posts that are not curated as information only. A shared data fixture of cases with expected memberships is read by both test suites. `blog-mcp-image.yml`'s path filters gain the fixture's path.
+Rejected: **blog-mcp imports the core** — not possible given the image context and `rootDir`. **blog-mcp loads the core from the checkout at run time** — couples a running service to executing repository files. **Two independent implementations without a shared fixture** — the drift that left four hubs stale would recur in the validator.
+Reversibility: cheap
+
+---
+
+### 2026-10-08 — `blog_add_hub_entry` and `blog_validate_hubs` are repointed to the registry, not retired
+Context: The hub tools edit hand-written TSX lists through AST splicing, and their callers include the parity fixture, `git-service-consumer` declarations and the `create-blog-post` workflow. The redesign moves every list into the registry.
+Chosen: Tool names and inputs stay. `blog_add_hub_entry`'s `hub` enum widens to the registry's collection ids (a superset of today's four), and the tool writes a registry `entries` item through the `yaml` Document API, which preserves comments, with an atomic write and re-validation. An `href` that names another collection's route adds to that collection's `related` list. A duplicate entry is refused. The output's `path` becomes the registry file. `blog_validate_hubs` keeps its findings shape and its rule names where their meaning holds, adds `RegistrySchema`, `RegistryMissing`, `UnknownTag`, `UnknownCollection`, `IncludeExcludeConflict` and `RouteCollision`, and turns `HubCoverage` into information about uncurated rule members. Post validation gains `ReservedSlug`. The scheduler is not changed.
+Rejected: **Retire the hub tools** — breaks existing automation and the parity fixture. **New tool names for the registry** — every caller would change for no behavioural gain.
+Reversibility: moderate (the TSX lists are deleted in the same PR as the switch)
+
+---
+
+### 2026-10-08 — Data delivery: route data for static pages, a registry-bounded global summary, one lazily loaded index
+Context: Collection pages, the Journal index, the post footer and Surprise Me need different slices of discovery data. Global data is shipped with every page, so its size has to stay independent of the archive.
+Chosen: Static pages receive their entries as route data. Global data holds only the editorial summary: collection cards, featured entries and the topic list, all bounded by the registry and the tag count. The post footer and Surprise Me read one generated data module, loaded on demand behind a single client loader that degrades to nothing on failure. PR 1 measures the index before anything is optimized.
+Rejected: **The full index in global data** — ships the archive with every page. **One shard per post** — hundreds of tiny files with no shared caching. **A static file written after the build** — development would behave differently from production.
+Reversibility: cheap
+
+---
+
+### 2026-10-08 — The Journal home keeps chronological browsing intact by rendering the blog plugin's own page 1
+Context: Replacing `/` with an editorial home would leave `/page/2` starting at the eleventh post with no page 1, so the newest ten would vanish from chronological browsing.
+Chosen: The home is the documented `blogListComponent`. On page 1 it renders the Journal sections first, then a Latest section containing exactly the plugin's page-1 items and an "Older entries" link to `/page/2`. Page 2 onward renders the stock list. The Latest section plus every `/page/N` therefore equals the `/archive/` set with no gap and no duplicate, and an artifact check asserts that.
+Rejected: **A separate complete chronological listing** — duplicates `/archive/` and still leaves page 2 without page 1. **Moving the blog list to another base path** — moves `/page/N`, a public URL. **`postsPerPage: 'ALL'`** — removes pagination and makes `/` heavy.
+Reversibility: cheap
+
+---
+
+### 2026-10-08 — Existing hub lists seed the registry; automatic membership is enabled per chronicle against a committed baseline
+Context: Four hubs already miss posts their own rules match, and broad tags (`stories` 21 posts, `philosophy` 18) would swamp any chronicle mapped to them. Switching every hub to rules at once would change membership silently.
+Chosen: The registry starts as an exact copy of today's seven lists, as explicit entries with their labels and overrides, and with no rules. PR 1 commits a baseline of current membership and a test that resolved membership equals the baseline plus a recorded list of reviewed changes. PR 4 enables rules one chronicle at a time, each change recorded. No tag joins a chronicle without an explicit mapping. The baseline is retired after PR 4.
+Rejected: **Derive every hub from tags immediately** — silent membership changes, and broad tags would leak in. **Keep manual lists forever** — the queue could never make a post discoverable in its chronicle without a second PR.
+Reversibility: cheap
+
+---
+
+### 2026-10-08 — All Docusaurus internals are read through one adapter with a version guard and a captured fixture
+Context: `allContentLoaded` and the blog plugin's loaded-content shape are undocumented. Docusaurus 3.10 is the last v3 line, and v4 is coming.
+Chosen: One adapter is the only module that reads loaded content. It turns it into a plain `Entry` list and fails the build on a missing or mistyped field, zero posts, duplicate permalinks, an unmapped tag permalink, or a missing or duplicated blog plugin instance. It also fails the build on any Docusaurus version outside its verified list, currently `3.10.1`. A trimmed capture of the real loaded content from the pinned image is committed as its test fixture; re-capturing it is part of every upgrade. No Docusaurus type crosses the boundary.
+Rejected: **Read plugin content directly in components and the plugin** — spreads the undocumented shape across the code base, so an upgrade breaks it in many places. **Warn instead of failing** — a warning can ship empty chronicles.
+Reversibility: cheap
+
+---
+
+### 2026-10-08 — The registry is `docs/blog/chronicles.yml`, read with the base image's `js-yaml`
+Context: Editorial state (collections, rules, overrides, order, featured entries) needs one authored home that reaches the build and that blog-mcp may write. Only `docs/` reaches the build, and blog-mcp's write allowlist covers `docs/blog/` but not arbitrary files directly under `docs/`.
+Chosen: A single YAML file beside `tags.yml`. The build parses it with `js-yaml`, already a direct dependency of the pinned base image, so nothing is added there. blog-mcp edits it with its existing `yaml` dependency. The blog plugin only loads `.md`/`.mdx` files, and blog-mcp's post scan only reads `.md`, so neither mistakes it for a post.
+Rejected: **JSON** — no comments, poor for prose descriptions. **A TypeScript module** — blog-mcp would return to AST splicing. **Front-matter fields** — forbidden new per-post metadata, and queued PRs cannot carry them. **`.config/blog.json`** — never reaches the build.
+Reversibility: cheap
+
+---
+
+### 2026-10-08 — `/series/<id>/` stays the canonical route of every chronicle; no naming redirects; duplicate routes fail the build
+Context: The interface renames Series to Chronicles. Five `/series/*` routes are public, and GitHub Pages can only redirect client-side.
+Chosen: Every chronicle, existing and new, lives at `/series/<id>/`. `/chronicles/` is only the landing page, and `/journal/` is the Journal index. `/projects/game-engine/` stays a project hub. No redirect is added purely for naming consistency. `onDuplicateRoutes` becomes `'throw'`, and the core fails the build when a post slug claims a reserved route.
+Rejected: **`/chronicles/<id>/` with redirect stubs from `/series/*`** — five permanent client-side redirects that exist only so the prefix matches the label, and redirects that search engines weaken.
+Reversibility: expensive (a published collection URL becomes a public contract)
+
+---
+
+### 2026-10-08 — Journal + Chronicles is computed by a build-time plugin over the blog's loaded content (Approach A)
+Context: Chronicle membership must follow posts merged by the scheduler with no second PR, which rules out anything that requires a regeneration step after publication. Three approaches were presented: A, a site plugin plus a registry; B, a committed generated index; C, wrapping or replacing the blog plugin.
+Chosen: A, approved with seven corrections (pagination, adapter isolation, incremental membership, publication and identity invariants, static versus lazy delivery, blog-mcp compatibility, CI enforcement). Every post merged to `main` is picked up by the next build with no synchronization.
+Rejected: **B, a committed generated index** — queued post-only PRs never regenerate it, so every publication would need a second "reindex" PR, which changes the scheduler and breaks the primary invariant. **C, wrapping the blog plugin** — routes every post, feed and sitemap URL through new code for features the brief does not require.
+Reversibility: moderate
+
+---
+
 ### 2026-09-07 — AgentKit sync adopts applicable routing and lessons only
 Context: Syncing AgentKit from `d57880d` to `ac828a3` adds shell-backed `/next` and `/clean` helpers, three broadly applicable lessons, a record-writing sequence required by a newly added citation test, and an unrelated Videowright instruction block. The repository's `AGENTS.md` and `agent.md` are maintained artifacts, so the additions were presented individually rather than merged wholesale.
 Chosen: Add concise `/next` and `/clean` routing rows that name the new helper scripts; the record-writing sequence that makes the updated command citations valid; and the lessons on checking narrowed table rows, revisiting deferred work when its blocker disappears, and asserting correspondence rather than a fixed set size. Do not add the Videowright block: this repository has no `videos/` project.
