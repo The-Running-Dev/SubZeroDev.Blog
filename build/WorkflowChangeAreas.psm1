@@ -7,9 +7,9 @@ Implements the change-area classifier specified in
 tools/blog-mcp/TODO-NEXT.md sections 15-22: given the set of paths changed
 between two refs, decides which of a fixed set of named areas
 (markdown_gate, site_verify, site_deploy, blog_mcp_test, blog_mcp_image,
-blog_mcp_compose, workflow_definition) applies, so a workflow can skip
-inapplicable expensive jobs without ever leaving a required status check
-permanently pending.
+blog_content, blog_mcp_compose, workflow_definition) applies, so a workflow
+can skip inapplicable expensive jobs without ever leaving a required status
+check permanently pending.
 
 This module is pure logic plus a thin git-invocation layer; it never calls
 GitHub's REST API (whose changed-file list truncates at 300 entries) and
@@ -274,6 +274,20 @@ $script:AreaDefinition = [ordered]@{
         # ships inside the image (no Dockerfile COPY reaches it), so it
         # belongs only here, not in $script:BlogMcpImagePattern.
         'build/Confirm-BlogMcpDeployment.ps1'
+        '.github/workflows/blog-mcp-image.yml'
+    ) + $script:ClassifierPattern
+
+    # The inputs blog-mcp's post validator (validateAllPosts) reads from the
+    # repository rather than from its own source: posts, authors.yml,
+    # tags.yml, and the .config/blog.json that locates them. The validator's
+    # code is already covered by blog_mcp_test; this area exists so a
+    # content-only change, which never touches tools/blog-mcp/, still runs
+    # the validator. Without it, posts with an uppercase filename and
+    # offset-form dates sat on main from 2026-09-14 until a later
+    # tools/blog-mcp change ran the suite and failed on them.
+    blog_content = @(
+        'docs/blog/**'
+        '.config/blog.json'
         '.github/workflows/blog-mcp-image.yml'
     ) + $script:ClassifierPattern
 
