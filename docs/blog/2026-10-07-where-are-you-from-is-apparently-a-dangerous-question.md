@@ -1,237 +1,205 @@
 ---
 title: "\"Where Are You From?\" Is Apparently a Dangerous Question"
-description: "A simple question keeps turning into a nationality deposition, so the answer is now classified."
+description: "A normal dating-app question turns into classified information, a spy investigation, and eventually an actual conversation."
 slug: where-are-you-from-is-apparently-a-dangerous-question
 authors:
   - subzerodev
 date: 2026-10-07T09:35:00Z
 draft: true
 tags:
-  - identity
   - stories
+  - absurd
   - bulgaria
 ---
 
 # "Where Are You From?" Is Apparently a Dangerous Question
 
-A woman asked me where I am from.
+A woman asked me where I am originally from.
 
-Simple question.
+Perfectly normal question.
 
-I have learned that it is not a simple question.
+I answered:
 
-So I told her:
+> "That is classified information. You don't need to know."
 
-> "Let's keep that classified."
+This was not me trying to be mysterious.
 
-She thought that was mysterious.
-
-Good.
-
-Mystery is considerably easier than the fucking administrative hearing that usually follows.
+The fucking question is complicated.
 
 <!-- truncate -->
 
-Because if I answer honestly, somebody eventually decides to argue with me.
+That is the whole problem.
 
-Not about geography.
+Some questions have a one-line answer.
 
-About **me**.
+What do you do?
 
-## The Easy Answer That Does Not Exist
+I program.
 
-I was born in one city.
+What are you reading?
 
-I never really lived there.
+I can name the book.
 
-I lived somewhere else.
+What did you eat tonight?
 
-My mother is from one place.
+Yogurt with salt, because apparently I am committed to confusing people at every possible level.
 
-My father is from another.
+But:
 
-We moved around.
+> "Where are you originally from?"
 
-Then I moved around more.
+That one does not fit neatly into the little text box.
 
-Then I spent roughly twenty-three years in the United States.
+I can answer it.
 
-Then I lived in Europe again.
+I just cannot answer it honestly in one clean line without starting a biography, and I did not feel like opening a fucking PowerPoint presentation in the middle of a dating app.
 
-Then I came back to Bulgaria.
+## Classified
 
-So:
+She asked:
 
-> "Where are you from?"
+> "Is this the only one or everything is?"
 
-Pick a coordinate system.
+Fair question.
 
-Birth?
+So I clarified:
 
-Parents?
+> "Не, не всичко. Този въпрос е сложен."
 
-Childhood?
+No, not everything.
 
-Citizenship?
+That question is complicated.
 
-Culture?
+That could have been the end of it.
 
-Where I spent most of my adult life?
+Naturally, I made it worse.
 
-Where I feel at home?
+> "Bulgarians think I'm a spy. Which is endlessly amusing to me."
 
-Where I currently live?
+She laughed.
 
-There is no single answer that contains all of that.
+> "Spy?! This is so old school."
 
-Which is fine.
+Old school?
 
-I am not applying for customs clearance during a Tinder conversation.
+People still tell me this shit.
 
-## But You Are Bulgarian
+Young, old, doesn't matter.
 
-This is the part I keep finding bizarre.
+Apparently "spy" remains an available explanation whenever somebody cannot immediately fit me into whatever model they are using.
 
-Somebody asks.
+So I gave her Roger Murtaugh:
 
-I answer.
+> "I am too old for this shit."
 
-Then they tell me I am wrong.
+Which, to be fair, is probably the correct response to being accidentally assigned an intelligence-service career by random civilians.
 
-> "You were born in Bulgaria."
+## Something Not Classified
 
-Correct.
+She eventually said:
 
-> "Your parents are Bulgarian."
-
-Also correct.
-
-> "Therefore you are Bulgarian."
-
-Okay.
-
-You may classify me that way.
-
-I am not trying to confiscate your taxonomy.
-
-What I do not understand is why you need **me** to agree with your classification.
-
-A woman once became genuinely irritated because I would not adopt the identity she had selected for me.
-
-Another conversation recently went in the same direction.
-
-I said I did not want to discuss it.
-
-That did not help.
-
-Apparently "I do not want to discuss my nationality" is merely the opening statement in a longer nationality discussion.
-
-## Meanwhile, I Speak Bulgarian Like a Foreigner
-
-Then there is the opposite comedy.
-
-Lately people have started telling me I speak Bulgarian like a foreigner.
-
-This is fantastic.
-
-One group:
-
-> "You are obviously Bulgarian."
-
-Another group:
-
-> "Why do you speak Bulgarian like that?"
+> "Okay, so let's talk about something not classified."
 
 Excellent.
 
-Please form a committee.
+Progress.
 
-I will await the ruling.
+I suggested philosophy or religion.
 
-Today I was in a sandwich shop and somebody started speaking to me in English.
+She immediately pointed out that this could make for a very short conversation.
 
-I answered in English.
+Also fair.
 
-Then something I said in Bulgarian triggered questions about my Bulgarian.
+I told her I was kidding and that we could talk about anything.
 
-I found this objectively-subjectively fucking funny.
+Life is not serious.
 
-My identity is apparently being crowdsourced in real time.
+Then she found the obvious continuation:
 
-## The Question Has Unintended Consequences
+> "When you're not spying, what do you do?"
 
-So now I joke about it.
+There it was.
 
-Classified.
+The joke had survived contact with reality.
+
+So I answered:
+
+> "I put on spy movies."
+
+Because obviously.
+
+Then I finally gave her the boring human answer.
+
+I program.
+
+I travel.
+
+I read.
+
+And then I asked what she reads when she is not asking embarrassing questions.
+
+That is more or less how a normal conversation finally emerged from a question I had declared classified twenty minutes earlier.
+
+## The Funny Part
+
+The spy joke is funny to me precisely because I am not trying to create some mysterious persona.
+
+I am not sitting there thinking:
+
+> How can I seem intriguing?
+
+I am thinking:
+
+> Fuck. This question again.
+
+The shortest answer was "classified."
+
+Then she played along.
+
+Then I played along with her playing along.
+
+And eventually we got to books.
+
+This is apparently how communication works now.
+
+Start with a completely normal question.
+
+Refuse to answer it normally.
+
+Accidentally become a spy.
+
+Quote Lethal Weapon.
+
+Discuss philosophy.
+
+Admit you watch spy movies.
+
+Finally reveal that you are a programmer who reads books.
+
+Perfectly efficient.
+
+## The Actual Answer
+
+The actual answer remains the same.
+
+That question is complicated.
+
+Not forbidden.
+
+Not mystical.
+
+Not some dark secret.
+
+Just complicated.
+
+If I know you long enough, you will probably hear the whole story eventually.
+
+But I am not compressing it into a nationality field just because a dating app conversation expects one.
+
+Until then:
+
+Classified information.
 
 Need-to-know basis.
 
-National security.
-
-Because the truthful answer is not a label.
-
-It is a story.
-
-And I do not feel like telling the entire story every time somebody wants to know which little flag icon should appear next to my name.
-
-If you get to know me, you will find out.
-
-You will hear where I lived.
-
-You will hear what shaped me.
-
-You will hear which cultures I love.
-
-You will hear how I speak.
-
-You will watch me confuse three languages in the same week.
-
-Eventually you can classify me however the fuck you want.
-
-I genuinely do not care.
-
-## The Strange Need to Resolve Me
-
-That is the part that still interests me.
-
-Why does the uncertainty bother people?
-
-Why is:
-
-> "It's complicated."
-
-not an acceptable answer?
-
-Why does somebody who met me six minutes ago suddenly need a definitive ruling on my national identity?
-
-Nothing changes.
-
-I do not become easier to talk to.
-
-The sandwich does not taste different.
-
-The weather remains the same.
-
-No border moves.
-
-But somehow the category must be resolved.
-
-I have stopped helping.
-
-Ask where I am from.
-
-I may tell you.
-
-I may tell you it is classified.
-
-I may tell you:
-
-> "Everywhere and nowhere."
-
-And if that answer bothers you, excellent.
-
-Now we have discovered something useful.
-
-Not about me.
-
-About your need for the answer.
+And apparently, when I am not spying, I read.
