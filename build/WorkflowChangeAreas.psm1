@@ -251,15 +251,14 @@ $script:AreaDefinition = [ordered]@{
 
     # Union, never exclusion: build/Test-DocumentationArtifact.ps1 is not
     # under docs/**, so it lands here and only here with no special-casing.
-    # docs-ci.yml/docs-deploy.yml are included here (editing them should
-    # re-verify the site build) but deliberately not in site_deploy (editing
-    # them alone shouldn't force a redeploy) -- reading TODO-NEXT.md
+    # docs.yml is included here (editing it should re-verify the site
+    # build) but deliberately not in site_deploy (editing it alone
+    # shouldn't force a redeploy) -- reading TODO-NEXT.md
     # section 17.2's "generated-workflow changes that alter the build path"
     # narrowly. One-line change if that reading is wrong.
     site_verify = $script:SiteDeployPattern + @(
         'build/Test-DocumentationArtifact.ps1'
-        '.github/workflows/docs-ci.yml'
-        '.github/workflows/docs-deploy.yml'
+        '.github/workflows/docs.yml'
     )
 
     site_deploy = $script:SiteDeployPattern

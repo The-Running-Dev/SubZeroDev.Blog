@@ -194,11 +194,10 @@ deployment, and publication outcomes.
 
 After auto-merge is enabled:
 
-1. Monitor `Documentation links and terminology` and `Verify Documentation
-   Build` for the exact head SHA and report their final outcome.
+1. Monitor `docs / Build` for the exact head SHA and report its final outcome.
 2. Confirm the PR merged with the expected squash strategy and record the
    resulting merge commit SHA.
-3. Locate the `Docs Deploy` workflow for that merge commit and wait for its
+3. Locate the `Docs` workflow for that merge commit and wait for its
    final outcome.
 4. After a successful deployment, verify the canonical post URL over HTTPS:
 
@@ -207,7 +206,7 @@ After auto-merge is enabled:
 5. Report the PR URL, merge commit, deployment result, and published post URL.
 
 - **Tool:** `blog_wait_for_checks({ ref: $headSha })`, `blog_wait_for_merge({ pr })`, `blog_wait_for_deploy({ mergeCommitSha })`, `blog_verify_published_url({ mergeCommitSha, slug })` — or `blog_publish_report({ pr, slug })` to assemble all of the above into one report.
-- **Fallback:** `gh pr checks <pr> --watch`, poll `gh pr view --json state,mergeCommit`, poll `gh run list --workflow "Docs Deploy"` filtered to the merge commit SHA, `curl` the canonical URL once deploy completes.
+- **Fallback:** `gh pr checks <pr> --watch`, poll `gh pr view --json state,mergeCommit`, poll `gh run list --workflow "Docs"` filtered to the merge commit SHA, `curl` the canonical URL once deploy completes.
 
 If CI fails, review feedback arrives before merge, or the deployment fails:
 
@@ -258,7 +257,7 @@ successful. Do not require a user to click Merge, authorize an already enabled
 merge, or ask separately for the public URL. If deployment or route validation
 fails, report the failure and do not present a post URL as published.
 
-**Hard rule:** never state or imply a published URL until the `Docs Deploy` run
+**Hard rule:** never state or imply a published URL until the `Docs` run
 for that exact merge commit shows `completed`/`success`. A merged PR is not a
 deployed site — deploy runs after merge and takes its own time. Poll the run
 status until it finishes; do not report the URL as done based on the merge

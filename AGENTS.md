@@ -394,8 +394,9 @@ decision-log entry alone, per *Decision logging* above.
   directly.
 - `docs/docusaurus.config.ts`: consumer-owned site and route configuration.
 - `docs/sidebar.ts`: documentation navigation.
-- `docs/Dockerfile`, `docs.ps1`, `.github/workflows/docs-*.yml`: installer-owned
-  build and delivery files.
+- `docs/Dockerfile`, `docs.ps1`: installer-owned local build files.
+- `.github/workflows/docs.yml`: thin caller of the shared GitHub-ActionTemplates
+  `docs.yml` workflow, which builds and deploys the site.
 - `build/Test-Documentation.ps1`: documentation quality gate.
 - `.config/DocumentationRules.psd1`: generated-file and terminology rules.
 - `.config/blog.json`: machine-readable publishing configuration shared by
@@ -436,11 +437,11 @@ supported `Invoke-SetupDocs` interface. Before upgrading, inspect the template
 instructions, resolve the current container digest, dry-run the installer, and
 update every immutable image reference together.
 
-The installer-owned workflows carry one documented consumer-inserted step:
-after each production build, `./build/Test-DocumentationArtifact.ps1` validates
-this repository's route contract, which only this repository knows. Do not add
-other manual edits to `.github/workflows/docs-*.yml`. If a template upgrade
-regenerates those files, re-apply the validation step before merging.
+The docs workflow runs `./build/Test-Documentation.ps1` before the build
+(`pre-build`) and `./build/Test-DocumentationArtifact.ps1` after it
+(`post-build`), which validates this repository's route contract. Repository
+steps are script paths in those inputs; keep their logic in the scripts, not in
+the workflow file.
 
 README homepage generation is disabled because the blog owns `/`. Do not
 restore `build/ConvertTo-DocumentationHomepage.ps1` or
@@ -515,10 +516,9 @@ blocks the merge on those threads regardless. Query review threads via
 `tools/blog-mcp`'s `blog_pr_comments` tool or the GraphQL `reviewThreads`
 query in `.agents/workflows/publish-change.md`. Required PR checks are:
 
-- `Documentation links and terminology`
-- `Verify Documentation Build`
+- `docs / Build`
 
-Do not require the merge-only deployment job. Enable GitHub auto-merge with
+Do not require the merge-only deployment job (`docs / Deploy`). Enable GitHub auto-merge with
 the allowed squash strategy and the exact validated head SHA; GitHub will merge
 only after the required checks and conversation resolution pass. If the head
 changes, revalidate it and enable auto-merge again with the new SHA. Protect
@@ -536,7 +536,7 @@ post, verify its canonical HTTPS route after deployment succeeds and report the
 published URL. Do not claim a post is published when the deployment or route
 verification failed.
 
-**Hard rule:** never state or imply a published URL until the `Docs Deploy` run
+**Hard rule:** never state or imply a published URL until the `Docs` run
 for that exact merge commit shows `completed`/`success`. A merged PR is not a
 deployed site. Poll the run status (`gh run list` / `gh run watch`) until it
 finishes — do not estimate timing or report the URL "as good as done." When
@@ -550,7 +550,7 @@ layer is unavailable.
 
 - Public claims match source and current behavior.
 - Authored links, anchors, and terminology pass the gate.
-- The immutable docs image digest is consistent in all installer-owned files.
+- The immutable docs image digest is consistent in `docs/Dockerfile` and `docs.ps1`.
 - Production docs build and deployment checks pass.
 - `/`, `/welcome/`, `/docs/`, and representative authored routes work over
   HTTPS.
