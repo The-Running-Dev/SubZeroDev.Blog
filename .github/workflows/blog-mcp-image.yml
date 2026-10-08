@@ -10,8 +10,8 @@ name: blog-mcp Image
 # Not a required status check, so it's free to be more aggressively gated
 # than the docs workflows: a `changes` job (build/WorkflowChangeAreas.psm1,
 # Milestone 10 Phase A) classifies every run into blog_mcp_test/
-# blog_mcp_image/blog_content/blog_mcp_compose, and every other job below
-# gates on those outputs. The `paths:` filter on `on:` is belt-and-braces with that
+# blog_mcp_image/blog_mcp_compose, and every other job below gates on those
+# outputs. The `paths:` filter on `on:` is belt-and-braces with that
 # classifier, not redundant with it: `paths:` stops a run from being created
 # at all (the property that makes "a planning-document change creates no
 # workflow run" true), while the classifier splits jobs *within* a created
@@ -50,9 +50,6 @@ name: blog-mcp Image
             - "tools/blog-mcp/docker-compose.yml"
             - "tools/blog-mcp/.env.example"
             - "tools/blog-mcp/.env.ci"
-            # blog_content inputs: what the post validator reads
-            - "docs/blog/**"
-            - ".config/blog.json"
             # the classifier and this workflow's own definition
             - "build/WorkflowChangeAreas.psm1"
             - "build/Get-WorkflowChangeArea.ps1"
@@ -97,7 +94,6 @@ jobs:
             blog_mcp_test: ${{ steps.classify.outputs.blog_mcp_test }}
             blog_mcp_image: ${{ steps.classify.outputs.blog_mcp_image }}
             blog_mcp_compose: ${{ steps.classify.outputs.blog_mcp_compose }}
-            blog_content: ${{ steps.classify.outputs.blog_content }}
             forced: ${{ steps.classify.outputs.forced }}
         steps:
             # fetch-depth: 0 -- Get-WorkflowChangePath computes
@@ -135,7 +131,7 @@ jobs:
                   # that has to be off here.
                   $PSNativeCommandUseErrorActionPreference = $false
 
-                  $areaName = @('blog_mcp_test', 'blog_mcp_image', 'blog_mcp_compose', 'blog_content')
+                  $areaName = @('blog_mcp_test', 'blog_mcp_image', 'blog_mcp_compose')
 
                   function Write-JobOutput {
                       param (
@@ -321,46 +317,6 @@ jobs:
             - name: Verify image contract (Dockerfile / .dockerignore / classifier parity)
               run: pwsh -NoProfile -File ./build/Test-BlogMcpImageContract.ps1
               working-directory: ${{ github.workspace }}
-
-    # Post content is validated by blog-mcp's own validator, not by the docs
-    # build (Docusaurus accepts an uppercase filename and an offset-form
-    # date; build/Test-Documentation.ps1 checks links and terminology only).
-    # This job runs just that validator's tests, so a content-only change
-    # gets the check without the full suite or an image build. It runs even
-    # when `test` also runs: it is cheap, and it keeps this job's verdict
-    # independent of whether some other area happened to be touched.
-    content:
-        name: Validate blog posts
-        needs: changes
-        if: needs.changes.outputs.blog_content == 'true'
-        runs-on: ubuntu-latest
-        permissions:
-            contents: read
-        defaults:
-            run:
-                working-directory: tools/blog-mcp
-        steps:
-            # Default fetch-depth: 1 is enough -- the SlugImmutable rule reads
-            # `git show HEAD:<path>`, never older history.
-            - name: Check out repository
-              uses: actions/checkout@v7
-
-            - name: Set up Node.js
-              uses: actions/setup-node@v5
-              with:
-                  node-version: "22"
-                  cache: npm
-                  cache-dependency-path: tools/blog-mcp/package-lock.json
-
-            - name: Install server dependencies
-              run: npm ci
-
-            # Invoked directly rather than through a package.json script:
-            # package.json is a blog_mcp_image input, so adding a script
-            # there would publish and redeploy the image for a CI-only change.
-            # verification: true
-            - name: Validate posts against blog-mcp's rules
-              run: npx vitest run test/validate.test.ts
 
     image-pr:
         name: Verify image build (pull request)

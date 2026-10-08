@@ -284,11 +284,12 @@ $script:AreaDefinition = [ordered]@{
     # content-only change, which never touches tools/blog-mcp/, still runs
     # the validator. Without it, posts with an uppercase filename and
     # offset-form dates sat on main from 2026-09-14 until a later
-    # tools/blog-mcp change ran the suite and failed on them.
+    # tools/blog-mcp change ran the suite and failed on them. Gates
+    # .github/workflows/blog-content.yml's required "Validate blog posts".
     blog_content = @(
         'docs/blog/**'
         '.config/blog.json'
-        '.github/workflows/blog-mcp-image.yml'
+        '.github/workflows/blog-content.yml'
     ) + $script:ClassifierPattern
 
     blog_mcp_compose = @(

@@ -332,7 +332,8 @@ $extraFixture = @(
     @{ Name = 'classifier/self-module'; Path = @('build/WorkflowChangeAreas.psm1'); Expect = @('markdown_gate', 'blog_mcp_test', 'blog_content', 'workflow_definition') }
     @{ Name = 'classifier/test-script'; Path = @('build/Test-WorkflowChangeAreas.ps1'); Expect = @('markdown_gate', 'blog_mcp_test', 'blog_content', 'workflow_definition') }
     @{ Name = 'classifier/wrapper-script'; Path = @('build/Get-WorkflowChangeArea.ps1'); Expect = @('markdown_gate', 'blog_mcp_test', 'blog_content', 'workflow_definition') }
-    @{ Name = 'workflow/image'; Path = @('.github/workflows/blog-mcp-image.yml'); Expect = @('blog_mcp_test', 'blog_content', 'workflow_definition') }
+    @{ Name = 'workflow/image'; Path = @('.github/workflows/blog-mcp-image.yml'); Expect = @('blog_mcp_test', 'workflow_definition') }
+    @{ Name = 'workflow/blog-content'; Path = @('.github/workflows/blog-content.yml'); Expect = @('blog_content', 'workflow_definition') }
     @{ Name = 'workflow/docs-ci'; Path = @('.github/workflows/docs-ci.yml'); Expect = @('site_verify', 'workflow_definition') }
     @{ Name = 'unknown/unclassified'; Path = @('LICENSE', '.editorconfig'); Expect = @() }
     @{ Name = 'glob/prefix-bleed'; Path = @('tools/blog-mcp-other/x.ts'); Expect = @() }
