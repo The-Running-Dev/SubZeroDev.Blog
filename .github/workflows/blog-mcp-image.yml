@@ -2,9 +2,8 @@ name: blog-mcp Image
 
 # Builds and publishes the blog-mcp MCP server's Docker image
 # (tools/blog-mcp/Dockerfile) to ghcr.io. This is intentionally its own file,
-# never a job added to docs-ci.yml/docs-deploy.yml -- see AGENTS.md's
-# "installer-owned build and delivery files" section; those two carry
-# load-bearing markers and a documented single consumer-inserted step,
+# never a job added to docs.yml, which is only the thin caller of the shared
+# reusable docs workflow (The-Running-Dev/GitHub-ActionTemplates) and carries
 # nothing else.
 #
 # Not a required status check, so it's free to be more aggressively gated

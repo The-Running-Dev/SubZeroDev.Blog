@@ -143,7 +143,7 @@ GitHub keeps the PR open until every protected-branch requirement passes. Do
 not merge directly or bypass protection — **there is no direct-merge tool in
 `tools/blog-mcp`; enabling auto-merge is the only merge path either way.**
 Monitor the required checks for the exact head SHA, then confirm the merge
-and the `Docs Deploy` workflow for its merge commit. The repository removes
+and the `Docs` workflow for its merge commit. The repository removes
 the remote branch automatically after the merge.
 
 - **Tool:** `blog_wait_for_checks({ ref: $headSha })`, then
@@ -187,10 +187,10 @@ exception.
 - **Tool:** `blog_wait_for_deploy({ mergeCommitSha })`, then
   `blog_verify_published_url({ mergeCommitSha, slug })`, or
   `blog_publish_report({ pr, slug })` to assemble the whole report at once.
-- **Fallback:** poll `gh run list --workflow "Docs Deploy"` filtered to the
+- **Fallback:** poll `gh run list --workflow "Docs"` filtered to the
   merge commit SHA, then `curl` the canonical route once it completes.
 
-**Hard rule:** never state or imply a published URL until the `Docs Deploy` run
+**Hard rule:** never state or imply a published URL until the `Docs` run
 for that exact merge commit shows `completed`/`success`. A merged PR is not a
 deployed site. Poll the run status until it finishes — do not estimate timing
 or report the URL as done while deploy is still in flight.
