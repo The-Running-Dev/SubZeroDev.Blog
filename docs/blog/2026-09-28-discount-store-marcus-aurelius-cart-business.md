@@ -4,7 +4,7 @@ description: "Bubbles steals the carts, Ricky destroys aisle four, Julian keeps 
 slug: discount-store-marcus-aurelius-cart-business
 authors:
   - subzerodev
-date: 2026-09-29T00:50:00+03:00
+date: 2026-09-28T21:50:00Z
 tags:
   - philosophy
   - stories

@@ -99,10 +99,11 @@ and preferences belong in `AGENTS.md`.
   then delete. This repository squash-merges by default, so it applies every time.
 - **A required status check that never runs blocks the pull request permanently.** The
   saving on a skipped run is not worth a check that silently never reports — this is why
-  `docs-ci.yml` carries no `paths:` filter.
-- **A CI job can never be granted more permission than its workflow declares.** `docs-ci.yml`
-  and `docs-deploy.yml` stay two files for this reason: folding them together would hand the
-  gate and build jobs credentials they never use.
+  `docs.yml` carries no `paths:` filter.
+- **A called job can never be granted more permission than its caller job gives it.** `docs.yml`
+  grants `contents: read, pages: write, id-token: write` on the calling job, because the shared
+  workflow's Deploy job needs the write scopes; its Build job then narrows itself to read-only,
+  and Deploy is skipped on pull requests.
 
 ## Rendering and encoding
 
