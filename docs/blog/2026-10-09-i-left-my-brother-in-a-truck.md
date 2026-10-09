@@ -165,7 +165,7 @@ The interesting part is that I didn't stop caring for my brothers when we grew u
 
 I stopped thinking I had any right to run their lives.
 
-Yavor needed a hand finding his way? When I was about twenty, I brought him down to Texas. He lived with me for five or six months.
+Yavor needed a hand finding his way? When Yavor was about twenty, I brought him down to Texas. He lived with me for five or six months.
 
 Not because he owed me.
 
