@@ -4,7 +4,7 @@ description: "The transcription murders his name, Martin says huh, OpenAI tackle
 slug: universe-keeps-unit-testing-marcus-aurelius
 authors:
   - subzerodev
-date: 2026-09-29T01:25:00+03:00
+date: 2026-09-28T22:25:00Z
 tags:
   - philosophy
   - stories
