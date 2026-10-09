@@ -26,8 +26,8 @@ evidence-backed fix sequence, are tracked in
 
 The image ships PowerShell 7, git, and the GitHub CLI, but not Docker. It
 therefore cannot run the production Docusaurus build itself — that remains
-the job of the `Verify Documentation Build` required check in
-[`.github/workflows/docs-ci.yml`](../../.github/workflows/docs-ci.yml). What
+the job of the `docs / Build` required check in
+[`.github/workflows/docs.yml`](../../.github/workflows/docs.yml). What
 it *can* run unmodified is `build/Test-Documentation.ps1` (the link/anchor/
 terminology gate), which is pure PowerShell with no Docker or network
 dependency.
