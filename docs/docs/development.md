@@ -48,10 +48,10 @@ The production build runs through Docker:
 ## Pull Requests
 
 Use a focused branch and open a draft pull request. The pull request must pass
-both documentation checks before it is made ready and squash merged:
+the required checks before it is made ready and squash merged:
 
-- `Documentation links and terminology`
-- `Verify Documentation Build`
+- `docs / Build`
+- `Validate blog posts` (runs only when blog content changes; skipped otherwise)
 
 The deployment job runs only after changes reach `main`; it must not be
 configured as a pull-request requirement.
