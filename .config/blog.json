@@ -9,8 +9,8 @@
   "author_id": "subzerodev",
   "default_tags": [],
   "canonical_url": "https://blog.subzerodev.com",
-  "required_checks": ["Documentation links and terminology", "Verify Documentation Build"],
-  "deploy_workflow": "Docs Deploy",
+  "required_checks": ["docs / Build"],
+  "deploy_workflow": "Docs",
   "branch_prefixes": ["blog", "content", "fix", "feature", "docs"],
   "hubs": [
     { "id": "about", "path": "docs/src/pages/about.tsx", "match": { "tags": ["ahead-of-the-rubric"] } },

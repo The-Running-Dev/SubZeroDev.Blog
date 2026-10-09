@@ -1,0 +1,136 @@
+name: Blog content
+
+# Validates blog posts against blog-mcp's own validator (validateAllPosts),
+# which is the only check for its filename and date rules: Docusaurus accepts
+# an uppercase filename and an offset-form date, and
+# build/Test-Documentation.ps1 checks links and terminology only.
+#
+# Its own file, not a job in blog-mcp-image.yml, because "Validate blog
+# posts" is a required status check and that workflow is path-filtered: a
+# required check in a run that is never created leaves a pull request
+# permanently blocked. So this workflow has no `paths:` filter. Instead the
+# `changes` job runs the change-area classifier (build/WorkflowChangeAreas.psm1)
+# and the validator job is skipped only after successful classification finds
+# no blog content changes; a skipped job satisfies a required check.
+#
+# pull_request only: content reaches main through a pull request, which has
+# already been validated, so a main push has nothing new to check.
+
+"on":
+    pull_request:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    changes:
+        name: Classify blog content changes
+        runs-on: ubuntu-latest
+        outputs:
+            blog_content: ${{ steps.classify.outputs.blog_content }}
+        steps:
+            # fetch-depth: 0 -- the classifier computes `git merge-base`
+            # between the base ref and HEAD, which a shallow checkout lacks.
+            - name: Check out repository
+              uses: actions/checkout@v7
+              with:
+                  fetch-depth: 0
+
+            # Every dynamic value arrives through env:, never interpolated
+            # into the script body -- github.base_ref is attacker-influenced
+            # on a fork PR.
+            - name: Classify changed paths
+              id: classify
+              shell: pwsh
+              env:
+                  EVENT_NAME: ${{ github.event_name }}
+                  PR_BASE_REF: ${{ github.base_ref }}
+                  PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+              run: |
+                  Set-StrictMode -Version 3.0
+                  $ErrorActionPreference = 'Stop'
+                  # The base-ref probe expects `git rev-parse` to fail for an
+                  # unresolvable candidate.
+                  $PSNativeCommandUseErrorActionPreference = $false
+
+                  if ($env:EVENT_NAME -eq 'workflow_dispatch') {
+                      Write-Host 'workflow_dispatch: forcing blog_content true.'
+                      Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value 'blog_content=true' -Encoding utf8
+                      exit 0
+                  }
+
+                  $base = $null
+                  foreach ($candidate in @("origin/$($env:PR_BASE_REF)", $env:PR_BASE_SHA)) {
+                      if ([string]::IsNullOrWhiteSpace($candidate) -or $candidate -eq 'origin/') { continue }
+                      git rev-parse --verify --quiet "$candidate^{commit}" *> $null
+                      if ($LASTEXITCODE -eq 0) { $base = $candidate; break }
+                      Write-Host "::warning::Base ref candidate '$candidate' does not resolve in this checkout; trying the next."
+                  }
+                  if (-not $base) {
+                      # Fail closed: a required check must not pass on a guess.
+                      throw 'No base ref candidate resolved to a commit. Confirm actions/checkout used fetch-depth: 0.'
+                  }
+
+                  # -JsonPath rather than stdout: the wrapper's summary and its
+                  # JSON share one stream when it runs as a child process.
+                  $jsonPath = Join-Path $env:RUNNER_TEMP 'workflow-change-areas.json'
+                  $wrapper = Join-Path $env:GITHUB_WORKSPACE 'build/Get-WorkflowChangeArea.ps1'
+                  pwsh -NoProfile -File $wrapper -Base $base -Head 'HEAD' -JsonPath $jsonPath | Write-Host
+                  if ($LASTEXITCODE -ne 0) {
+                      throw "build/Get-WorkflowChangeArea.ps1 failed with exit code $LASTEXITCODE."
+                  }
+
+                  $result = Get-Content -LiteralPath $jsonPath -Raw | ConvertFrom-Json
+                  if ($result.Schema -ne 'workflow-change-areas/v1') {
+                      throw "Unexpected classifier schema '$($result.Schema)'; this job understands 'workflow-change-areas/v1' only."
+                  }
+
+                  $value = if ([bool] $result.Area.blog_content) { 'true' } else { 'false' }
+                  Write-Host "blog_content = $value"
+                  Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value "blog_content=$value" -Encoding utf8
+
+    # The required status check. Its name is what branch protection matches
+    # on, so renaming this job means updating main's required checks too.
+    content:
+        name: Validate blog posts
+        needs: changes
+        if: always() && (needs.changes.result != 'success' || needs.changes.outputs.blog_content == 'true')
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: tools/blog-mcp
+        steps:
+            # A failed dependency otherwise skips this required check, which
+            # branch protection accepts without validating any posts.
+            - name: Require successful classification
+              if: needs.changes.result != 'success'
+              shell: pwsh
+              working-directory: .
+              run: throw 'Blog content classification did not succeed.'
+
+            # Default fetch-depth: 1 is enough -- the SlugImmutable rule reads
+            # `git show HEAD:<path>`, never older history.
+            - name: Check out repository
+              uses: actions/checkout@v7
+
+            - name: Set up Node.js
+              uses: actions/setup-node@v5
+              with:
+                  node-version: "22"
+                  cache: npm
+                  cache-dependency-path: tools/blog-mcp/package-lock.json
+
+            - name: Install server dependencies
+              run: npm ci
+
+            # Invoked directly rather than through a package.json script:
+            # package.json is a blog_mcp_image input, so adding a script
+            # there would publish and redeploy the image for a CI-only change.
+            # verification: true
+            - name: Validate posts against blog-mcp's rules
+              run: npx vitest run test/validate.test.ts

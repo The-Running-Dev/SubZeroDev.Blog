@@ -273,9 +273,10 @@ $findings = [System.Collections.Generic.List[pscustomobject]]::new()
 $matrixFixture = @(
     @{ Name = 'matrix/planning-doc-only'; Path = @('tools/blog-mcp/TODO-NEXT.md'); Expect = @('markdown_gate') }
     @{ Name = 'matrix/root-readme-only'; Path = @('README.md'); Expect = @('markdown_gate') }
-    @{ Name = 'matrix/blog-post'; Path = @('docs/blog/2026-08-02-example-post.md'); Expect = @('markdown_gate', 'site_verify', 'site_deploy') }
-    @{ Name = 'matrix/blog-tags'; Path = @('docs/blog/tags.yml'); Expect = @('site_verify', 'site_deploy') }
-    @{ Name = 'matrix/blog-authors'; Path = @('docs/blog/authors.yml'); Expect = @('site_verify', 'site_deploy') }
+    @{ Name = 'matrix/blog-post'; Path = @('docs/blog/2026-08-02-example-post.md'); Expect = @('markdown_gate', 'site_verify', 'site_deploy', 'blog_content') }
+    @{ Name = 'matrix/blog-tags'; Path = @('docs/blog/tags.yml'); Expect = @('site_verify', 'site_deploy', 'blog_content') }
+    @{ Name = 'matrix/blog-authors'; Path = @('docs/blog/authors.yml'); Expect = @('site_verify', 'site_deploy', 'blog_content') }
+    @{ Name = 'matrix/blog-config'; Path = @('.config/blog.json'); Expect = @('blog_content') }
     @{ Name = 'matrix/hub-page'; Path = @('docs/docs/index.md'); Expect = @('markdown_gate', 'site_verify', 'site_deploy') }
     @{ Name = 'matrix/server-src'; Path = @('tools/blog-mcp/src/tools/post.ts'); Expect = @('blog_mcp_test', 'blog_mcp_image') }
     @{ Name = 'matrix/server-src-plus-markdown'; Path = @('tools/blog-mcp/src/tools/post.ts', 'tools/blog-mcp/README.md'); Expect = @('markdown_gate', 'blog_mcp_test', 'blog_mcp_image') }
@@ -300,7 +301,7 @@ $matrixFixture = @(
     @{
         Name   = 'matrix/mixed'
         Path   = @('docs/blog/2026-08-02-example-post.md', 'docs/docusaurus.config.ts', 'tools/blog-mcp/src/serve.ts', 'tools/blog-mcp/test/serve.test.ts')
-        Expect = @('markdown_gate', 'site_verify', 'site_deploy', 'blog_mcp_test', 'blog_mcp_image')
+        Expect = @('markdown_gate', 'site_verify', 'site_deploy', 'blog_mcp_test', 'blog_mcp_image', 'blog_content')
     }
 )
 
@@ -328,11 +329,12 @@ if (Test-FixtureIncluded -Name 'matrix/mixed') {
 $extraFixture = @(
     @{ Name = 'gate/documentation-rules'; Path = @('.config/DocumentationRules.psd1'); Expect = @('markdown_gate') }
     @{ Name = 'gate/documentation-script'; Path = @('build/Test-Documentation.ps1'); Expect = @('markdown_gate') }
-    @{ Name = 'classifier/self-module'; Path = @('build/WorkflowChangeAreas.psm1'); Expect = @('markdown_gate', 'blog_mcp_test', 'workflow_definition') }
-    @{ Name = 'classifier/test-script'; Path = @('build/Test-WorkflowChangeAreas.ps1'); Expect = @('markdown_gate', 'blog_mcp_test', 'workflow_definition') }
-    @{ Name = 'classifier/wrapper-script'; Path = @('build/Get-WorkflowChangeArea.ps1'); Expect = @('markdown_gate', 'blog_mcp_test', 'workflow_definition') }
+    @{ Name = 'classifier/self-module'; Path = @('build/WorkflowChangeAreas.psm1'); Expect = @('markdown_gate', 'blog_mcp_test', 'blog_content', 'workflow_definition') }
+    @{ Name = 'classifier/test-script'; Path = @('build/Test-WorkflowChangeAreas.ps1'); Expect = @('markdown_gate', 'blog_mcp_test', 'blog_content', 'workflow_definition') }
+    @{ Name = 'classifier/wrapper-script'; Path = @('build/Get-WorkflowChangeArea.ps1'); Expect = @('markdown_gate', 'blog_mcp_test', 'blog_content', 'workflow_definition') }
     @{ Name = 'workflow/image'; Path = @('.github/workflows/blog-mcp-image.yml'); Expect = @('blog_mcp_test', 'workflow_definition') }
-    @{ Name = 'workflow/docs-ci'; Path = @('.github/workflows/docs-ci.yml'); Expect = @('site_verify', 'workflow_definition') }
+    @{ Name = 'workflow/blog-content'; Path = @('.github/workflows/blog-content.yml'); Expect = @('blog_content', 'workflow_definition') }
+    @{ Name = 'workflow/docs'; Path = @('.github/workflows/docs.yml'); Expect = @('site_verify', 'workflow_definition') }
     @{ Name = 'unknown/unclassified'; Path = @('LICENSE', '.editorconfig'); Expect = @() }
     @{ Name = 'glob/prefix-bleed'; Path = @('tools/blog-mcp-other/x.ts'); Expect = @() }
 )
@@ -452,7 +454,7 @@ if (Test-FixtureIncluded -Name 'glob/malformed-leading-slash') {
 
 if (Test-FixtureIncluded -Name 'meta/area-coverage') {
     $definition = Get-WorkflowChangeAreaDefinition
-    $expectedNames = @('markdown_gate', 'site_verify', 'site_deploy', 'blog_mcp_test', 'blog_mcp_image', 'blog_mcp_compose', 'workflow_definition')
+    $expectedNames = @('markdown_gate', 'site_verify', 'site_deploy', 'blog_mcp_test', 'blog_mcp_image', 'blog_content', 'blog_mcp_compose', 'workflow_definition')
     $findings.AddRange([pscustomobject[]] (Test-StringSetEqual -Fixture 'meta/area-coverage' -Assertion 'DefinitionKeys' -Expected $expectedNames -Actual @($definition.Keys)))
 }
 
@@ -573,7 +575,7 @@ else {
 
                 $area = Get-WorkflowChangeArea -ChangedPath $changePath.Path -Base 'HEAD~1' -Head 'HEAD' -MergeBase $changePath.MergeBase
                 $findings.AddRange([pscustomobject[]] (Test-AreaExpectation -Fixture 'git/rename-and-delete' -Result $area `
-                            -ExpectedTrueArea @('markdown_gate', 'site_verify', 'site_deploy', 'blog_mcp_test', 'blog_mcp_image')))
+                            -ExpectedTrueArea @('markdown_gate', 'site_verify', 'site_deploy', 'blog_mcp_test', 'blog_mcp_image', 'blog_content')))
             }
             finally {
                 Remove-ChangeAreaScratchRepository -RepositoryRoot $scratch
@@ -599,7 +601,7 @@ else {
 
                 $reverse = Get-WorkflowChangePath -RepositoryRoot $scratch -Base 'feature' -Head 'main'
                 $reverseArea = Get-WorkflowChangeArea -ChangedPath $reverse.Path -Base 'feature' -Head 'main' -MergeBase $reverse.MergeBase
-                $findings.AddRange([pscustomobject[]] (Test-AreaExpectation -Fixture 'git/merge-base-reversed' -Result $reverseArea -ExpectedTrueArea @('markdown_gate', 'site_verify', 'site_deploy')))
+                $findings.AddRange([pscustomobject[]] (Test-AreaExpectation -Fixture 'git/merge-base-reversed' -Result $reverseArea -ExpectedTrueArea @('markdown_gate', 'site_verify', 'site_deploy', 'blog_content')))
                 if ($reverse.MergeBase.Count -ne 1 -or $reverse.MergeBase[0] -ne $seedSha) {
                     $findings.Add((New-ChangeAreaFinding -Fixture 'git/merge-base-reversed' -Assertion 'MergeBase' -Severity 'Error' -Message 'Merge base must be symmetric regardless of comparison direction.'))
                 }
