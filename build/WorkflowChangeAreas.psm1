@@ -7,9 +7,9 @@ Implements the change-area classifier specified in
 tools/blog-mcp/TODO-NEXT.md sections 15-22: given the set of paths changed
 between two refs, decides which of a fixed set of named areas
 (markdown_gate, site_verify, site_deploy, blog_mcp_test, blog_mcp_image,
-blog_mcp_compose, workflow_definition) applies, so a workflow can skip
-inapplicable expensive jobs without ever leaving a required status check
-permanently pending.
+blog_content, blog_mcp_compose, workflow_definition) applies, so a workflow
+can skip inapplicable expensive jobs without ever leaving a required status
+check permanently pending.
 
 This module is pure logic plus a thin git-invocation layer; it never calls
 GitHub's REST API (whose changed-file list truncates at 300 entries) and
@@ -251,15 +251,14 @@ $script:AreaDefinition = [ordered]@{
 
     # Union, never exclusion: build/Test-DocumentationArtifact.ps1 is not
     # under docs/**, so it lands here and only here with no special-casing.
-    # docs-ci.yml/docs-deploy.yml are included here (editing them should
-    # re-verify the site build) but deliberately not in site_deploy (editing
-    # them alone shouldn't force a redeploy) -- reading TODO-NEXT.md
+    # docs.yml is included here (editing it should re-verify the site
+    # build) but deliberately not in site_deploy (editing it alone
+    # shouldn't force a redeploy) -- reading TODO-NEXT.md
     # section 17.2's "generated-workflow changes that alter the build path"
     # narrowly. One-line change if that reading is wrong.
     site_verify = $script:SiteDeployPattern + @(
         'build/Test-DocumentationArtifact.ps1'
-        '.github/workflows/docs-ci.yml'
-        '.github/workflows/docs-deploy.yml'
+        '.github/workflows/docs.yml'
     )
 
     site_deploy = $script:SiteDeployPattern
@@ -275,6 +274,21 @@ $script:AreaDefinition = [ordered]@{
         # belongs only here, not in $script:BlogMcpImagePattern.
         'build/Confirm-BlogMcpDeployment.ps1'
         '.github/workflows/blog-mcp-image.yml'
+    ) + $script:ClassifierPattern
+
+    # The inputs blog-mcp's post validator (validateAllPosts) reads from the
+    # repository rather than from its own source: posts, authors.yml,
+    # tags.yml, and the .config/blog.json that locates them. The validator's
+    # code is already covered by blog_mcp_test; this area exists so a
+    # content-only change, which never touches tools/blog-mcp/, still runs
+    # the validator. Without it, posts with an uppercase filename and
+    # offset-form dates sat on main from 2026-09-14 until a later
+    # tools/blog-mcp change ran the suite and failed on them. Gates
+    # .github/workflows/blog-content.yml's required "Validate blog posts".
+    blog_content = @(
+        'docs/blog/**'
+        '.config/blog.json'
+        '.github/workflows/blog-content.yml'
     ) + $script:ClassifierPattern
 
     blog_mcp_compose = @(
