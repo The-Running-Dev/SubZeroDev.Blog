@@ -561,13 +561,13 @@ if (Test-FixtureIncluded -Name 'image/build-revision-parity') {
         $workflowText = [IO.File]::ReadAllText($workflowPath)
         $buildArgPattern = [regex]::Escape("$buildRevisionArgName=`${{ github.sha }}")
         $buildArgMatch = [regex]::Matches($workflowText, $buildArgPattern)
-        # One in the image-pr job's "Build image (never pushed)" step, one in
-        # the publish job's "Build and push" step -- both must pass the exact
-        # source commit through, or a PR build and a real publish would prove
-        # different things about this wiring.
-        if ($buildArgMatch.Count -ne 2) {
+        # The single build-args value on the image job, which calls the shared
+        # container workflow: one build serves the pull-request check and the
+        # published image alike, so there is only one place to pass the exact
+        # source commit through (it used to be two, image-pr + publish).
+        if ($buildArgMatch.Count -ne 1) {
             $findings.Add((New-ImageContractFinding -Fixture 'image/build-revision-parity' -Severity 'Error' `
-                        -Message "Expected exactly 2 occurrences of '$buildRevisionArgName=`${{ github.sha }}' as a build-args value in blog-mcp-image.yml (image-pr + publish build steps), found $($buildArgMatch.Count)."))
+                        -Message "Expected exactly 1 occurrence of '$buildRevisionArgName=`${{ github.sha }}' as a build-args value in blog-mcp-image.yml (the image job's call of the shared container workflow), found $($buildArgMatch.Count)."))
         }
     }
 }

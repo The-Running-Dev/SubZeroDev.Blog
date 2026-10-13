@@ -269,10 +269,13 @@ $script:AreaDefinition = [ordered]@{
         'tools/blog-mcp/test/**'
         'tools/blog-mcp/vitest.config.*'
         'build/Test-BlogMcpImageContract.ps1'
-        # CI-only post-redeploy verification logic (issue #109) -- it never
-        # ships inside the image (no Dockerfile COPY reaches it), so it
-        # belongs only here, not in $script:BlogMcpImagePattern.
+        # CI-only scripts: the post-redeploy verification logic (issue #109), its
+        # post-deploy hook and the workflow's change-area step. None ships
+        # inside the image (no Dockerfile COPY reaches build/), so they belong
+        # only here, not in $script:BlogMcpImagePattern.
         'build/Confirm-BlogMcpDeployment.ps1'
+        'build/Invoke-BlogMcpPostDeploy.ps1'
+        'build/Write-BlogMcpChangeAreaOutput.ps1'
         '.github/workflows/blog-mcp-image.yml'
     ) + $script:ClassifierPattern
 
