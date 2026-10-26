@@ -55,6 +55,11 @@ export default function LuciferChronicles(): React.JSX.Element {
           title: 'Much Ado About Nothing',
           description: 'A dramatic declaration granting permission for something that was already happening.',
           href: '/much-ado-about-nothing/'
+        },
+        {
+          title: 'Are You Not Entertained?',
+          description: 'An old shirt, an olive branch, a misunderstanding, and the surprisingly useful option of simply asking.',
+          href: '/are-you-not-entertained/'
         }
       ]}
     />
