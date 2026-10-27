@@ -227,7 +227,6 @@ $oldBlogLinkPattern = '<a\b[^>]*\bhref="https://blog\.subzerodev\.com/"[^>]*>Blo
 
 foreach ($route in $representativeRoutes) {
     $content = Get-ArtifactContent -RelativePath $route
-    Assert-Content -Content $content -ExpectedText $mastheadRequiredText -Label "documentation artifact '$route'"
 
     if ($content -cnotmatch '<title\b[^>]*>[^<]*SubZeroDev Journal</title>') {
         throw "Expected documentation artifact '$route' to use the SubZeroDev Journal page title."
@@ -235,7 +234,8 @@ foreach ($route in $representativeRoutes) {
     if ($content -notmatch '(?s)<header\b[^>]*\bsite-masthead\b[^>]*>(.*?)</header>') {
         throw "Expected documentation artifact '$route' to contain the site masthead."
     }
-    $masthead = $Matches[1]
+    $masthead = $Matches[0]
+    Assert-Content -Content $masthead -ExpectedText $mastheadRequiredText -Label "documentation artifact '$route' masthead"
     if ($masthead -cnotmatch $journalLinkPattern -or $masthead -cmatch $oldBlogLinkPattern) {
         throw "Expected documentation artifact '$route' masthead to link to the Journal at the existing domain."
     }
