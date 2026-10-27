@@ -6,7 +6,8 @@ Validates discovery routes and feeds in a production documentation artifact.
 Checks the route contract that only exists after a production Docusaurus build:
 canonical and compatibility pages, the archive, the tag index and every
 predefined tag page, and the RSS and Atom feeds. It also proves that the
-authoring template was excluded from blog discovery.
+Journal identity is rendered without changing the SubZeroDev masthead brand,
+and that the authoring template was excluded from blog discovery.
 #>
 [CmdletBinding()]
 param (
@@ -94,6 +95,29 @@ function Assert-ArtifactContent {
 
     $content = Get-ArtifactContent -RelativePath $RelativePath
     Assert-Content -Content $content -ExpectedText $ExpectedText -Label "documentation artifact '$RelativePath'"
+}
+
+function Assert-XmlValue {
+    param (
+        [Parameter(Mandatory)]
+        [xml] $Document,
+
+        [Parameter(Mandatory)]
+        [string] $XPath,
+
+        [Parameter(Mandatory)]
+        [string] $ExpectedValue,
+
+        [Parameter(Mandatory)]
+        [string] $Label
+    )
+
+    $namespaces = [Xml.XmlNamespaceManager]::new($Document.NameTable)
+    $namespaces.AddNamespace('atom', 'http://www.w3.org/2005/Atom')
+    $nodes = @($Document.SelectNodes($XPath, $namespaces))
+    if ($nodes.Count -ne 1 -or $nodes[0].get_InnerText() -cne $ExpectedValue) {
+        throw "Expected $Label at '$XPath' to be exactly '$ExpectedValue' (one node)."
+    }
 }
 
 # Line-based extraction with optional trailing YAML comments. A tag entry
@@ -196,9 +220,25 @@ $footerLinkText = @(
     'https://portfolio.subzerodev.com/'
 )
 
+# Match the destination and label on the same anchor, within each landmark.
+# A footer-only rename must not hide a stale masthead label (or vice versa).
+$journalLinkPattern = '<a\b[^>]*\bhref="https://blog\.subzerodev\.com/"[^>]*>Journal(?=<)'
+$oldBlogLinkPattern = '<a\b[^>]*\bhref="https://blog\.subzerodev\.com/"[^>]*>Blog(?=<)'
+
 foreach ($route in $representativeRoutes) {
     $content = Get-ArtifactContent -RelativePath $route
     Assert-Content -Content $content -ExpectedText $mastheadRequiredText -Label "documentation artifact '$route'"
+
+    if ($content -cnotmatch '<title\b[^>]*>[^<]*SubZeroDev Journal</title>') {
+        throw "Expected documentation artifact '$route' to use the SubZeroDev Journal page title."
+    }
+    if ($content -notmatch '(?s)<header\b[^>]*\bsite-masthead\b[^>]*>(.*?)</header>') {
+        throw "Expected documentation artifact '$route' to contain the site masthead."
+    }
+    $masthead = $Matches[1]
+    if ($masthead -cnotmatch $journalLinkPattern -or $masthead -cmatch $oldBlogLinkPattern) {
+        throw "Expected documentation artifact '$route' masthead to link to the Journal at the existing domain."
+    }
 
     # Blog list pages also render a per-article <footer> (post tags), which a
     # bare <footer>...</footer> match would find first. `theme-layout-footer`
@@ -207,8 +247,29 @@ foreach ($route in $representativeRoutes) {
     if ($content -notmatch '(?s)<footer\b[^>]*\btheme-layout-footer\b[^>]*>(.*?)</footer>') {
         throw "Expected documentation artifact '$route' to contain the site footer (class ``theme-layout-footer``)."
     }
-    Assert-Content -Content $Matches[1] -ExpectedText $footerLinkText -Label "documentation artifact '$route' footer"
+    $footer = $Matches[1]
+    Assert-Content -Content $footer -ExpectedText $footerLinkText -Label "documentation artifact '$route' footer"
+    if ($footer -cnotmatch $journalLinkPattern -or $footer -cmatch $oldBlogLinkPattern) {
+        throw "Expected documentation artifact '$route' footer to link to the Journal at the existing domain."
+    }
 }
+
+# Display names must not move the root index, published posts or compatibility
+# redirects. Check canonical metadata separately from links in article content.
+foreach ($path in @('', 'welcome', 'ai-assisted-engineering-workflow')) {
+    $route = if ($path) { "$path/index.html" } else { 'index.html' }
+    $content = Get-ArtifactContent -RelativePath $route
+    $canonicalUrl = [regex]::Escape("https://blog.subzerodev.com/$path")
+    if ($content -notmatch "<link\b(?=[^>]*\brel=`"canonical`")(?=[^>]*\bhref=`"$canonicalUrl`")") {
+        throw "Expected documentation artifact '$route' to retain its canonical URL."
+    }
+}
+Assert-ArtifactContent -RelativePath 'blog/index.html' -ExpectedText @('content="0;url=/"')
+Assert-ArtifactContent -RelativePath 'blog/welcome/index.html' -ExpectedText @('content="0;url=/welcome/"')
+Assert-ArtifactContent -RelativePath 'index.html' -ExpectedText @(
+    'href="/rss.xml" title="SubZeroDev Journal RSS Feed"',
+    'href="/atom.xml" title="SubZeroDev Journal Atom Feed"'
+)
 
 foreach ($permalink in $tagPermalinks) {
     Assert-ArtifactFile -RelativePath "tags/$permalink/index.html"
@@ -238,6 +299,18 @@ foreach ($feedPath in @('rss.xml', 'atom.xml')) {
     }
     catch {
         throw "Feed '$feedPath' is not valid XML: $($_.Exception.Message)"
+    }
+
+    if ($feedPath -eq 'rss.xml') {
+        Assert-XmlValue -Document $feed -XPath '/rss/channel/title' -ExpectedValue 'SubZeroDev Journal' -Label $feedPath
+        Assert-XmlValue -Document $feed -XPath '/rss/channel/link' -ExpectedValue 'https://blog.subzerodev.com/' -Label $feedPath
+        Assert-XmlValue -Document $feed -XPath '/rss/channel/item[link="https://blog.subzerodev.com/ai-assisted-engineering-workflow"]/guid' -ExpectedValue 'https://blog.subzerodev.com/ai-assisted-engineering-workflow' -Label $feedPath
+    }
+    else {
+        Assert-XmlValue -Document $feed -XPath '/atom:feed/atom:title' -ExpectedValue 'SubZeroDev Journal' -Label $feedPath
+        Assert-XmlValue -Document $feed -XPath '/atom:feed/atom:id' -ExpectedValue 'https://blog.subzerodev.com/' -Label $feedPath
+        Assert-XmlValue -Document $feed -XPath '/atom:feed/atom:link[@rel="alternate"]/@href' -ExpectedValue 'https://blog.subzerodev.com/' -Label $feedPath
+        Assert-XmlValue -Document $feed -XPath '/atom:feed/atom:entry[atom:id="https://blog.subzerodev.com/ai-assisted-engineering-workflow"]/atom:link/@href' -ExpectedValue 'https://blog.subzerodev.com/ai-assisted-engineering-workflow' -Label $feedPath
     }
 
     $feedText = $feed.OuterXml
