@@ -1,3 +1,8 @@
+windows:
+  label: Windows
+  permalink: /windows
+  description: Installing, configuring, and maintaining Microsoft Windows.
+
 site-updates:
   label: Site Updates
   permalink: /site-updates
@@ -157,3 +162,4 @@ react:
   label: React
   permalink: /react
   description: Building, composing, and abusing React components and the tooling around them.
+
