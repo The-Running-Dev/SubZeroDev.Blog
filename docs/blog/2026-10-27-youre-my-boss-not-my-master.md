@@ -1,60 +1,147 @@
 ---
 title: "You're My Boss, Not My Goddamn Master"
-description: "Work, authority, family crisis, and the line between doing a job and surrendering my dignity."
+description: "Two decades of engineering judgment, three HR representatives, and an extremely fragrant laptop return."
 slug: youre-my-boss-not-my-master
 authors:
   - subzerodev
 date: 2026-10-27T00:00:00Z
-draft: true
 tags:
-  - philosophy
   - stories
+  - absurd
+  - lucifer
+  - philosophy
 ---
 
 # You're My Boss, Not My Goddamn Master
 
-You're my boss. You're not my goddamn master.
+There is a peculiar corporate ritual where someone hires you for twenty-five years of experience and then becomes deeply offended when you use any of it.
+
+**We value your judgment. Please stop judging. Here are your tickets.**
 
 <!-- truncate -->
 
-I keep coming back to that because there seems to be an awful lot of confusion about what a job gives somebody the right to expect from you.
+I have encountered this ritual more than once.
 
-There is work. There are responsibilities. There are decisions that have to be made, and sometimes somebody else has the authority to make them. I understand that.
+The company reads the résumé. Architecture. Engineering. Automation. Problem solving. Innovation. Lovely stuff. Bring this man aboard!
 
-I still have judgment. I still have a life. I still have the ability to say that something is fucking wrong.
+Then I arrive, examine the system, suggest improvements, and someone says the professional equivalent of **SHUT UP AND TURN THE TICKETS**.
 
-I think about ThoughtWorks. The family crisis in Spain. The product owner. The three-person HR firing ceremony. And the fucking smelly shoes returned with the MacBook.
+My apologies. I thought you were hiring the engineer, not renting the fingers.
 
-That last detail belongs in the story. It's absurd, and I don't want to clean the absurdity out of it just to make the whole thing sound more respectable.
+## The Jason Escalation Protocol
 
-I have to be careful about what I'm claiming here. These are my experiences as I remember them. I can describe how something landed with me without pretending I know everything that was happening in everybody else's head.
+At one job, a coworker disagreed with something I was doing.
 
-But I know the question they leave me with.
+Perfectly normal. Adults disagree. We can discuss it.
 
-What is the point of bringing experience and independent judgment to a job if exercising that judgment becomes a problem the moment somebody above you doesn't like it?
+Instead he went to the boss.
 
-I don't think being experienced makes me automatically right. I can be wrong. I can be difficult. I've made enough mistakes that I'm not going to pretend otherwise.
+The boss came over and told me to do what my coworker said.
 
-I still need more than the fact that somebody is my boss to make something make sense to me.
+"Okay," I replied.
 
-Explain the decision. Tell me what I'm missing. Give me something I can actually examine. I might still disagree, but at least we're dealing with the work and the reasons for doing it.
+And I continued exercising my own judgment.
 
-The moment the explanation becomes the hierarchy itself, I have a problem.
+That particular dispute would not be the last example of my apparently shocking belief that having a boss is not the same as having a master.
 
-And yes, that can cost me. I know it can cost me. I've talked enough about authenticity and its consequences to know that being able to live with my own response doesn't guarantee that the response works out well for me.
+I recognize a manager's position. I also recognize that hierarchy is not an argument and a job title is not a substitute for thinking.
 
-I don't want to rewrite the story as though every consequence proves I was brave and everybody else was a fucking idiot. That would be convenient. It would also spare me from examining anything I might have handled badly.
+This has not made me universally popular.
 
-Maybe I could have said something differently. Maybe I could have chosen a different moment. Maybe I could have protected myself better.
+Two of my most recent corporate jobs ended with me being fired.
 
-Those are questions I can ask without deciding that I should have surrendered my judgment altogether.
+My LinkedIn endorsement section is probably missing the category **Stubborn Motherfucker, Expert Level**.
 
-The family crisis belongs in this because having a job doesn't make the rest of your life stop existing. Something serious can happen to your family while you are also somebody's employee. I struggle with any arrangement that seems unable to hold both of those facts.
+## Our Corporate Family Would Like You to Report to HR
 
-What I can write now is the part I keep wrestling with: how to work with authority without accepting that authority as ownership.
+Then there was Spain.
 
-I don't have some triumphant final scene where I walk away and everything gets better. The consequences matter. Being able to say that I stood by myself doesn't make them painless.
+I was working at a consultancy that liked to talk about collaboration, values, humanity, and all the other beautiful words you can fit onto a corporate website without ever having to test them against reality.
 
-I want to be able to work with people. I also want to be able to disagree with them without feeling that my right to have a judgment of my own is the fucking problem.
+At the time, a serious family crisis involving my mother erupted. I told my product owner I needed to spend a couple of weeks in Bulgaria. I intended to continue working. I explained what was happening. I asked for some support.
 
-I haven't found a comfortable way to hold that.
+We discussed it. I understood it was fine.
+
+When I returned, the situation had somehow transformed into a justification for ending my employment.
+
+And there is a detail I particularly enjoy: before this, I had spent roughly three months without a client assignment. Instead of sitting around contemplating the Agile Manifesto, I found useful things to work on—testing, Docker, containers, improvements that could help the teams.
+
+You know. Engineering.
+
+Apparently that was not enough to rescue me from the next performance of **Corporate Accountability: The Musical**.
+
+## Three HR Representatives Walk Into a Video Call
+
+Three women from HR appeared on a call to tell me I was being fired.
+
+Three.
+
+For one employee.
+
+This had the production budget of a hostage negotiation.
+
+They began reading a list of alleged failings and dates. I disputed the account. As I remember it, much of the list bore little resemblance to what had actually happened.
+
+But then I realized there was no reason to sit through an elaborate courtroom drama when the verdict had apparently been printed before the hearing.
+
+"I don't care. Just fire me."
+
+They continued explaining.
+
+"I understand. Fire me."
+
+More explanations.
+
+"**Motherfuckers, I have accepted the plot. Roll the credits.**"
+
+Not my exact words on the call, but very much the spirit.
+
+They were determined to complete their dismissal ceremony. I was determined to stop attending a ceremony whose outcome I already knew.
+
+A remarkable collision of corporate process and an employee with no interest in the theater.
+
+## The MacBook and the Shoes
+
+They wanted their company MacBook returned.
+
+Fine.
+
+I had already told them it wasn't suitable for the kind of heavy work I do, but it was their machine and they wanted it back.
+
+They sent me a box.
+
+I packed the laptop.
+
+Then I found a pair of old, smelly shoes that I had been planning to throw away.
+
+And I packed those too.
+
+Off the box went to Barcelona.
+
+Was this a mature, elegant, Stoically detached expression of professional disappointment?
+
+Absolutely fucking not.
+
+Was it a gloriously petty and absurd farewell gift?
+
+I will let the receiving department conduct its own retrospective.
+
+## The Point, Somewhere Under the Shoes
+
+I was transparent about a family crisis because I thought people could have an honest conversation.
+
+I was doing useful engineering because that's what I was hired to do.
+
+And I continue to think that collaboration means discussing ideas, not automatically obeying the nearest person with a title.
+
+Companies love hiring independent thinkers.
+
+Until the thinker turns out to be independent.
+
+Then they call HR.
+
+Sometimes three of them.
+
+**You're my boss. You're not my goddamn master.**
+
+Please return all company equipment, including any footwear inadvertently included in the separation package.
