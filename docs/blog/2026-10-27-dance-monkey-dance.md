@@ -1,64 +1,121 @@
 ---
 title: "Dance, Monkey, Dance"
-description: "Tinder, auditions, human worth, and wanting to meet somebody without performing for a ranking system."
+description: "Tinder has apparently invented a stock market for human worth, and I refuse to list my shares."
 slug: dance-monkey-dance
 authors:
   - subzerodev
 date: 2026-10-27T00:00:00Z
-draft: true
 tags:
-  - philosophy
   - stories
+  - absurd
+  - lucifer
+  - philosophy
 ---
 
 # Dance, Monkey, Dance
 
-Apparently, getting to know another human being needs to be made as fucking complicated as possible.
+I opened Tinder and encountered a profound declaration attributed to Marilyn Monroe: no man is worth two women, and no woman should be worth so little as to come second.
+
+Wonderful.
+
+Apparently human beings are now traded on a relationship commodities exchange.
 
 <!-- truncate -->
 
-There's a Tinder profile. There's a quote about a man not being worth two women. And before we've even met, we're already doing arithmetic with human worth.
+What the fuck does **worth** mean here?
 
-What the fuck are we measuring?
+Money? Character? Affection? Height? Number of compatible phone chargers?
 
-I can understand wanting a relationship where you are treated well. I can understand having expectations and not wanting to waste your time. I have expectations too.
+And who established the exchange rate between one man and two women?
 
-But I struggle with the premise that one person arrives with a value already assigned, and the other person's job is to demonstrate that they're worth considering.
+I have questions for the governing body. I suspect the governing body is a woman with a Tinder profile and a Pinterest quote collection.
 
-Then there's the whole two-days-to-impress-me thing.
+## Welcome to the Human Valuation Department
 
-Two days. Impress me.
+People love announcing universal laws of romance as though they received them on stone tablets.
 
-I can hear how ridiculous it sounds when it's put that plainly. An audition with a fucking deadline.
+Monogamy. Exclusivity. Who gets to pursue whom. Who has to demonstrate value. Who is supposed to be grateful.
 
-And the ridiculousness isn't made any better by switching who gets to say it. I don't get to call the premise demeaning and then treat it as reasonable when it gives me the advantage.
+Choose whatever relationship arrangement works for you. But the minute you start declaring what an entire human being is *worth*, we have entered the Department of Absurd Measurements.
 
-That's the part I don't want to lose.
+Love isn't automatically a fixed-size pizza. Nobody informs a mother she may love only one child because a second child would dilute the market value of the first.
 
-It's easy to object to a game because somebody has put you in the position you don't like. It's harder to ask why the game would suddenly become reasonable if you got the better position.
+Obviously romantic relationships involve their own commitments, but the arithmetic analogy is spectacularly silly.
 
-I don't want my answer to somebody assigning my worth to be that I should get to assign theirs instead.
+Human societies have arranged relationships in more than one way across history. Somehow a modern dating profile has finally distilled all that complexity into a slogan with a celebrity's name underneath.
 
-I want to understand how two people manage to bury the possibility of getting to know each other under so much fucking performance.
+Thank God. Anthropology can close.
 
-You have to present yourself. They have to present themselves. There are expectations about who should do what, who should prove something, who should be impressed, who should appear less interested.
+## The Audition Begins
 
-I can feel myself getting irritated just describing it.
+Online dating has another wonderful tradition.
 
-And then I have to be honest about what I'm bringing into that too. I'm not arriving without opinions, hurt, expectations, or ways of protecting myself. I can't criticize everybody else's performance and assume that everything I do is somehow untouched by it.
+A woman matches with me and expects me to perform.
 
-I don't think authenticity means blurting out every thought and demanding that somebody appreciate it. I also don't know how much of myself I'm supposed to edit before we're no longer finding out whether we actually like each other.
+Impress me. Chase me. Prove yourself. Entertain me. Dance, monkey, dance.
 
-That seems like a fairly important thing to establish.
+I've encountered this often enough that one day I decided to reverse the script.
 
-Do I like this person? Do they like me? Can we talk? Are we interested in what the other person has to say?
+I opened with:
 
-Those questions are already complicated enough. I don't understand the enthusiasm for adding a ranking system.
+**"You have two days to impress me."**
 
-The Tinder quote bothers me because it takes a person and turns them into a category before there's even a conversation. The two-days premise bothers me because it makes the conversation feel like a test somebody gets to administer.
+Yes. Two days.
 
-I don't want to spend all my time demonstrating that I deserve to be there.
+Apparently I had become the director of a romantic probation program.
 
-I also don't want to become so irritated with the whole fucking process that I stop being able to meet the person inside it.
+The woman—let's call her my unlucky lucky participant—did not appreciate the experiment.
 
-I don't have a clever answer to that. I have a fairly simple desire to get to know somebody, and a growing amount of frustration about how difficult people, including me, can make it.
+There was bravado. Defensiveness. Talk about chasing women. All the magnificent machinery of a social script being suddenly operated backward.
+
+And of course I wasn't actually evaluating her on a forty-eight-hour performance contract.
+
+I wanted to see what would happen when the expectation was pointed in the other direction.
+
+The answer: quite a lot of theater.
+
+## And Then Two Humans Accidentally Appeared
+
+Eventually, beneath all the ridiculous posturing, a perfectly ordinary question emerged:
+
+"What are you looking for?"
+
+And my answer was simple.
+
+Nothing.
+
+Not nothing in the sense of refusing to engage with anybody. Nothing in the sense that I'm not shopping for a predetermined outcome.
+
+I want to meet interesting people. Talk. Get to know each other. Enjoy whatever happens. Maybe friendship. Maybe romance. Maybe absolutely nothing.
+
+Who the fuck knows?
+
+That is the entire project brief.
+
+No deliverable. No three-month milestone. No contract to produce a girlfriend by Q4.
+
+Just two people, perhaps having a fucking conversation.
+
+Revolutionary technology.
+
+## Some Assembly Not Required
+
+I remember people who behave outside the script. The unexpected response. The person who doesn't automatically do the familiar dance. Whether this woman remembers me is irrelevant.
+
+What matters is how absurd the script looks when you turn it around.
+
+And the funniest part is that my actual preference is the opposite of that deliberately arrogant opening.
+
+**I don't have to impress you. You don't have to impress me.**
+
+We can simply discover whether we find each other interesting.
+
+But apparently that would be too straightforward.
+
+Much better to begin by assigning everyone a numerical worth, enforcing a romantic hierarchy, and requiring a live audition.
+
+Welcome to Tinder.
+
+Please take a number.
+
+Your humanity will be assessed shortly.
