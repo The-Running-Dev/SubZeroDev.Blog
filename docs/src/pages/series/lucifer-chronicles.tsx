@@ -9,6 +9,12 @@ export default function LuciferChronicles(): React.JSX.Element {
       title="Lucifer Chronicles"
       entries={[
         {
+          title: 'This Conversation Never Happened',
+          description:
+            'A Telegram recovery pitch acquires an unsolicited mafia subplot and ends with the entire conversation disappearing.',
+          href: '/this-conversation-never-happened/'
+        },
+        {
           label: 'Start here',
           title: 'Lucifer Chronicles: The Game I Apparently Started Writing Without Realizing It',
           description:
