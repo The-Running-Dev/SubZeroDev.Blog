@@ -1,62 +1,89 @@
 ---
 title: "The Darkness I Choose Not to Become"
-description: "Unwanted revenge thoughts, the choices I make, and the unresolved struggle to live by my own principles."
+description: "When my brain moonlights as an evil genius and the Buddhist department files a complaint."
 slug: darkness-i-choose-not-to-become
 authors:
   - subzerodev
 date: 2026-10-27T00:00:00Z
-draft: true
 tags:
   - philosophy
   - stories
+  - absurd
+  - lucifer
 ---
 
 # The Darkness I Choose Not to Become
 
-I can think of some truly fucked up things.
+I have a very creative mind.
+
+Unfortunately, nobody explained to it that **creative** and **morally advisable** are not synonyms.
 
 <!-- truncate -->
 
-When somebody hurts me, when somebody betrays me, my mind can go somewhere I don't want it to go. And it doesn't stop at a passing thought. It starts building. Details. Possibilities. Elaborate, creative, malicious scenarios. Ways of hurting somebody back.
+Give me an engineering problem and I'll design you a system. Give me an absurd bureaucracy and I'll reverse-engineer its nonsense. Give me somebody who has hurt me badly, and apparently some small department in my head immediately opens a project called **OPERATION: WHAT THE ACTUAL FUCK**.
 
-I look at what I've just thought and think, Jesus fucking Christ. Where did that come from?
+No product owner. No sprint planning. No budget approval. Astonishing throughput.
 
-I've never acted on these things. I've said that repeatedly, because it matters. I already know I'm not going to do them. But knowing that doesn't stop the thoughts from appearing, and it doesn't stop me feeling like I'm failing myself when they do.
+The ideas arrive when I'm hurt or angry, often without an invitation. Not merely, "Fuck that person." Oh, no. My brain has to construct entire elaborate, malicious scenarios, complete with dependencies, failure modes, and apparently a quality-assurance department staffed by demons.
 
-That's the part I'm trying to put into words.
+I look at the result and think: *Jesus Christ, man. Who hired these people?*
 
-I want to live by certain principles. I want to be a decent human being. I've recognized things in Stoicism that I was trying to practice long before I knew what the fuck Stoicism was. And then somebody does something shitty to me and my mind produces something so fucking malicious that I have trouble reconciling it with any of that.
+I haven't acted on those fantasies. I'm not planning to. That's important, but it isn't the whole story.
 
-How do these things exist in the same person?
+Because then the other department arrives.
 
-I think about the fifteen thousand euros I lost in what I described as a scam. The anger is there. The hurt is there. And then the ideas come. I don't need to repeat the details here. What bothers me is how elaborate they can become, almost without me wanting them to. I described it as a coping mechanism, because that's how it feels to me. Something happens that hurts me, and my mind starts constructing what I could do about it.
+## The Ethics Committee Has Entered the Chat
 
-I don't do it.
+I've spent years trying to be a better human being *to myself*. Not for a certificate. Not for public applause. Not because the universe has a loyalty program and every virtuous act earns me a free sandwich.
 
-But I still have to live with knowing I thought of it.
+I encountered Stoicism and recognized a great deal of what I'd already been trying to practice. More recently, Zen and Buddhism wandered into my life and started making themselves at home.
 
-I brought Buddhism and karma into the conversation because I thought the thoughts themselves counted against me. If what happens inside my head matters morally, then what the fuck do I do with things that appear before I've chosen to think them?
+And now I have a problem.
 
-Apparently, I don't know enough about Buddhism. I need to study it more. I'm not going to take my half-understanding of something and pretend I've settled a question people have spent lifetimes examining.
+How the fuck do I reconcile a sincere commitment to compassion and character with a mind that occasionally produces a supervillain's business plan?
 
-In the conversation, intention came up. The difference between something appearing in my mind and choosing to encourage it. Between imagining a thing and deciding to do it.
+I once lost a substantial sum of money in something I experienced as a scam. The hurt was real. The scenarios my mind generated afterward were spectacularly ugly. I won't describe the mechanics, because the mechanics aren't the point.
 
-I can understand that distinction. I still struggle with what happens in between.
+The point is that I could imagine them.
 
-Because it isn't always one ugly thought arriving and leaving. Sometimes an entire fucking scenario develops. And I don't know how to account for that neatly. Where does something that came almost automatically become something I'm giving attention to? How do I examine it honestly without turning the examination into another way of staying inside it?
+And even though I chose not to act, I still looked at those thoughts as evidence against myself.
 
-I don't have a clean answer.
+Congratulations, Ben. Another successful performance review by the Department of Impossible Standards.
 
-I can hear the reassurance that I haven't acted on it. I know I haven't. I don't want to dismiss that. But I also don't want to use it to stop looking at something that bothers me about myself.
+## Apparently Karma Isn't a Thought-Crime Detector
 
-I've fucked up plenty of things in my life. I've hurt people. I've gone back, sometimes years later, and apologized because I knew I'd been a dickhead. I don't want to become so invested in being a good person that I can't admit when I've behaved badly.
+At first I understood Buddhist karma almost as a cosmic surveillance service.
 
-And I don't want to condemn myself for everything my mind is capable of producing either.
+**We have detected an unauthorized malicious thought. Your enlightenment privileges have been suspended.**
 
-That's a difficult fucking place to stand.
+Then I encountered the Buddhist emphasis on intention.
 
-Even the title makes it sound more settled than it feels. The darkness I choose not to become. There is a choice in what I do, and I've been clear about that. But I still don't know how to live comfortably with what I can imagine.
+Something appearing in the mind is not automatically identical to deliberately endorsing it, nourishing it, and acting on it. Stoicism has its own language for the distinction between an impression and the assent we give it.
 
-I can't say I've failed. I can't say I've reconciled it.
+That's fascinating. And it doesn't magically answer everything.
 
-I'm saying that when I'm hurt and angry, these thoughts come. I don't act on them. And I still look at them and wonder how the fuck they fit with the person I'm trying to be.
+Because my mind doesn't always offer one unpleasant thought and leave. Sometimes it keeps developing the scenario. When does an unwanted thought become something I'm feeding? What am I responsible for, and what am I merely noticing?
+
+I don't fucking know.
+
+I intend to keep studying. That is a much more satisfying answer than pretending a couple of lectures have made me the Supreme Court of Karma.
+
+## The Man in the Mirror, Unfortunately, Is Human
+
+I've hurt people in my life. I've been a dickhead. More than once, years after the fact, I've reached out to someone and apologized because I finally understood something I'd done.
+
+Nobody forced me. The statute of limitations on being a dickhead had probably already expired. I still wanted to own it.
+
+So I cannot pretend I'm some spotless moral specimen.
+
+I'm a human being with a mind that can produce beautiful things and some properly fucked-up ones. I can recognize the darkness. I can refuse to make it my conduct. And I can still struggle with the fact that it appeared at all.
+
+There is no inspirational bow on this story.
+
+No "and then I became enlightened." No magical Zen gong. No certificate signed by Marcus Aurelius.
+
+Just me, staring at the latest unsolicited design document from my inner supervillain, saying:
+
+**Rejected. We are not shipping this.**
+
+And then returning to the much harder project of figuring out what it means to be a decent fucking human being.
