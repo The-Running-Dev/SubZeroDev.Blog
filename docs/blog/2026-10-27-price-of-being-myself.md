@@ -1,68 +1,109 @@
 ---
 title: "The Price of Being Myself"
-description: "The pain of being open, the responsibility for my own mistakes, and the boundaries I still have to find."
+description: "Authenticity has been a terrible investment. I keep buying it anyway."
 slug: price-of-being-myself
 authors:
   - subzerodev
 date: 2026-10-27T00:00:00Z
-draft: true
 tags:
   - philosophy
   - stories
+  - absurd
+  - lucifer
 ---
 
 # The Price of Being Myself
 
-Authenticity has caused me a lot of fucking pain. And I'm still choosing it.
+I have discovered an investment strategy with a truly spectacular track record.
+
+It's called **Being Authentic**.
+
+The returns, in my experience, have been absolutely fucking terrible.
+
+And I keep investing.
 
 <!-- truncate -->
 
-I know how that sounds. Like I'm about to explain why it was all worth it, or tell myself that the right people will appreciate it eventually.
+This is not going to be one of those inspirational articles where the author bravely reveals that honesty eventually brought him the perfect relationship, a six-figure job, and a golden retriever named Wisdom.
 
-I don't have that conclusion.
+I already have a dog. She is not named Wisdom. The rest of the supposed rewards have been rather less reliable.
 
-I've talked about the costs in work and relationships. Being open doesn't guarantee that somebody will understand you. Being honest doesn't guarantee that they'll be honest with you. You can show somebody something real and still get hurt. Knowing that hasn't made the choice simple for me.
+I tell people the truth about my life. If things are difficult, I say so. If I'm struggling, I say so. If I disagree, I say so. If I have fucked something up, I try to own it.
 
-There are times when protecting myself seems to require being less open. Saying less. Keeping more to myself. I can understand why somebody would do that. Sometimes I think I should do more of it.
+It's a wildly inefficient strategy for navigating a world in which everybody wants authenticity right up until it's inconvenient.
 
-Then I start wondering what exactly I'm protecting, and how much of myself I'm prepared to put away to protect it.
+## Vulnerability, Terms and Conditions Apply
 
-I don't know where that line is.
+A couple of years ago I was living in Spain when a family crisis exploded. I told the people I was working with what was happening. I explained that I needed to go to Bulgaria briefly, that I would continue working, and that I needed some understanding.
 
-I've been hurt by a lot of people. There is the trauma with my mother, and all the other fucking shit I've talked about. I can acknowledge that without making it an explanation for every choice I've ever made. I don't want my own mistakes to disappear into a story about what everybody else did to me.
+I believed I was speaking with adults.
 
-I've made plenty.
+I had apparently missed Section 47B of the Corporate Family Agreement: **We care about your personal life provided it does not become personal.**
 
-I've tried to be good and fucked things up anyway. Sometimes I've been a dickhead. Sometimes it has taken me years to go back to somebody and say that I was wrong, that I hurt them, that I'm sorry.
+The professional details belong in another entry, complete with a firing ceremony and a box of shoes. For now, the important part is that I chose openness, and it cost me.
 
-Years later. Long after an apology could conveniently make me look better in the original situation.
+Dating has supplied its own practical demonstrations.
 
-I don't say that as proof that I'm some exceptionally good human being. It doesn't undo what I did. I say it because taking responsibility matters to me even when the moment has passed, even when somebody might judge me for bringing it up.
+Someone gets to know me, likes the way I dress, likes how I treat her, likes my independence. Then comes the exciting new phase in which the qualities she admired need to be remodeled under new management.
 
-I don't want to hide from something just because admitting it is uncomfortable.
+At work they hire your judgment, then ask you to stop exercising it.
 
-But being willing to admit my mistakes creates another difficulty. I can start examining myself so fucking hard that I lose track of what belongs to me and what belongs to the other person.
+In relationships they admire who you are, then start issuing software patches to your personality.
 
-Somebody can hurt me, and I can still find myself asking whether I handled being hurt well enough.
+**Ben 2.0: Now With Reduced Autonomy!**
 
-Sometimes that's a fair question. Sometimes I probably did handle it badly. But I don't want my willingness to question myself to become an unlimited invitation to take responsibility for everything.
+Installation declined.
 
-I need to be able to say both things. I fucked this up. You hurt me.
+## Am I a Masochist or Just Terrible at Learning?
 
-Neither sentence makes the other disappear.
+This is the question I ask myself.
 
-And authenticity itself doesn't settle that. Calling something authentic doesn't automatically make it kind, sensible, or fair. I can be completely honest about what I feel and still need to think about what I do with it. I don't want to turn being myself into a fucking exemption from responsibility.
+If I can recognize a pattern so well, why do I keep doing something when I can often anticipate the price?
 
-At the same time, I can't pretend that every painful consequence means the original choice was wrong.
+Do I enjoy the pain?
 
-That's what I keep running into. I can see a cost. Sometimes I can see it coming. And I still don't necessarily know whether avoiding it would leave me more able to live with myself.
+I don't believe that's what I'm choosing. I'm choosing to behave according to principles I consider worthwhile, even after repeated evidence that those principles are not a reliable method of acquiring comfort.
 
-I'd like to understand how to protect myself without becoming somebody I don't recognize. How to have boundaries without using them to hide from every difficult conversation. How to be open without treating access to me as something everybody is entitled to.
+What a fucking sales pitch.
 
-I haven't worked that out.
+I could be more guarded. More calculated. I could turn every conversation into a risk assessment and expose exactly the amount of humanity permitted by the current threat model.
 
-I keep choosing authenticity, and I keep questioning what that choice is costing me. I don't know how much of the pain is unavoidable, how much comes from the way I make the choice, and how much I could spare myself.
+As an engineer, I could build an excellent system for that.
 
-I don't want to give up on being honest with myself. I'm also fucking tired of getting hurt.
+The horrifying part is that I'd have to live inside it.
 
-Both of those things are true.
+## The Backdated Apology Department
+
+I've made plenty of mistakes myself. Some were spectacular. Some hurt people I cared about.
+
+And sometimes, years later, I've contacted someone and said: I was a dickhead. What I did was fucked up. I'm sorry.
+
+Years later.
+
+No PR campaign. No redemption badge. No guarantee the person even wants to hear from me.
+
+I don't say this as proof that I'm a good man. I say it because I want to be able to look at myself without pretending the unpleasant parts of my history didn't happen.
+
+That standard applies when I've been hurt, too. I don't want to manufacture a saint out of myself simply because somebody else behaved badly.
+
+## Virtue Has No Cashback Program
+
+Stoicism came along and gave me language for something I'd already been doing: choosing conduct according to an internal standard rather than demanding that the outcome cooperate.
+
+This does not mean that the price is imaginary.
+
+The price has been real. Jobs. Relationships. Trust. Stability. Pain.
+
+I'm not declaring that authenticity secretly makes life wonderful. I'm saying something considerably less marketable.
+
+**It has hurt me. A lot. And I'm still choosing it.**
+
+Maybe I will learn better boundaries. Maybe I'll become more selective about whom I trust. Maybe this entire operating model needs a security review.
+
+But I don't want the solution to be becoming a fake version of myself.
+
+Which is ridiculous, really. I've spent twenty-five years optimizing systems for efficiency, and the system I refuse to optimize is apparently my own willingness to be human.
+
+Worst ROI in the portfolio.
+
+Still not selling.
