@@ -1,65 +1,118 @@
 ---
 title: "I Need People I Can Ask"
-description: "Trying to understand Stoicism, Buddhism, and Zen, and looking for people in Sofia I can question in English."
+description: "An accidental Stoic discovers Zen communities and prepares to show up with 800 questions and no certification."
 slug: i-need-people-i-can-ask
 authors:
   - subzerodev
 date: 2026-10-27T00:00:00Z
-draft: true
 tags:
   - philosophy
   - stories
   - bulgaria
+  - absurd
+  - lucifer
 ---
 
 # I Need People I Can Ask
 
-I'm not a Buddhist. I'm not a Zen practitioner. I'm not a Stoic.
+I am not a Buddhist. I am not a Zen master. I am not a certified Stoic.
+
+I am a fucking guy with a lot of questions.
+
+Apparently this is going to become everybody else's problem.
 
 <!-- truncate -->
 
-I'm just a fucking guy who has discovered some things in his life, found words for some of them later, and now has a lot of questions.
+For years I had been doing things that I later recognized in Stoicism. Acting according to my own standards. Accepting consequences. Trying not to make my character dependent on the latest circus around me.
 
-I recognized things in Stoicism before I knew what Stoicism was. That was strange. Finding a name for something I'd already been trying to practice didn't make me suddenly understand it better in every situation.
+Then I discovered the actual philosophy.
 
-I can recognize a principle and still struggle with it when somebody hurts me. I can want to be a decent human being and still have a mind capable of producing some profoundly fucked up thoughts.
+Oh.
 
-That's what I want to talk about.
+Some ancient Greek and Roman motherfuckers had apparently already written documentation for parts of my operating system.
 
-I've been hurt by people. There is the trauma with my mother. There are my own mistakes, the people I've hurt, the apologies I've made. I don't want to turn up somewhere and tell everybody I've figured life out.
+Would have been nice to receive the manual earlier.
 
-I want to be able to put these things on the table and ask how other people live with them.
+## The Cross-Platform Philosophy Problem
 
-Zen is the newest thing pulling at my attention. Buddhism, Taoism, Stoicism — I don't even fully understand how all of these things relate to each other. I see connections, then I start wondering whether I'm understanding the ideas or just recognizing something that sounds familiar to me.
+More recently, Zen and Buddhism got my attention. Taoism keeps wandering into the conversation too.
 
-I need to learn more.
+Stoicism says: concern yourself with what is yours to choose.
 
-And I want people I can ask. People who might tell me I'm misunderstanding something, or describe an experience that makes me see my own differently.
+Taoism asks what happens when you stop trying to force reality into your preferred shape.
 
-I don't particularly want another identity. I don't know what calling myself a Zen anything would add right now. I haven't done the practice. I don't have the understanding. I'm interested, and I have questions. That seems like enough to admit.
+Zen comes along and, as far as my beginner's understanding goes, asks whether I have actually paid attention to what is happening before constructing seventeen models explaining it.
 
-Finding out there might be communities in Sofia where I can have these conversations made me want to fucking go.
+Different histories. Different traditions. Different methods.
 
-But I need to do this in English.
+My brain, naturally, wants to build an interoperability layer.
 
-That isn't a small preference. There is no way for me to express these things in Bulgarian with the precision I need. These are things I already struggle to put into words. I need access to the language in which I can actually examine them.
+**Stoicism.Buddhism.Taoism.Adapter v0.0.1-alpha**
 
-I don't want to spend the entire conversation trying to translate myself and lose what I meant somewhere along the way.
+Status: questions outnumber answers by approximately forty-seven to one.
 
-I know I may arrive wanting discussion and find a community whose ordinary practice is mostly sitting meditation. I need to find out what they actually offer, whether there's room for questions, and whether we can have the conversation in English.
+## My Mind Has Filed a Bug Against My Ethics
 
-I haven't gone yet. A list of groups and an encouraging description don't establish any of that.
+I have a serious question beneath the jokes.
 
-And although meditation isn't the main thing drawing me there, I also need to understand what the practice involves before deciding what I think of it. I can't expect a community to rearrange itself around the part I'm interested in.
+When somebody hurts me, malicious fantasies sometimes arrive almost uninvited. I don't act on them. But I struggle with what their existence says about the man I'm trying to be.
 
-I can go, listen, ask, and find out.
+And then I discover that Buddhism gives intention a central role in understanding karma.
 
-There's something uncomfortable about wanting this much conversation while being unable to give a settled account of what I believe. I keep circling questions I can't answer cleanly. Sometimes I don't even know if I'm asking them properly.
+Wonderful. Another framework to study.
 
-When a thought appears without me wanting it, what responsibility do I have for what happens next? How do I stop judging myself by a standard I don't know how to live up to? How do I own the things I've done without taking ownership of everything that's been done to me?
+I want to sit with people who have spent time practicing these traditions and ask: what do you actually do with a mind like that? How does compassion work when you're hurt? What distinguishes an involuntary thought from a chosen intention? How do you recognize your mistakes without turning self-examination into a lifelong criminal trial?
 
-I don't know whether any group will help me answer those questions.
+I don't need someone to stamp **GOOD HUMAN** on my forehead.
 
-I don't know whether the first place I visit will even be somewhere I can talk about them.
+I want a conversation.
 
-But they're the questions I have. I want to be able to say them in English, to another fucking person, and see what happens in the conversation.
+I've made mistakes. I've returned to people years later to apologize for things I did when I knew less or behaved worse. I have been hurt as well. I'm not trying to publish the definitive theory of humanity.
+
+I would just like to talk to other humans attempting the same ridiculous assignment.
+
+## Sofia Has Actual Philosophers in the Wild
+
+I recently discovered that Sofia has Zen communities, Buddhist groups, Hindu study sessions, and Stoic meetups.
+
+What?
+
+There are actual places where people gather to discuss this stuff?
+
+And all this time I was listening to long philosophy talks on my own, like a philosophical raccoon rummaging through the internet after midnight.
+
+The Zen community particularly interests me. I want to show up, listen, share experiences if appropriate, and ask questions.
+
+Possibly many questions.
+
+There is one practical complication: **I need to have these conversations in English.**
+
+I can function in Bulgarian. But the things I'm trying to express here are difficult enough in the language where I can actually think them through. Translating all that nuance in real time would be like debugging a distributed system by shouting through a brick wall.
+
+I hope the Zen practitioners can accommodate an English conversation.
+
+I also know meditation is central to Zen. It's not the part that drew me in first. I'm drawn to the questions, to the philosophy, to people with real practice and lived experience.
+
+I may arrive expecting an intellectual exchange and discover that the first lesson is to sit down and shut the fuck up.
+
+Which, considering the number of questions I have, might itself be an excellent lesson.
+
+## Identity Not Found
+
+I have no desire to turn this into another badge.
+
+Stoic. Buddhist. Taoist. Zen practitioner. Whatever.
+
+My closet is already full of identities people would like me to wear, and most of them don't fit.
+
+I'm not joining because I've solved anything.
+
+I'm going because I haven't.
+
+I'm curious. I've lived things that these philosophies speak to. I recognize some of the ideas and struggle with others. I want to hear how people actually practice them.
+
+And maybe the grand result will be nothing more than a few conversations with interesting people.
+
+Which, come to think of it, is exactly what I wanted out of Tinder.
+
+**Apparently enlightenment has a better events calendar.**
