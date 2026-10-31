@@ -9,6 +9,12 @@ export default function LuciferChronicles(): React.JSX.Element {
       title="Lucifer Chronicles"
       entries={[
         {
+          title: 'The Projects Are Reproducing',
+          description:
+            'Reverse engineering produces a desktop ecosystem, games, and a memory system to keep track of the damage.',
+          href: '/projects-are-reproducing/'
+        },
+        {
           title: 'This Conversation Never Happened',
           description:
             'A Telegram recovery pitch acquires an unsolicited mafia subplot and ends with the entire conversation disappearing.',
