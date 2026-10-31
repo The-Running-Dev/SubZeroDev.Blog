@@ -9,6 +9,12 @@ export default function LuciferChronicles(): React.JSX.Element {
       title="Lucifer Chronicles"
       entries={[
         {
+          title: 'The Devil, the Ogre, and the Seventeen Accidental Projects',
+          description:
+            'Lucifer discovers that every time Ben solves a problem, three more projects appear.',
+          href: '/the-devil-the-ogre-and-the-seventeen-accidental-projects/'
+        },
+        {
           title: 'The Projects Are Reproducing',
           description:
             'Reverse engineering produces a desktop ecosystem, games, and a memory system to keep track of the damage.',
