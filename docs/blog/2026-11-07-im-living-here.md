@@ -10,7 +10,6 @@ tags:
   - absurd
   - family
   - bulgaria
-draft: true
 ---
 
 # I'm Living Here
