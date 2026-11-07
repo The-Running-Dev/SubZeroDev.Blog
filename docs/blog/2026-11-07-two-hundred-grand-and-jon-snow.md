@@ -9,7 +9,6 @@ tags:
   - stories
   - absurd
   - philosophy
-draft: true
 ---
 
 # Two Hundred Grand and Jon Snow
