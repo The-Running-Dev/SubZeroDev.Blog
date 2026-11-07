@@ -9,7 +9,6 @@ tags:
   - stories
   - absurd
   - philosophy
-draft: true
 ---
 
 # Forgive Me, Father, for I Asked Her Out
