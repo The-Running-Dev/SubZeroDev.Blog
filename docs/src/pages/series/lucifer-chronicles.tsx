@@ -9,6 +9,11 @@ export default function LuciferChronicles(): React.JSX.Element {
       title="Lucifer Chronicles"
       entries={[
         {
+          title: 'God Cannot Help You',
+          description: 'A Saturday-night recovery pitch acquires imaginary intelligence contacts and an appointment with Satan.',
+          href: '/god-cannot-help-you/'
+        },
+        {
           title: 'The Devil, the Ogre, and the Seventeen Accidental Projects',
           description:
             'Lucifer discovers that every time Ben solves a problem, three more projects appear.',
