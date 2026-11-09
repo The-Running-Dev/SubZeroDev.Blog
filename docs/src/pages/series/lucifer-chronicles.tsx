@@ -9,6 +9,11 @@ export default function LuciferChronicles(): React.JSX.Element {
       title="Lucifer Chronicles"
       entries={[
         {
+          title: "Don't Mind Me, I'm Just an Asshole",
+          description: 'A deliberately unflattering introduction and the conversation hiding behind a loaded word.',
+          href: '/dont-mind-me-im-just-an-asshole/'
+        },
+        {
           title: 'God Cannot Help You',
           description: 'A Saturday-night recovery pitch acquires imaginary intelligence contacts and an appointment with Satan.',
           href: '/god-cannot-help-you/'
@@ -18,6 +23,11 @@ export default function LuciferChronicles(): React.JSX.Element {
           description:
             'Lucifer discovers that every time Ben solves a problem, three more projects appear.',
           href: '/the-devil-the-ogre-and-the-seventeen-accidental-projects/'
+        },
+        {
+          title: "I'm Looking for a Conversation, Not a Fucking Interview",
+          description: 'Thoughtful answers, absent curiosity, and the cost of carrying a dating-app conversation.',
+          href: '/im-looking-for-a-conversation-not-a-fucking-interview/'
         },
         {
           title: 'The Projects Are Reproducing',
@@ -37,6 +47,11 @@ export default function LuciferChronicles(): React.JSX.Element {
           description:
             'A game engine turns years of absurd encounters into the accidental first chapter of Lucifer Chronicles.',
           href: '/lucifer-chronicles/'
+        },
+        {
+          title: 'Abrasive, Difficult, Stubborn — Fuck Your Labels',
+          description: 'Shyness, firm opinions, and the demand for something more specific than a verdict.',
+          href: '/abrasive-difficult-stubborn-fuck-your-labels/'
         },
         {
           title: "God's Greatest Practical Joke",
