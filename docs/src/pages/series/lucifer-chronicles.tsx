@@ -50,6 +50,11 @@ export default function LuciferChronicles(): React.JSX.Element {
           href: '/lucifer-fly-negotiation/'
         },
         {
+          title: 'No Three-Month Free Trial of My Best Behavior',
+          description: 'Showing up with opinions, humor, profanity, and the willingness to answer for them.',
+          href: '/no-three-month-free-trial-of-my-best-behavior/'
+        },
+        {
           title: 'The Night I Ended Up in Hell Discussing Philosophy With Lucifer',
           description:
             'A sleepless trip to Hell becomes a cosmic argument about ego, free will, God, and customer support.',
