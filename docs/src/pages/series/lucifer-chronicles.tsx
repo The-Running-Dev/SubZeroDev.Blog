@@ -9,6 +9,11 @@ export default function LuciferChronicles(): React.JSX.Element {
       title="Lucifer Chronicles"
       entries={[
         {
+          title: "Don't Mind Me, I'm Just an Asshole",
+          description: 'A deliberately unflattering introduction and the conversation hiding behind a loaded word.',
+          href: '/dont-mind-me-im-just-an-asshole/'
+        },
+        {
           title: 'God Cannot Help You',
           description: 'A Saturday-night recovery pitch acquires imaginary intelligence contacts and an appointment with Satan.',
           href: '/god-cannot-help-you/'
