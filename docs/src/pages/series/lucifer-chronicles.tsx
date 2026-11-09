@@ -9,6 +9,11 @@ export default function LuciferChronicles(): React.JSX.Element {
       title="Lucifer Chronicles"
       entries={[
         {
+          title: 'The Department of Self-Inflicted Martyrdom',
+          description: 'Lucifer audits a family loyalty oath that blocks the help its enforcer says he needs.',
+          href: '/department-of-self-inflicted-martyrdom/'
+        },
+        {
           title: "Don't Mind Me, I'm Just an Asshole",
           description: 'A deliberately unflattering introduction and the conversation hiding behind a loaded word.',
           href: '/dont-mind-me-im-just-an-asshole/'
