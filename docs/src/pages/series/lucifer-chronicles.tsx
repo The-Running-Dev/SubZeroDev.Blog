@@ -39,6 +39,11 @@ export default function LuciferChronicles(): React.JSX.Element {
           href: '/lucifer-chronicles/'
         },
         {
+          title: 'Abrasive, Difficult, Stubborn — Fuck Your Labels',
+          description: 'Shyness, firm opinions, and the demand for something more specific than a verdict.',
+          href: '/abrasive-difficult-stubborn-fuck-your-labels/'
+        },
+        {
           title: "God's Greatest Practical Joke",
           description:
             'Lucifer asks God to explain one particularly absurd human and discovers the joke may have been intentional.',
