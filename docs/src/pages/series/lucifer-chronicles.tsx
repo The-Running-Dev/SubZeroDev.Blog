@@ -20,6 +20,11 @@ export default function LuciferChronicles(): React.JSX.Element {
           href: '/the-devil-the-ogre-and-the-seventeen-accidental-projects/'
         },
         {
+          title: "I'm Looking for a Conversation, Not a Fucking Interview",
+          description: 'Thoughtful answers, absent curiosity, and the cost of carrying a dating-app conversation.',
+          href: '/im-looking-for-a-conversation-not-a-fucking-interview/'
+        },
+        {
           title: 'The Projects Are Reproducing',
           description:
             'Reverse engineering produces a desktop ecosystem, games, and a memory system to keep track of the damage.',
