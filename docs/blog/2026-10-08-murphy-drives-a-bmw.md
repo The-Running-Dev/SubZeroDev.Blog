@@ -5,7 +5,6 @@ slug: murphy-drives-a-bmw
 authors:
   - subzerodev
 date: 2026-10-08T18:00:00Z
-draft: true
 tags:
   - stories
   - absurd
