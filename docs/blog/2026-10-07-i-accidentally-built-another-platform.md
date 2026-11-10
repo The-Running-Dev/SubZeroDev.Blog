@@ -5,7 +5,6 @@ slug: i-accidentally-built-another-platform
 authors:
   - subzerodev
 date: 2026-10-07T09:32:00Z
-draft: true
 tags:
   - programming
   - projects
