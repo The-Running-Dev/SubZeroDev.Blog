@@ -5,7 +5,6 @@ slug: vibe-coding-apparently
 authors:
   - subzerodev
 date: 2026-10-07T09:31:00Z
-draft: true
 tags:
   - ai
   - programming
