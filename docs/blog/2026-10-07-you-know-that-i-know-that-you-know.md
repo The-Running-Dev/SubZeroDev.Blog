@@ -5,7 +5,6 @@ slug: you-know-that-i-know-that-you-know
 authors:
   - subzerodev
 date: 2026-10-07T09:30:00Z
-draft: true
 tags:
   - stories
   - reddit
