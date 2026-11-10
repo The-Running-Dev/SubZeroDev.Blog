@@ -5,7 +5,6 @@ slug: ancient-sandwich-technology
 authors:
   - subzerodev
 date: 2026-10-07T09:34:00Z
-draft: true
 tags:
   - lucifer
   - stories
