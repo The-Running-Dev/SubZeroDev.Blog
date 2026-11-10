@@ -30,12 +30,14 @@ Repository files can configure Docusaurus and add content, but shared
 components, theme behavior, and build scripts remain owned by the
 [Docusaurus Template](https://github.com/The-Running-Dev/Docusaurus-Template).
 
-All four build references pin the same immutable container digest:
+Both local build references pin the same immutable container digest:
 
 - `docs/Dockerfile`
 - `docs.ps1`
-- `.github/workflows/docs-ci.yml`
-- `.github/workflows/docs-deploy.yml`
+
+CI does not use that image: `.github/workflows/docs.yml` calls the shared
+`docs.yml` reusable workflow from `The-Running-Dev/GitHub-ActionTemplates`,
+which builds on its own pinned build-agent image.
 
 ## Delivery
 
