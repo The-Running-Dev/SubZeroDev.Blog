@@ -4,7 +4,7 @@ description: "A conversation about why humanity should be angrier ended at hopel
 slug: whats-under-the-anger
 authors:
   - subzerodev
-date: 2026-10-07T09:32:00+03:00
+date: 2026-10-07T06:32:00Z
 tags:
   - philosophy
   - stories

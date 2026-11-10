@@ -4,7 +4,7 @@ description: "One drunk neighbor, one angry sister, one drunk conversation, and 
 slug: dont-expect-drunk-people-to-act-sober
 authors:
   - subzerodev
-date: 2026-10-07T09:33:00+03:00
+date: 2026-10-07T06:33:00Z
 tags:
   - philosophy
   - stories

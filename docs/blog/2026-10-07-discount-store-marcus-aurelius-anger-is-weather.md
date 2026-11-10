@@ -4,7 +4,7 @@ description: "Peace did not make me stop getting angry; it just stopped turning 
 slug: discount-store-marcus-aurelius-anger-is-weather
 authors:
   - subzerodev
-date: 2026-10-07T09:30:00+03:00
+date: 2026-10-07T06:30:00Z
 tags:
   - philosophy
   - stories

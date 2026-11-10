@@ -4,7 +4,7 @@ description: "Youth has vigor, age has adaptability, and reality does not care h
 slug: the-world-has-always-been-mad
 authors:
   - subzerodev
-date: 2026-10-07T09:31:00+03:00
+date: 2026-10-07T06:31:00Z
 tags:
   - philosophy
   - stories

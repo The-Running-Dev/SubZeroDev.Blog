@@ -4,7 +4,7 @@ description: "My internet redundancy was deliberate. The €17 Wi-Fi adapter was
 slug: i-bought-wifi-for-a-computer-sitting-behind-a-router
 authors:
   - subzerodev
-date: 2026-10-07T09:36:00+03:00
+date: 2026-10-07T06:36:00Z
 tags:
   - development
   - stories

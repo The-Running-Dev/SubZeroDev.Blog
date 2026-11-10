@@ -4,7 +4,7 @@ description: "In Bulgaria yogurt is not breakfast. It is infrastructure."
 slug: there-is-no-such-thing-as-enough-yogurt
 authors:
   - subzerodev
-date: 2026-10-07T09:35:00+03:00
+date: 2026-10-07T06:35:00Z
 tags:
   - bulgaria
   - stories
