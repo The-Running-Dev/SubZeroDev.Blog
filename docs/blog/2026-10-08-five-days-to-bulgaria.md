@@ -5,7 +5,6 @@ slug: five-days-to-bulgaria
 authors:
   - subzerodev
 date: 2026-10-08T18:00:00Z
-draft: true
 tags:
   - stories
   - absurd
