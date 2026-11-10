@@ -9,6 +9,11 @@ export default function LuciferChronicles(): React.JSX.Element {
       title="Lucifer Chronicles"
       entries={[
         {
+          title: 'One Fucking Guy',
+          description: 'Lucifer inspects exhausted build quotas, a personal dashboard, and the enterprise with exactly one user.',
+          href: '/one-fucking-guy/'
+        },
+        {
           title: 'The Department of Self-Inflicted Martyrdom',
           description: 'Lucifer audits a family loyalty oath that blocks the help its enforcer says he needs.',
           href: '/department-of-self-inflicted-martyrdom/'
@@ -103,6 +108,156 @@ export default function LuciferChronicles(): React.JSX.Element {
           title: 'Much Ado About Nothing',
           description: 'A dramatic declaration granting permission for something that was already happening.',
           href: '/much-ado-about-nothing/'
+        },
+        {
+          label: 'Journal',
+          title: 'Nobody Asked You',
+          description: 'There is a difference between helping somebody and appointing yourself director of their life.',
+          href: '/nobody-asked-you/'
+        },
+        {
+          label: 'Journal',
+          title: 'Save the Children! GO GO GO GO GO!',
+          description: 'Children get scared, adults get louder, and a Jack Russell discovers another two thousand RPM.',
+          href: '/save-the-children-go-go-go-go-go/'
+        },
+        {
+          label: 'Journal',
+          title: 'So Fucking What?',
+          description: 'Young Buck tried to make my Tinder settings embarrassing, so I matched the guy in front of him.',
+          href: '/so-fucking-what/'
+        },
+        {
+          label: 'Journal',
+          title: 'Sometimes You Have to Ask',
+          description: 'Community is not always people anticipating what you need. Sometimes it is knowing who to ask, and having them actually show up.',
+          href: '/sometimes-you-have-to-ask/'
+        },
+        {
+          label: 'Journal',
+          title: 'This Is Why I Don’t Go to the Doctor',
+          description: 'A routine doctor visit becomes a bureaucratic side quest involving health insurance, paid blood tests, a urine cup, and a camper nobody bothered to read the intake notes for.',
+          href: '/this-is-why-i-dont-go-to-the-doctor/'
+        },
+        {
+          label: 'Journal',
+          title: 'What Are You, a Fucking Turtle?',
+          description: 'A perfectly good argument about relationships, disagreement, and why nobody has to roll over.',
+          href: '/what-are-you-a-fucking-turtle/'
+        },
+        {
+          label: 'Journal',
+          title: 'Apparently I Bought Infrastructure',
+          description: 'I needed a shop-vac cable and accidentally purchased enough distance to electrify the yard.',
+          href: '/apparently-i-bought-infrastructure/'
+        },
+        {
+          label: 'Journal',
+          title: "Castlevania, But It's My Fucking Life",
+          description: 'The blog is already full of one-minute animated episodes; apparently all I need is Lucifer, a Ridgeback, and unnecessarily dramatic lighting.',
+          href: '/castlevania-but-its-my-fucking-life/'
+        },
+        {
+          label: 'Journal',
+          title: 'Critical Acclaim',
+          description: 'Reddit hated the game engine, so naturally their reviews belong on the website.',
+          href: '/critical-acclaim/'
+        },
+        {
+          label: 'Journal',
+          title: 'Head Code Wrangler: My Résumé Has Returned to Its Natural State',
+          description: 'A perfectly serious résumé, except for the part where the Sorcerer Supreme has twenty years of production experience.',
+          href: '/head-code-wrangler-resume-natural-state/'
+        },
+        {
+          label: 'Journal',
+          title: 'Just Backgammon and Genital Mutilation',
+          description: 'Lucifer opens a dating app and discovers that friendship now comes with a rather alarming set of terms and conditions.',
+          href: '/just-backgammon-and-genital-mutilation/'
+        },
+        {
+          label: 'Journal',
+          title: "Old Man Couldn't Breathe",
+          description: 'A doctor talks about longevity, a Sprinter gets its boost back, and apparently both old men are still under maintenance.',
+          href: '/old-man-couldnt-breathe/'
+        },
+        {
+          label: 'Journal',
+          title: 'This Is the World We Live In',
+          description: 'Humanity invents a device that can reach anyone on Earth, then uses it to avoid the person sitting two feet away.',
+          href: '/this-is-the-world-we-live-in/'
+        },
+        {
+          label: 'Journal',
+          title: 'What the Fuck Are You Doing, You Maniac?',
+          description: 'Twenty-five years after watching a brilliant programmer write his own browser, I apparently became the same kind of idiot.',
+          href: '/what-the-fuck-are-you-doing-you-maniac/'
+        },
+        {
+          label: 'Journal',
+          title: 'Preemptive Defensiveness, Now Available in Ridgeback',
+          description: 'Lucifer observes the same unnecessary defensive ritual twice in one evening: first from a human, then from a dog who has just liberated the Bulgarian Bag of Bags.',
+          href: '/preemptive-defensiveness-now-available-in-ridgeback/'
+        },
+        {
+          label: 'Journal',
+          title: 'Are You Not Entertained?',
+          description: 'An old shirt, an olive branch, a misunderstanding, and the surprisingly useful option of simply asking.',
+          href: '/are-you-not-entertained/'
+        },
+        {
+          label: 'Journal',
+          title: 'Your Honor, Counsel Brought a Knife to a Drone Fight',
+          description: 'Rickisms were only the beginning. The next logical step is deliberately smashing idioms, courtroom language, movie quotes, and technical nonsense together until English files a complaint.',
+          href: '/counsel-brought-a-knife-to-a-drone-fight/'
+        },
+        {
+          label: 'Journal',
+          title: 'The Discount Store Cinematic Universe',
+          description: 'Discount Store Marcus Aurelius was apparently not enough. Then came Alan Shore. Then Maximus. Lucifer is now executive producer of a franchise nobody approved.',
+          href: '/discount-store-cinematic-universe/'
+        },
+        {
+          label: 'Journal',
+          title: 'The Universe Has Entered the Chat',
+          description: 'A casual complaint about work somehow became a metaphysical court case involving cosmic hostility, happiness debt, and celestial bookkeeping.',
+          href: '/universe-entered-the-chat/'
+        },
+        {
+          label: 'Journal',
+          title: 'Ancient Sandwich Technology',
+          description: 'Lucifer discovers a mysterious sandwich press in the archaeological layers of a Bulgarian house.',
+          href: '/ancient-sandwich-technology/'
+        },
+        {
+          label: 'Journal',
+          title: 'Lucifer Talks to an Autoresponder',
+          description: 'Lucifer discovers a corporate SMS bot with one line of dialogue and enough stamina to turn a spam message into an existential relationship.',
+          href: '/lucifer-talks-to-an-autoresponder/'
+        },
+        {
+          label: 'Journal',
+          title: "Apparently I'm Going to a Wedding",
+          description: 'I put on what I considered a casual suit for coffee in a Bulgarian village and accidentally created a local formalwear classification system.',
+          href: '/apparently-im-going-to-a-wedding/'
+        },
+        {
+          label: 'Journal',
+          title: 'Apparently This Is My Life',
+          description: "Camper van, e-bike, Lucifer suit, CB radio, dogs, and the daily absurdity that doesn't need an author.",
+          href: '/apparently-this-is-my-life/'
+        },
+        {
+          label: 'Journal',
+          title: 'I Just Wanted Plex on the Fucking TV',
+          description: 'A missing Plex connection leads to network archaeology, a homemade Ubuntu gateway, forgotten documentation, and Lucifer asking why the NAS needs so many network cards.',
+          href: '/i-just-wanted-plex-on-the-tv/'
+        },
+        {
+          label: 'Journal',
+          title: 'I Left My Brother in a Truck. My Brain Sent Him to the North Sea.',
+          description: 'One submerged dream truck, a mysterious 33,000 debt, and forty years of being Батко.',
+          href: '/i-left-my-brother-in-a-truck/'
         }
       ]}
     />
