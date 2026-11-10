@@ -97,5 +97,10 @@ ENV NODE_ENV=production
 # with a published port.
 EXPOSE 8765
 
+# No CMD: the entrypoint picks the transport from its first argument, then
+# BLOG_MCP_TRANSPORT, then falls back to stdio. A `CMD ["stdio"]` here made that
+# fallback unreachable (the argument was always set), so the image could not be
+# started in `serve` mode by environment alone, which the CI smoke test needs.
+# `docker run <image>` still starts stdio, and `docker run <image> serve` or a
+# Compose `command: serve` still selects the transport as before.
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-CMD ["stdio"]
