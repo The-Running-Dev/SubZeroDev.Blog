@@ -9,6 +9,11 @@ export default function LuciferChronicles(): React.JSX.Element {
       title="Lucifer Chronicles"
       entries={[
         {
+          title: 'One Fucking Guy',
+          description: 'Lucifer inspects exhausted build quotas, a personal dashboard, and the enterprise with exactly one user.',
+          href: '/one-fucking-guy/'
+        },
+        {
           title: 'The Department of Self-Inflicted Martyrdom',
           description: 'Lucifer audits a family loyalty oath that blocks the help its enforcer says he needs.',
           href: '/department-of-self-inflicted-martyrdom/'
