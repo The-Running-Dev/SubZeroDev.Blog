@@ -4,7 +4,7 @@ description: "A village sign, an imaginary drive-by, and the stories people writ
 slug: there-is-nothing-to-gain-but-it-will-confuse-the-cunty
 authors:
   - subzerodev
-date: 2026-10-03T20:47:00+03:00
+date: 2026-10-03T17:47:00Z
 tags:
   - absurd
   - stories
