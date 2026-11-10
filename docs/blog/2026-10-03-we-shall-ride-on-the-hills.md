@@ -4,7 +4,7 @@ description: "I declined a ride home, unfolded the e-bike, and entered the insec
 slug: we-shall-ride-on-the-hills
 authors:
   - subzerodev
-date: 2026-10-03T20:46:00+03:00
+date: 2026-10-03T17:46:00Z
 tags:
   - absurd
   - stories
