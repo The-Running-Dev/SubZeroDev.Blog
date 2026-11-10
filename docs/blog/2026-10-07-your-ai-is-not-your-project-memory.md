@@ -5,7 +5,6 @@ slug: your-ai-is-not-your-project-memory
 authors:
   - subzerodev
 date: 2026-10-07T00:00:00Z
-draft: true
 tags:
   - ai
   - llm

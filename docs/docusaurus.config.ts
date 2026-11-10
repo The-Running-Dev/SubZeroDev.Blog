@@ -19,7 +19,7 @@ const ecosystemLinks: Array<{ href: string; label: string; className?: string }>
   },
   {
     href: 'https://blog.subzerodev.com/',
-    label: 'Blog',
+    label: 'Journal',
     className: 'site-masthead__ecosystem-active'
   },
   {
@@ -33,8 +33,8 @@ const ecosystemLinks: Array<{ href: string; label: string; className?: string }>
 ];
 
 const config: Config = {
-  title: 'SubZeroDev Blog',
-  tagline: 'The source and project documentation for the SubZeroDev technical blog.',
+  title: 'SubZeroDev Journal',
+  tagline: 'The source and project documentation for the SubZeroDev Journal.',
   url: 'https://blog.subzerodev.com',
   baseUrl: '/',
   onBrokenLinks: 'throw',
@@ -69,7 +69,7 @@ const config: Config = {
         blog: {
           path: 'blog',
           routeBasePath: '/',
-          blogTitle: 'SubZeroDev Blog',
+          blogTitle: 'SubZeroDev Journal',
           blogDescription: 'Notes on building and maintaining SubZeroDev projects.',
           tags: 'tags.yml',
           onInlineTags: 'throw',
@@ -81,7 +81,7 @@ const config: Config = {
           ],
           feedOptions: {
             type: ['rss', 'atom'],
-            title: 'SubZeroDev Blog',
+            title: 'SubZeroDev Journal',
             description: 'Notes on building and maintaining SubZeroDev projects.',
             copyright: `Copyright © ${new Date().getFullYear()} SubZeroDev`,
             language: 'en',
