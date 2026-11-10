@@ -8,7 +8,6 @@ authors:
 date: '2026-10-26T00:00:00Z'
 tags:
 - philosophy
-draft: true
 ---
 
 # Come and Take My Enlightenment. I Don't Want It
