@@ -9,11 +9,54 @@ export default function LuciferChronicles(): React.JSX.Element {
       title="Lucifer Chronicles"
       entries={[
         {
+          title: 'The Department of Self-Inflicted Martyrdom',
+          description: 'Lucifer audits a family loyalty oath that blocks the help its enforcer says he needs.',
+          href: '/department-of-self-inflicted-martyrdom/'
+        },
+        {
+          title: "Don't Mind Me, I'm Just an Asshole",
+          description: 'A deliberately unflattering introduction and the conversation hiding behind a loaded word.',
+          href: '/dont-mind-me-im-just-an-asshole/'
+        },
+        {
+          title: 'God Cannot Help You',
+          description: 'A Saturday-night recovery pitch acquires imaginary intelligence contacts and an appointment with Satan.',
+          href: '/god-cannot-help-you/'
+        },
+        {
+          title: 'The Devil, the Ogre, and the Seventeen Accidental Projects',
+          description:
+            'Lucifer discovers that every time Ben solves a problem, three more projects appear.',
+          href: '/the-devil-the-ogre-and-the-seventeen-accidental-projects/'
+        },
+        {
+          title: "I'm Looking for a Conversation, Not a Fucking Interview",
+          description: 'Thoughtful answers, absent curiosity, and the cost of carrying a dating-app conversation.',
+          href: '/im-looking-for-a-conversation-not-a-fucking-interview/'
+        },
+        {
+          title: 'The Projects Are Reproducing',
+          description:
+            'Reverse engineering produces a desktop ecosystem, games, and a memory system to keep track of the damage.',
+          href: '/projects-are-reproducing/'
+        },
+        {
+          title: 'This Conversation Never Happened',
+          description:
+            'A Telegram recovery pitch acquires an unsolicited mafia subplot and ends with the entire conversation disappearing.',
+          href: '/this-conversation-never-happened/'
+        },
+        {
           label: 'Start here',
           title: 'Lucifer Chronicles: The Game I Apparently Started Writing Without Realizing It',
           description:
             'A game engine turns years of absurd encounters into the accidental first chapter of Lucifer Chronicles.',
           href: '/lucifer-chronicles/'
+        },
+        {
+          title: 'Abrasive, Difficult, Stubborn — Fuck Your Labels',
+          description: 'Shyness, firm opinions, and the demand for something more specific than a verdict.',
+          href: '/abrasive-difficult-stubborn-fuck-your-labels/'
         },
         {
           title: "God's Greatest Practical Joke",
@@ -25,6 +68,11 @@ export default function LuciferChronicles(): React.JSX.Element {
           title: 'Lucifer, the Fly, and the Negotiation That Failed Spectacularly',
           description: 'A perfectly reasonable attempt at diplomacy.',
           href: '/lucifer-fly-negotiation/'
+        },
+        {
+          title: 'No Three-Month Free Trial of My Best Behavior',
+          description: 'Showing up with opinions, humor, profanity, and the willingness to answer for them.',
+          href: '/no-three-month-free-trial-of-my-best-behavior/'
         },
         {
           title: 'The Night I Ended Up in Hell Discussing Philosophy With Lucifer',
@@ -55,11 +103,6 @@ export default function LuciferChronicles(): React.JSX.Element {
           title: 'Much Ado About Nothing',
           description: 'A dramatic declaration granting permission for something that was already happening.',
           href: '/much-ado-about-nothing/'
-        },
-        {
-          title: 'Are You Not Entertained?',
-          description: 'An old shirt, an olive branch, a misunderstanding, and the surprisingly useful option of simply asking.',
-          href: '/are-you-not-entertained/'
         }
       ]}
     />
