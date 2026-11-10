@@ -5,7 +5,6 @@ slug: ai-is-coming-for-my-job-good
 authors:
   - subzerodev
 date: 2026-10-07T00:00:00Z
-draft: true
 tags:
   - ai
   - philosophy
