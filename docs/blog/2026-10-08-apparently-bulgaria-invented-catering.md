@@ -9,7 +9,6 @@ tags:
   - bulgaria
   - stories
   - absurd
-draft: true
 ---
 
 I've decided to embrace grandpa life properly.
