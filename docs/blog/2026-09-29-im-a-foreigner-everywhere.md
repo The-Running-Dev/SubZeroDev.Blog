@@ -4,7 +4,7 @@ description: "Germany rearming led to Russia, Russia led to Bulgaria, Bulgaria l
 slug: im-a-foreigner-everywhere
 authors:
   - subzerodev
-date: 2026-09-29T14:42:00+03:00
+date: 2026-09-29T11:42:00Z
 tags:
   - philosophy
   - stories
