@@ -5,7 +5,6 @@ slug: why-doesnt-windows-just-put-my-shit-back
 authors:
   - subzerodev
 date: 2026-10-07T09:33:00Z
-draft: true
 tags:
   - windows
   - programming
