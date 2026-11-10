@@ -70,6 +70,12 @@ export default function AiAssistedEngineering(): React.JSX.Element {
           description:
             'A snapshot of the workflow becoming an automation platform, told from the operator in the middle of it.',
           href: '/state-of-dev-week-of-july-27-2026/'
+        },
+        {
+          label: 'Journal',
+          title: "Hannibal Doesn't Need to Know Everything",
+          description: "On Derivco's A-Team, refusing the eight-hour sports-betting course, delegating specialist knowledge, and starting with the reusable abstraction.",
+          href: '/hannibal-doesnt-need-to-know-everything/'
         }
       ]}
     />
