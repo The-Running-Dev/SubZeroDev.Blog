@@ -8,7 +8,6 @@ date: 2026-10-08T00:00:00Z
 tags:
   - stories
   - absurd
-draft: true
 ---
 
 Bonnie has had meat.
