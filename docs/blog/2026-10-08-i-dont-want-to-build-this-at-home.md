@@ -4,7 +4,7 @@ description: "I went in for a €17 Wi-Fi adapter, accidentally retired a ten-ye
 slug: i-dont-want-to-build-this-at-home
 authors:
   - subzerodev
-date: 2026-10-08T09:50:00+03:00
+date: 2026-10-08T06:50:00Z
 tags:
   - development
   - stories
