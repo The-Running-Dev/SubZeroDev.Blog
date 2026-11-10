@@ -9,7 +9,6 @@ tags:
   - lucifer
   - absurd
   - stories
-draft: true
 ---
 
 Plex wasn't accessible from the TV.
