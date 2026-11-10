@@ -4,7 +4,7 @@ description: "Van Diesel went to the mechanic. Everybody else apparently entered
 slug: the-bulgarian-driving-experience
 authors:
   - subzerodev
-date: 2026-10-03T20:45:00+03:00
+date: 2026-10-03T17:45:00Z
 tags:
   - absurd
   - stories
