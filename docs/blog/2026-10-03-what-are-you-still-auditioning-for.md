@@ -4,7 +4,7 @@ description: "A dirty tile floor, two professional cleaners, one rearranged hous
 slug: what-are-you-still-auditioning-for
 authors:
   - subzerodev
-date: 2026-10-03T21:03:00+03:00
+date: 2026-10-03T18:03:00Z
 tags:
   - family
   - philosophy
