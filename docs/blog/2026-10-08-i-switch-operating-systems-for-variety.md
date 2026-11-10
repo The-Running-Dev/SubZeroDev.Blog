@@ -4,7 +4,7 @@ description: "A maxed-out 2018 machine, three operating systems, Parallels sitti
 slug: i-switch-operating-systems-for-variety
 authors:
   - subzerodev
-date: 2026-10-08T09:45:00+03:00
+date: 2026-10-08T06:45:00Z
 tags:
   - development
   - stories
