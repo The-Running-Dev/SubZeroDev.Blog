@@ -5,7 +5,6 @@ slug: please-stop-explaining-me-to-me
 authors:
   - subzerodev
 date: 2026-10-07T09:36:00Z
-draft: true
 tags:
   - identity
   - philosophy

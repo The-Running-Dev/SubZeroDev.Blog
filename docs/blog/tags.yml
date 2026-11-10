@@ -1,3 +1,8 @@
+windows:
+  label: Windows
+  permalink: /windows
+  description: Installing, configuring, and maintaining Microsoft Windows.
+
 site-updates:
   label: Site Updates
   permalink: /site-updates
@@ -157,3 +162,53 @@ react:
   label: React
   permalink: /react
   description: Building, composing, and abusing React components and the tooling around them.
+
+privacy:
+  label: Privacy
+  permalink: /privacy
+  description: Practical privacy choices for devices, accounts, and online services.
+
+security:
+  label: Security
+  permalink: /security
+  description: Protecting devices, accounts, and data, and recovering after a compromise.
+
+absurdity:
+  label: Absurdity
+  permalink: /absurdity
+  description: Journal entries about absurdity.
+
+driving:
+  label: Driving
+  permalink: /driving
+  description: Journal entries about driving.
+
+engineering:
+  label: Engineering
+  permalink: /engineering
+  description: Journal entries about engineering.
+
+gen-x:
+  label: Gen X
+  permalink: /gen-x
+  description: Journal entries about gen x.
+
+identity:
+  label: Identity
+  permalink: /identity
+  description: Journal entries about identity.
+
+programming:
+  label: Programming
+  permalink: /programming
+  description: Journal entries about programming.
+
+projects:
+  label: Projects
+  permalink: /projects
+  description: Journal entries about projects.
+
+reddit:
+  label: Reddit
+  permalink: /reddit
+  description: Journal entries about reddit.
