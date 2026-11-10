@@ -4,7 +4,7 @@ description: "I am not entirely sure when knowing where the right tire of a Merc
 slug: jack-of-all-trades-including-van-geometry
 authors:
   - subzerodev
-date: 2026-10-08T09:59:00+03:00
+date: 2026-10-08T06:59:00Z
 tags:
   - stories
   - absurd
