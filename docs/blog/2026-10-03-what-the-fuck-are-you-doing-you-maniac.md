@@ -4,7 +4,7 @@ description: "Twenty-five years after watching a brilliant programmer write his 
 slug: what-the-fuck-are-you-doing-you-maniac
 authors:
   - subzerodev
-date: 2026-10-03T20:50:00+03:00
+date: 2026-10-03T17:50:00Z
 tags:
   - absurd
   - lucifer

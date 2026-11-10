@@ -4,7 +4,7 @@ description: "A perfectly serious résumé, except for the part where the Sorcer
 slug: head-code-wrangler-resume-natural-state
 authors:
   - subzerodev
-date: 2026-10-03T20:50:00+03:00
+date: 2026-10-03T17:50:00Z
 tags:
   - absurd
   - lucifer

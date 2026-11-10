@@ -4,7 +4,7 @@ description: "Reddit hated the game engine, so naturally their reviews belong on
 slug: critical-acclaim
 authors:
   - subzerodev
-date: 2026-10-03T20:50:00+03:00
+date: 2026-10-03T17:50:00Z
 tags:
   - absurd
   - lucifer
