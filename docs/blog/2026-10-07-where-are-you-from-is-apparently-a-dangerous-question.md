@@ -5,7 +5,6 @@ slug: where-are-you-from-is-apparently-a-dangerous-question
 authors:
   - subzerodev
 date: 2026-10-07T09:35:00Z
-draft: true
 tags:
   - stories
   - absurd
