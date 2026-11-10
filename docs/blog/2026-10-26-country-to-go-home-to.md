@@ -9,7 +9,6 @@ date: '2026-10-26T00:00:00Z'
 tags:
 - stories
 - philosophy
-draft: true
 ---
 
 # The Country I Wish I Could Go Home To
