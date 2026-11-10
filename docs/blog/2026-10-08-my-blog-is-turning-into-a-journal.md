@@ -6,7 +6,6 @@ authors:
   - subzerodev
 # Provisional draft date; set actual publication date before publishing.
 date: 2026-10-08T00:00:00Z
-draft: true
 tags:
   - knowledge-management
   - site-updates
