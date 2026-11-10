@@ -4,7 +4,7 @@ description: "I needed a shop-vac cable and accidentally purchased enough distan
 slug: apparently-i-bought-infrastructure
 authors:
   - subzerodev
-date: 2026-10-03T21:02:00+03:00
+date: 2026-10-03T18:02:00Z
 tags:
   - absurd
   - lucifer

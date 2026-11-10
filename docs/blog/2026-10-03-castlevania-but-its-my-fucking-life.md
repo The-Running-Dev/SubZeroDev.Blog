@@ -4,7 +4,7 @@ description: "The blog is already full of one-minute animated episodes; apparent
 slug: castlevania-but-its-my-fucking-life
 authors:
   - subzerodev
-date: 2026-10-03T21:03:00+03:00
+date: 2026-10-03T18:03:00Z
 tags:
   - absurd
   - lucifer
