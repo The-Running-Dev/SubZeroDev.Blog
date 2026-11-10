@@ -194,7 +194,8 @@ deployment, and publication outcomes.
 
 After auto-merge is enabled:
 
-1. Monitor `docs / Build` for the exact head SHA and report its final outcome.
+1. Monitor `docs / Build` and `Validate blog posts` for the exact head SHA and
+   report their final outcomes.
 2. Confirm the PR merged with the expected squash strategy and record the
    resulting merge commit SHA.
 3. Locate the `Docs` workflow for that merge commit and wait for its

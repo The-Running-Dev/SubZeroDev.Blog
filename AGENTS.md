@@ -517,6 +517,8 @@ blocks the merge on those threads regardless. Query review threads via
 query in `.agents/workflows/publish-change.md`. Required PR checks are:
 
 - `docs / Build`
+- `Validate blog posts` (skipped, which counts as passing, unless the change
+  touches blog content)
 
 Do not require the merge-only deployment job (`docs / Deploy`). Enable GitHub auto-merge with
 the allowed squash strategy and the exact validated head SHA; GitHub will merge
@@ -529,7 +531,7 @@ After a validated fix directly satisfies a review thread, resolve that thread
 so it cannot keep auto-merge blocked. Leave ambiguous findings unresolved and
 report them instead.
 
-After auto-merge is enabled, the agent must monitor the two required checks for
+After auto-merge is enabled, the agent must monitor the required checks for
 the exact head SHA and report their outcome. After merge, monitor the `Docs
 Deploy` workflow for the resulting merge commit. For a new or changed blog
 post, verify its canonical HTTPS route after deployment succeeds and report the

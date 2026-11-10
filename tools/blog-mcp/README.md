@@ -54,8 +54,8 @@ docker build -t subzerodev-blog-mcp tools/blog-mcp
 
 Or skip the local build entirely and pull the image CI publishes on every
 push to `main` (`.github/workflows/blog-mcp-image.yml`), tagged both
-`latest` and `sha-<commit>` (the latter for pinning to an exact build rather
-than trusting a floating tag):
+`latest` and the short commit SHA (for example `ghcr.io/the-running-dev/subzerodev-blog-mcp:f353d6e`),
+the latter for pinning to an exact build rather than trusting a floating tag:
 
 ```bash
 docker pull ghcr.io/the-running-dev/subzerodev-blog-mcp:latest
@@ -337,10 +337,10 @@ fields report this same identity, so a connected client can compare what
 
 A successful call to the Portainer redeploy webhook only proves the request
 was accepted, not that the public endpoint is serving the new image.
-`.github/workflows/blog-mcp-image.yml`'s "Verify deployed build and MCP
-catalog" step (`build/Confirm-BlogMcpDeployment.ps1`) closes that gap after
-every redeploy: it polls `/healthz` until the exact expected commit SHA is
-stable across several consecutive samples, then runs a real
+`.github/workflows/blog-mcp-image.yml` closes that gap after every redeploy:
+its post-deploy script (`build/Invoke-BlogMcpPostDeploy.ps1`, which runs
+`build/Confirm-BlogMcpDeployment.ps1`) polls `/healthz` until the exact expected
+commit SHA is stable across several consecutive samples, then runs a real
 `initialize -> tools/list -> blog_repo_status` MCP session to prove the
 write-capable tool catalog (including `blog_restore_paths`) is actually being
 served, not just labelled. It classifies a failure as one of:
