@@ -5,7 +5,6 @@ slug: yogurt-with-salt
 authors:
   - subzerodev
 date: 2026-10-08T06:55:00Z
-draft: true
 tags:
   - stories
   - absurd
