@@ -5,7 +5,6 @@ slug: well-get-lost-in-every-translation
 authors:
   - subzerodev
 date: 2026-10-08T06:50:00Z
-draft: true
 tags:
   - stories
   - absurd
