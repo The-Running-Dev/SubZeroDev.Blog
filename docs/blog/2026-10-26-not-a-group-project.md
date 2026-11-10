@@ -9,7 +9,6 @@ date: '2026-10-26T00:00:00Z'
 tags:
 - family
 - philosophy
-draft: true
 ---
 
 # I'm Not a Fucking Group Project
