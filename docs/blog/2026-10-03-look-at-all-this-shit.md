@@ -4,7 +4,7 @@ description: "Every individual purchase makes sense. Then one day you look aroun
 slug: look-at-all-this-shit
 authors:
   - subzerodev
-date: 2026-10-03T20:41:00+03:00
+date: 2026-10-03T17:41:00Z
 tags:
   - absurd
   - stories
