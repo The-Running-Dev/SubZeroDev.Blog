@@ -4,7 +4,7 @@ description: "Discount Store Marcus Aurelius returns: caring deeply, knowing you
 slug: cleanup-on-aisle-four
 authors:
   - subzerodev
-date: 2026-09-29T00:34:00+03:00
+date: 2026-09-28T21:34:00Z
 tags:
   - philosophy
   - stories
