@@ -4,7 +4,7 @@ description: "Apparently spatial awareness is an abstract psychological concept 
 slug: ten-whole-centimeters
 authors:
   - subzerodev
-date: 2026-10-08T09:58:00+03:00
+date: 2026-10-08T06:58:00Z
 tags:
   - stories
   - driving
