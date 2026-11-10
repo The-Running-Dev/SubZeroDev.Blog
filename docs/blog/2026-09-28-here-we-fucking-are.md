@@ -4,7 +4,7 @@ description: "Gin ran out. Vodka Sprite took over. Humanity sent confusing messa
 slug: here-we-fucking-are
 authors:
   - subzerodev
-date: 2026-09-29T01:05:00+03:00
+date: 2026-09-28T22:05:00Z
 tags:
   - philosophy
   - stories
