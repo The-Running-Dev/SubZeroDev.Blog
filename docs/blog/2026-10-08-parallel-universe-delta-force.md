@@ -4,7 +4,7 @@ description: "Not because I am secretly a commando, but because an absurd collec
 slug: apparently-my-parallel-universe-job-is-delta-force
 authors:
   - subzerodev
-date: 2026-10-08T09:55:00+03:00
+date: 2026-10-08T06:55:00Z
 tags:
   - stories
   - absurd
