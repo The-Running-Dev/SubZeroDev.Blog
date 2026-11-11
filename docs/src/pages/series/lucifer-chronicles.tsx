@@ -9,6 +9,11 @@ export default function LuciferChronicles(): React.JSX.Element {
       title="Lucifer Chronicles"
       entries={[
         {
+          title: 'The Mother Has Left the Chat',
+          description: 'Lucifer, God, and Discount Marcus inspect a final family email, a spectacular reply, and an email block that needs another attempt.',
+          href: '/the-mother-has-left-the-chat/'
+        },
+        {
           title: 'One Fucking Guy',
           description: 'Lucifer inspects exhausted build quotas, a personal dashboard, and the enterprise with exactly one user.',
           href: '/one-fucking-guy/'
