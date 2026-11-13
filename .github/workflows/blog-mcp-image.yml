@@ -1,7 +1,7 @@
 name: blog-mcp Image
 
 # Builds, smoke-tests and publishes the blog-mcp MCP server's Docker image
-# (tools/blog-mcp/Dockerfile) to ghcr.io, and redeploys the stack. The image
+# (tools/blog-mcp/Dockerfile) to ghcr.io, and hands the digest to the Infra deploy workflow. The image
 # build, smoke test, push and deploy are the shared reusable container
 # workflow (The-Running-Dev/GitHub-ActionTemplates, container.yml); this file
 # keeps only what is specific to this repository: the change-area gating, the
@@ -64,11 +64,6 @@ name: blog-mcp Image
     pull_request:
         paths: *blog-mcp-path
     workflow_dispatch:
-        inputs:
-            redeploy:
-                description: "Also call the stack redeploy webhook (main only)."
-                type: boolean
-                default: true
 
 # Every job declares its own permissions; nothing is granted by default.
 permissions: {}
@@ -253,27 +248,36 @@ jobs:
                 BLOG_MCP_CLONE_URL=https://github.com/The-Running-Dev/SubZeroDev.Blog.git
                 BLOG_MCP_GIT_USER_NAME=ci-smoke
                 BLOG_MCP_GIT_USER_EMAIL=ci-smoke@invalid.example
-            # The deployment stack pulls the floating `latest` tag, so only
-            # redeploy after a successful publish from main (container.yml
-            # publishes only the default branch). A manual run redeploys only
-            # when its `redeploy` input says so, which also records a manual
-            # redeploy as a deliberate, forced act. `inputs` is empty on a
-            # push event, hence the event_name arms.
-            deploy: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.redeploy == true) }}
-            # issue #109: the redeploy webhook only proves Portainer accepted
-            # the request. The public /healthz must report this commit, and
-            # then the post-deploy script re-checks it for several
-            # consecutive samples and verifies the MCP tool catalog.
-            health-url: https://blogging.subzerodev.com/healthz
-            health-expect: ${{ github.sha }}
-            post-deploy: build/Invoke-BlogMcpPostDeploy.ps1
-        secrets:
-            DEPLOY_WEBHOOK_URL: ${{ secrets.BLOG_MCP_REDEPLOY_WEBHOOK_URL }}
-            # Fails closed (build/Invoke-BlogMcpPostDeploy.ps1 throws) if
-            # BLOG_MCP_DEPLOY_VERIFY_TOKEN isn't configured, by design -- a
-            # successful webhook call must never again be treated as proof of
-            # a completed deployment.
-            DEPLOY_TOKEN: ${{ secrets.BLOG_MCP_DEPLOY_VERIFY_TOKEN }}
+            # Deployment is the separate `deploy` job below, which hands the pushed digest to Infra.
+            deploy: false
+
+    # Infra validates the digest and revision, redeploys the stack and waits until /healthz reports this
+    # commit; the post-deploy script then re-checks it for several samples and verifies the MCP tool catalog.
+    # DEPLOY_ENABLED is set by deploy/ once the stack is under OpenTofu.
+    deploy:
+        name: Deploy
+        needs: image
+        if: github.event_name == 'push' && vars.DEPLOY_ENABLED == 'true' && needs.image.outputs.pushed == 'true'
+        runs-on: ubuntu-latest
+        environment: production
+        permissions:
+            contents: read
+        steps:
+            - uses: The-Running-Dev/GitHub-ActionTemplates/actions/infra-deploy@c71f9720badd37b94b96da0c77633acc3a113647 # v2.2.0
+              with:
+                  app: blog-bot
+                  digest: ${{ needs.image.outputs.digest }}
+                  token: ${{ secrets.INFRA_DISPATCH_TOKEN }}
+
+            - name: Check out repository
+              uses: actions/checkout@v7
+
+            # Fails closed if BLOG_MCP_DEPLOY_VERIFY_TOKEN is not configured, by design.
+            - name: Verify the deployed build and MCP catalog
+              shell: pwsh
+              env:
+                  DEPLOY_TOKEN: ${{ secrets.BLOG_MCP_DEPLOY_VERIFY_TOKEN }}
+              run: ./build/Invoke-BlogMcpPostDeploy.ps1
 
     compose:
         name: Validate Compose files
