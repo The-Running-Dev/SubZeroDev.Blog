@@ -170,7 +170,7 @@ How quickly the miraculous becomes mundane.
 
 And here we are.
 
-2026.
+2026\.
 
 Humanity has developed machines capable of generating software, analyzing immense quantities of information, translating languages, assisting scientific research, and performing tasks that recently required considerable specialized human effort.
 
