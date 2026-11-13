@@ -7,7 +7,8 @@ authors:
 date: 2026-10-09T00:00:00Z
 tags:
   - philosophy
-  - stories
+  - politics-society
+  - thinking-learning
 ---
 
 I once spent an evening talking to a woman who lived in Israel.

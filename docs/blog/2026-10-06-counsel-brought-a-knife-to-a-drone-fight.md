@@ -8,7 +8,7 @@ date: 2026-10-06T00:00:00Z
 tags:
   - absurd
   - lucifer
-  - stories
+  - communication
 ---
 
 # Your Honor, Counsel Brought a Knife to a Drone Fight

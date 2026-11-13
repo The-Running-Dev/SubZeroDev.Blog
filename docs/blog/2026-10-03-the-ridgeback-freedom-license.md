@@ -6,8 +6,8 @@ authors:
   - subzerodev
 date: 2026-10-03T00:20:00Z
 tags:
-  - stories
   - absurd
+  - dogs
 ---
 
 # The Ridgeback Freedom License

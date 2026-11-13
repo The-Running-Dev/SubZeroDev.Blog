@@ -6,10 +6,8 @@ authors:
   - subzerodev
 date: 2026-10-08T06:58:00Z
 tags:
-  - stories
   - driving
   - absurd
-  - gen-x
 ---
 
 # Ten Whole Centimeters

@@ -6,10 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-07T09:21:00Z
 tags:
-  - philosophy
-  - stories
   - absurd
   - bulgaria
+  - boundaries
+  - relationships
 ---
 
 I almost got angry today.

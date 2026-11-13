@@ -6,9 +6,8 @@ authors:
   - subzerodev
 date: 2026-10-07T09:32:00Z
 tags:
-  - programming
-  - projects
-  - stories
+  - development
+  - work-career
 ---
 
 # I Accidentally Built Another Platform

@@ -9,7 +9,6 @@ tags:
   - ai
   - react
   - architecture
-  - subzerodev
   - lucifer
   - absurd
 ---

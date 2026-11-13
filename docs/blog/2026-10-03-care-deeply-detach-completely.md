@@ -7,7 +7,9 @@ authors:
 date: 2026-10-03T18:10:00Z
 tags:
   - philosophy
-  - stories
+  - boundaries
+  - relationships
+  - thinking-learning
 ---
 
 # I Can Care Deeply and Detach Completely

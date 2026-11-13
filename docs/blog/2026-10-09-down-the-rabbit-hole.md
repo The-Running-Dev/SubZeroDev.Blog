@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-09T00:00:00Z
 tags:
-  - philosophy
-  - stories
   - knowledge-management
+  - thinking-learning
+  - reading-list
 ---
 
 I have absolutely no idea how some of my conversations get from point A to point Z.

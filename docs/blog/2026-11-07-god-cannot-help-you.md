@@ -8,7 +8,7 @@ date: 2026-11-07T00:00:00Z
 tags:
   - lucifer
   - absurd
-  - stories
+  - communication
 ---
 
 It was Saturday night. I had nothing else to do. A stranger on Telegram had apparently lost $300,000 and wished to discuss my financial misfortunes. By the end of the evening, I had referred the matter to my various friends in the underworld and the intelligence agencies, with Satan available to receive the visitor. A perfectly ordinary allocation of resources.

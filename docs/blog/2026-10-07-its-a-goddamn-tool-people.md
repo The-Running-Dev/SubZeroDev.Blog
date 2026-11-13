@@ -9,6 +9,8 @@ tags:
   - ai
   - development
   - workflow
+  - work-career
+  - boundaries
 ---
 
 Take this scenario.

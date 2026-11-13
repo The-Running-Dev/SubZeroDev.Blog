@@ -8,9 +8,8 @@ date: 2026-10-02T00:00:00Z
 tags:
   - absurd
   - lucifer
-  - philosophy
-  - stories
   - bulgaria
+  - relationships
 ---
 
 There was a football game on.

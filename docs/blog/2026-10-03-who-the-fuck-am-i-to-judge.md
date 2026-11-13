@@ -7,7 +7,9 @@ authors:
 date: 2026-10-03T18:20:00Z
 tags:
   - philosophy
-  - stories
+  - boundaries
+  - dogs
+  - thinking-learning
 ---
 
 # Who the Fuck Am I to Judge?

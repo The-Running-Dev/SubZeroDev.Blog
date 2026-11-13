@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-11-09T00:00:00Z
 tags:
-  - stories
   - ai
   - workflow
+  - communication
 ---
 
 *How a simple journal entry became a full-scale repository management incident.*

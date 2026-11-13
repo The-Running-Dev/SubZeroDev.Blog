@@ -8,7 +8,6 @@ date: 2026-10-03T18:03:00Z
 tags:
   - absurd
   - lucifer
-  - stories
 ---
 
 # Castlevania, But It's My Fucking Life

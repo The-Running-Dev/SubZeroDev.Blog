@@ -8,9 +8,10 @@ date: 2026-11-11T00:00:00Z
 tags:
   - lucifer
   - absurd
-  - stories
   - development
   - ai
+  - thinking-learning
+  - work-career
 ---
 
 I have administered Hell for a considerable period. We have departments, backlogs, an unfortunate amount of paperwork, and people who insist their particular suffering requires a separate dashboard. Even by our standards, Ben's software operation is becoming fucking ridiculous.

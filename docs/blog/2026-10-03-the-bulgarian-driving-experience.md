@@ -7,8 +7,8 @@ authors:
 date: 2026-10-03T17:45:00Z
 tags:
   - absurd
-  - stories
   - bulgaria
+  - driving
 ---
 
 # The Bulgarian Driving Experience

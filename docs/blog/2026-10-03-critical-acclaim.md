@@ -8,7 +8,7 @@ date: 2026-10-03T17:50:00Z
 tags:
   - absurd
   - lucifer
-  - stories
+  - work-career
 ---
 
 # Critical Acclaim

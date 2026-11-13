@@ -158,6 +158,12 @@ if ($duplicatePermalinks.Count -gt 0) {
 }
 
 $requiredRoutes = @(
+    'journal/index.html',
+    'chronicles/index.html',
+    'projects/index.html',
+    'series/discount-store-marcus-aurelius/index.html',
+    'series/vehicle-history/index.html',
+    'series/well-why-not/index.html',
     'index.html'
     'welcome/index.html'
     'ai-assisted-engineering-workflow/index.html'
@@ -195,11 +201,10 @@ $mastheadRequiredText = @(
     'https://blog.subzerodev.com/',
     'https://github.com/The-Running-Dev?tab=repositories',
     'https://portfolio.subzerodev.com/',
-    '>Latest</a>',
-    '>Archive</a>',
+    '>Journal</a>',
     '>Topics</a>',
-    '>Series</a>',
-    '>Builds</a>',
+    '>Chronicles</a>',
+    '>Projects</a>',
     '>About</a>',
     '>Docs</a>'
 )
@@ -270,6 +275,20 @@ Assert-ArtifactContent -RelativePath 'index.html' -ExpectedText @(
     'href="/rss.xml" title="SubZeroDev Journal RSS Feed"',
     'href="/atom.xml" title="SubZeroDev Journal Atom Feed"'
 )
+
+# Discovery must render useful content without JavaScript as well.
+Assert-ArtifactContent -RelativePath 'index.html' -ExpectedText @('Life, software, and everything in between.', 'Recent entries', 'A few places to start')
+Assert-ArtifactContent -RelativePath 'journal/index.html' -ExpectedText @('Find an entry', 'Archive by year', 'entries')
+Assert-ArtifactContent -RelativePath 'chronicles/index.html' -ExpectedText @('Discount Store Marcus Aurelius', 'Vehicle History', 'Lucifer Chronicles')
+Assert-ArtifactContent -RelativePath 'projects/index.html' -ExpectedText @('Game Engine', 'Neo')
+Assert-ArtifactContent -RelativePath 'tags/index.html' -ExpectedText @('Software &amp; Systems', 'People &amp; Relationships', 'Thinking &amp; Identity', 'Everyday Life', 'Places &amp; Society')
+$discoveryConfig = Get-Content -LiteralPath 'docs/journal.config.json' -Raw | ConvertFrom-Json
+foreach ($legacy in $discoveryConfig.legacyTopics) {
+    Assert-ArtifactFile -RelativePath "tags/$($legacy.key)/index.html"
+    if ($legacy.PSObject.Properties.Name -contains 'target') {
+        Assert-ArtifactContent -RelativePath "tags/$($legacy.key)/index.html" -ExpectedText @("content=`"0;url=$($legacy.target)`"")
+    }
+}
 
 foreach ($permalink in $tagPermalinks) {
     Assert-ArtifactFile -RelativePath "tags/$permalink/index.html"

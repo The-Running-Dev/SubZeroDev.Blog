@@ -6,9 +6,11 @@ authors:
   - subzerodev
 date: 2026-10-09T00:00:00Z
 tags:
-  - philosophy
-  - stories
   - knowledge-management
+  - philosophy
+  - communication
+  - thinking-learning
+  - boundaries
 ---
 
 I've heard a lot of suggestions about what might explain the way I think.

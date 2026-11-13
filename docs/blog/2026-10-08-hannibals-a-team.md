@@ -6,10 +6,11 @@ authors:
   - subzerodev
 date: 2026-10-08T18:00:00Z
 tags:
-  - stories
   - absurd
   - ai
   - automation
+  - work-career
+  - thinking-learning
 ---
 
 # Hannibal's A-Team

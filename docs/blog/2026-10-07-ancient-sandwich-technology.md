@@ -7,8 +7,8 @@ authors:
 date: 2026-10-07T09:34:00Z
 tags:
   - lucifer
-  - stories
-  - absurdity
+  - absurd
+  - everyday-life
 ---
 
 # Ancient Sandwich Technology

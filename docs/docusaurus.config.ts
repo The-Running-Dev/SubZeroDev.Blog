@@ -34,7 +34,7 @@ const ecosystemLinks: Array<{ href: string; label: string; className?: string }>
 
 const config: Config = {
   title: 'SubZeroDev Journal',
-  tagline: 'The source and project documentation for the SubZeroDev Journal.',
+  tagline: 'Life, software, and the things that happen in between.',
   url: 'https://blog.subzerodev.com',
   baseUrl: '/',
   onBrokenLinks: 'throw',
@@ -44,6 +44,7 @@ const config: Config = {
     }
   },
   i18n: { defaultLocale: 'en', locales: ['en'] },
+  plugins: ['./plugins/journal-discovery.cjs'],
   themes: [
     [
       '@easyops-cn/docusaurus-search-local',
@@ -70,8 +71,10 @@ const config: Config = {
           path: 'blog',
           routeBasePath: '/',
           blogTitle: 'SubZeroDev Journal',
-          blogDescription: 'Notes on building and maintaining SubZeroDev projects.',
+          blogDescription: 'Stories, observations, and experiments from life, software, and everything in between.',
           tags: 'tags.yml',
+          blogListComponent: '@site/src/components/JournalHome.tsx',
+          blogTagsListComponent: '@site/src/components/JournalDiscovery/Topics.tsx',
           onInlineTags: 'throw',
           exclude: [
             '**/_*.{js,jsx,ts,tsx,md,mdx}',
@@ -82,7 +85,7 @@ const config: Config = {
           feedOptions: {
             type: ['rss', 'atom'],
             title: 'SubZeroDev Journal',
-            description: 'Notes on building and maintaining SubZeroDev projects.',
+            description: 'Stories, observations, and experiments from life, software, and everything in between.',
             copyright: `Copyright © ${new Date().getFullYear()} SubZeroDev`,
             language: 'en',
             // Docusaurus defaults this to the 20 most recent posts. A one-day
@@ -102,84 +105,20 @@ const config: Config = {
   themeConfig: {
     navbar: {
       items: [
-        {
-          to: '/',
-          position: 'left',
-          label: 'Latest',
-          exact: true
-        },
-        {
-          to: '/archive/',
-          position: 'left',
-          label: 'Archive'
-        },
-        {
-          to: '/tags/',
-          position: 'left',
-          label: 'Topics'
-        },
-        {
-          label: 'Series',
-          position: 'left',
-          activeBasePath: '/series/',
-          items: [
-            {
-              to: '/series/ai-assisted-engineering/',
-              label: 'AI-Assisted Engineering'
-            },
-            {
-              to: '/series/building-the-blog/',
-              label: 'Building the Blog'
-            },
-            {
-              to: '/series/docker/',
-              label: 'Docker'
-            },
-            {
-              to: '/series/state-of-dev/',
-              label: 'State of Dev'
-            },
-            {
-              to: '/series/lucifer-chronicles/',
-              label: 'Lucifer Chronicles'
-            }
-          ]
-        },
-        {
-          label: 'Builds',
-          position: 'left',
-          activeBasePath: '/projects/',
-          items: [
-            {
-              to: '/projects/game-engine/',
-              label: 'Game Engine'
-            },
-            {
-              to: '/the-absurd-adventures-of-neo/',
-              label: 'The Absurd Adventures of Neo'
-            }
-          ]
-        },
-        {
-          to: '/about/',
-          position: 'left',
-          label: 'About'
-        },
-        {
-          type: 'docSidebar',
-          sidebarId: 'docs',
-          position: 'left',
-          label: 'Docs'
-        },
+        { to: '/journal/', position: 'left', label: 'Journal' },
+        { to: '/chronicles/', position: 'left', label: 'Chronicles' },
+        { to: '/tags/', position: 'left', label: 'Topics' },
+        { to: '/projects/', position: 'left', label: 'Projects' },
+        { to: '/about/', position: 'left', label: 'About' },
+        { type: 'docSidebar', sidebarId: 'docs', position: 'left', label: 'Docs' },
         ...ecosystemLinks.map((link) => ({ ...link, position: 'right' as const }))
       ]
     },
-    // SubZeroDev.com's presentation layer defines one dark palette, not a
-    // light/dark pair -- the switch is disabled so the blog can't drift into
-    // a light theme this palette was never designed against.
+    // Enable persisted theme choices; the Navbar/ColorModeToggle overlay
+    // removes the duplicate control in favour of the masthead controls.
     colorMode: {
       defaultMode: 'dark',
-      disableSwitch: true,
+      disableSwitch: false,
       respectPrefersColorScheme: false
     },
     // Mirrors the masthead's outbound group (same four links, same active

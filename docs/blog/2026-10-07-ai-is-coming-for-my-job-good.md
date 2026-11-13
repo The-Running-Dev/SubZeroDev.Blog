@@ -7,8 +7,9 @@ authors:
 date: 2026-10-07T00:00:00Z
 tags:
   - ai
-  - philosophy
   - development
+  - work-career
+  - thinking-learning
 ---
 
 There's an argument about AI that keeps moving the furniture.

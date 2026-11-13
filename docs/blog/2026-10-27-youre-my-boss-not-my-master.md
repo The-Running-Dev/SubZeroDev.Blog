@@ -6,10 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-27T00:00:00Z
 tags:
-  - stories
   - absurd
   - lucifer
-  - philosophy
+  - boundaries
+  - work-career
 ---
 
 # You're My Boss, Not My Goddamn Master

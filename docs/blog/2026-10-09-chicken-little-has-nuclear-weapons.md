@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-09T00:00:00Z
 tags:
-  - philosophy
   - absurd
-  - stories
+  - philosophy
+  - politics-society
+  - thinking-learning
 ---
 
 Donald Trump is threatening Iran again, and people are understandably alarmed.

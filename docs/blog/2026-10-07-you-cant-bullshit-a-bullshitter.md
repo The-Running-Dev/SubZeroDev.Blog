@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-07T12:00:00Z
 tags:
-  - philosophy
-  - stories
   - absurd
+  - philosophy
+  - communication
+  - thinking-learning
 ---
 
 # You Can't Bullshit a Bullshitter

@@ -7,8 +7,8 @@ authors:
 # Provisional draft date; set the actual publication date before publishing.
 date: 2026-10-08T00:00:00Z
 tags:
-  - philosophy
-  - stories
+  - communication
+  - relationships
 ---
 
 I do Bible study with Ethan and Sandra.

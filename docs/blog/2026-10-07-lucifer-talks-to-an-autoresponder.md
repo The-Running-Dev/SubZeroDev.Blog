@@ -9,7 +9,7 @@ tags:
   - lucifer
   - absurd
   - automation
-  - stories
+  - communication
 ---
 
 # Lucifer Talks to an Autoresponder

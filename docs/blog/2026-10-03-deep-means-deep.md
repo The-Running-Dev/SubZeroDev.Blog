@@ -6,8 +6,8 @@ authors:
   - subzerodev
 date: 2026-10-03T18:00:00Z
 tags:
-  - philosophy
-  - stories
+  - relationships
+  - communication
 ---
 
 # Deep Means Deep

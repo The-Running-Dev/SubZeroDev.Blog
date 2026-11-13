@@ -6,10 +6,11 @@ authors:
   - subzerodev
 date: 2026-10-31T00:00:00Z
 tags:
-  - stories
   - absurd
   - bulgaria
   - lucifer
+  - everyday-life
+  - money
 ---
 
 I have discovered a marvelous new luxury service in Bulgaria.

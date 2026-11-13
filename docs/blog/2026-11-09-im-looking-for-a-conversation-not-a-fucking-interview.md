@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-11-09T00:00:00Z
 tags:
-  - stories
-  - philosophy
   - lucifer
+  - relationships
+  - communication
 ---
 
 # I'm Looking for a Conversation, Not a Fucking Interview

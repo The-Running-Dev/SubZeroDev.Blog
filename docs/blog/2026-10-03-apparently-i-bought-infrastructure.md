@@ -8,8 +8,8 @@ date: 2026-10-03T18:02:00Z
 tags:
   - absurd
   - lucifer
-  - stories
   - bulgaria
+  - everyday-life
 ---
 
 # Apparently I Bought Infrastructure

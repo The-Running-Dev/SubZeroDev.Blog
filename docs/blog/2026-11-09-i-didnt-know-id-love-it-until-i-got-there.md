@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-11-09T00:00:00Z
 tags:
-  - philosophy
-  - stories
   - absurd
+  - philosophy
+  - travel
+  - thinking-learning
 ---
 
 I didn't know I would love living in Barcelona until I lived in Barcelona. Gandia and Rótova weren't places I'd spent my whole life knowing I needed to be. I ended up there, looked around, and thought: holy shit. It's beautiful. I want to be here.

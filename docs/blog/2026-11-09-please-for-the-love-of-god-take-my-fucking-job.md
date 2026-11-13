@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-11-09T00:00:00Z
 tags:
-  - stories
   - ai
   - absurd
+  - work-career
+  - thinking-learning
 ---
 
 *The AI revolution is coming. Apparently, it got lost on the way.*

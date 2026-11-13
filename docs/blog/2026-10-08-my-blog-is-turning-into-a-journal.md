@@ -9,7 +9,6 @@ date: 2026-10-08T00:00:00Z
 tags:
   - knowledge-management
   - site-updates
-  - stories
 ---
 
 I started a blog.

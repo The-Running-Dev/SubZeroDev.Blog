@@ -8,7 +8,7 @@ date: 2026-10-27T00:00:00Z
 tags:
   - development
   - ai
-  - stories
+  - thinking-learning
 ---
 
 # Go Try the Fucking Thing

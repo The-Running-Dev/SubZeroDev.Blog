@@ -8,7 +8,7 @@ date: 2026-10-08T12:00:00Z
 tags:
   - lucifer
   - absurd
-  - stories
+  - everyday-life
 ---
 
 Plex wasn't accessible from the TV.

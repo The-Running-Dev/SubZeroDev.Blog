@@ -6,10 +6,12 @@ authors:
   - subzerodev
 date: 2026-10-06T11:05:00Z
 tags:
-  - philosophy
-  - stories
   - development
   - absurd
+  - philosophy
+  - work-career
+  - identity
+  - thinking-learning
 ---
 
 # I'm Not a Programmer

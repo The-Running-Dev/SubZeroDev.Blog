@@ -7,7 +7,7 @@ authors:
 date: 2026-10-07T06:32:00Z
 tags:
   - philosophy
-  - stories
+  - boundaries
 ---
 
 # What's Under the Anger?

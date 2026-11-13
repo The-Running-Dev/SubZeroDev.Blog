@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-08T06:50:00Z
 tags:
-  - stories
   - absurd
   - bulgaria
+  - relationships
+  - communication
 ---
 
 # We'll Get Lost in Every Translation

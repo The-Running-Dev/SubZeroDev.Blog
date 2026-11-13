@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-09-27T00:00:00Z
 tags:
-  - philosophy
   - family
-  - stories
+  - philosophy
+  - boundaries
 ---
 
 # Forgiveness Does Not Mean Access

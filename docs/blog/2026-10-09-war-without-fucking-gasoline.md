@@ -6,8 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-09T00:00:00Z
 tags:
-  - stories
   - philosophy
+  - politics-society
+  - thinking-learning
 ---
 
 I was watching Professor Poutin—yes, Poutin, eh; fucking Canadians—and he brought up something about World War II that made me stop and think.

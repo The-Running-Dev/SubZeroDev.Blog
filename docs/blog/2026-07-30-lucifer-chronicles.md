@@ -8,7 +8,7 @@ date: 2026-07-30T16:38:18Z
 tags:
   - absurd
   - lucifer
-  - stories
+  - game-engine
 ---
 
 # Lucifer Chronicles: The Game I Apparently Started Writing Without Realizing It

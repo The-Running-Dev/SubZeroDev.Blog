@@ -6,10 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-06T11:50:00Z
 tags:
-  - stories
-  - philosophy
   - development
   - absurd
+  - work-career
+  - boundaries
 ---
 
 # Training Is Not a Natural Disaster

@@ -6,9 +6,11 @@ authors:
   - subzerodev
 date: 2026-10-06T11:35:00Z
 tags:
-  - philosophy
   - absurd
-  - stories
+  - philosophy
+  - relationships
+  - boundaries
+  - thinking-learning
 ---
 
 # You Don't Get Time. You Make It.

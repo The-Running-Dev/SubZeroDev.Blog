@@ -224,3 +224,33 @@ Context: `tools/Measure-Session.ps1` was deleted from this repository in the cop
 Chosen: Remove both hook entries (`.claude/settings.json` is now `{}`) and rewrite the `AGENTS.md` paragraph to state plainly that no local tool currently measures real per-call usage, rather than leave either pointing at a deleted script.
 Rejected: **Point the hooks at a kit equivalent** — no such script exists in `~/.agent-kit` to point at. **Leave it as a known gap** — the hook firing against a missing file on every session end/prompt is an active error, not a passive gap; worth fixing now rather than flagging for later.
 Reversibility: cheap
+
+### 2026-11-13 — Local Journal, Chronicles, Topics, and Projects organization
+Context: The user approved the organization proposed after auditing all 258 entries and 43 tags, and explicitly requested local implementation and preview before any push or publication.
+Chosen: Keep the root post routes, feeds, archive, existing series paths and game-engine hub. Use the first blog list page as a discovery home, add /journal/ as the complete searchable publication index, /chronicles/ as a directory of overlapping curated reading paths, and /projects/ as a directory of project hubs. Replace the tag directory presentation at /tags/ with subject groups; the groups are presentation only, not required post categories. Rename topic display labels, merge overlapping development and absurdity tags, remove default Stories and incidental catch-all assignments, and add subjects supported by the entries. Preserve retired tag routes through redirects to their replacement or a historical membership index. Keep existing collection tags for authoring compatibility while showing them as reading paths. Use Docusaurus's loaded blog metadata for discovery data, with a local overlay plugin and an editorial JSON configuration; add no dependency or required front-matter field. Keep historical post titles and body text unchanged. All work remains local pending user review.
+Rejected: A tag-only cleanup leaves narrative and project discovery scattered. Moving posts under /journal/ breaks established public routes. A second category taxonomy forces each entry into an unnecessary hierarchy. Rewriting titles or inferring event dates changes source meaning. Adopting the entire earlier design cycle expands the approved local preview into unrelated delivery work.
+Reversibility: cheap before publication; established routes remain compatible.
+
+### 2026-11-13 — Compact layout and local reading preferences
+Context: During local review, the user requested less whitespace, a more readable font, a light/dark switch and text-size control.
+Chosen: Reduce masthead, introduction, section and entry spacing. Use Verdana with local system fallbacks, and 16/18/20 px base sizes through an always-visible reading control. Keep the dark default and add a white light palette with darker cyan links. Use Docusaurus's existing theme state and browser-local text-size storage; add no font download or dependency. Keep this revision local for review.
+Rejected: Loading a remote font adds a network dependency when a readable system face is sufficient. Retaining the single dark palette conflicts with the requested light option. Scaling only article text leaves discovery pages unchanged by the text-size control. Hiding controls in the mobile menu makes reading adjustments harder to find.
+Reversibility: cheap
+
+### 2026-11-13 — Font-relative article reading width
+Context: The user approved narrowing article lines during local review and requested short and long examples for comparison.
+Chosen: Cap the article at 60ch, including its header and footer, while retaining its left alignment and the existing responsive navigation layout. Verdana's broad zero glyph makes this a practical prose measure; ch measures zero glyphs rather than a literal count of mixed characters. The cap follows the selected font size and yields to the available width on smaller screens. Keep this revision local for review.
+Rejected: A fixed pixel width does not scale with the reading preference. Capping paragraphs individually leaves headings and other article content at inconsistent widths. Changing the whole site grid would also narrow discovery pages unnecessarily.
+Reversibility: cheap
+
+### 2026-11-13 — Contain wide article tables on phones
+Context: The privacy guide's intrinsic table column widths caused the entire page to scroll horizontally on phone screens. The user approved a local fix and preview.
+Chosen: Below 768px, display article tables as width-constrained blocks with horizontal overflow set to auto. Wide tables scroll independently within the article, retaining all columns and the chosen text size. Preserve the existing desktop table layout.
+Rejected: Shrinking table text undermines reading preferences. Clipping overflow hides content. Forcing every column to fit produces excessively narrow cells and awkward wrapping. A component wrapper adds unnecessary markup for behavior already supported by the existing table styles.
+Reversibility: cheap
+
+### 2026-11-13 — Explain overflowing tables on phones
+Context: The user approved a small swipe hint to make horizontal table scrolling discoverable during local review.
+Chosen: Add a local MDX table overlay that measures actual overflow below 768px and displays "Swipe to see all columns" only above overflowing article tables. Recheck when table dimensions or the breakpoint change, including reading-size changes. Associate the hint with the table and make overflowing tables keyboard-focusable. Use the existing muted text colour and compact spacing; keep everything local.
+Rejected: A permanent hint above every table adds noise when all columns fit. A CSS-only label cannot determine actual overflow. Editing each post duplicates presentation logic in authored content. The earlier CSS-only containment remains sufficient for scrolling itself; a component wrapper is now justified by the requested conditional explanation.
+Reversibility: cheap

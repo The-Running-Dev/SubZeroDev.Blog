@@ -8,8 +8,8 @@ date: 2026-10-08T07:13:00Z
 tags:
   - absurd
   - lucifer
-  - stories
   - bulgaria
+  - everyday-life
 ---
 
 # Apparently I'm Going to a Wedding

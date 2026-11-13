@@ -6,10 +6,11 @@ authors:
   - subzerodev
 date: 2026-11-09T00:00:00Z
 tags:
-  - philosophy
-  - stories
   - absurd
   - bulgaria
+  - philosophy
+  - thinking-learning
+  - travel
 ---
 
 When I lived in San Antonio, I heard people proudly say they had been born and raised there and had never left. I love San Antonio. I still wanted to ask whether they understood that the rest of the planet was open.

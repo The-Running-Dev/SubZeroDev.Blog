@@ -9,6 +9,8 @@ tags:
   - absurd
   - ai
   - llm
+  - money
+  - work-career
 ---
 
 Sometimes a man has got to take a stand.

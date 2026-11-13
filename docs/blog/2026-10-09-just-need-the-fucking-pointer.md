@@ -8,8 +8,8 @@ date: 2026-10-09T00:00:00Z
 tags:
   - development
   - knowledge-management
-  - philosophy
   - absurd
+  - thinking-learning
 ---
 
 I don't know everything. I can't know everything. And I've never particularly wanted to memorize every implementation of everything I've ever encountered.

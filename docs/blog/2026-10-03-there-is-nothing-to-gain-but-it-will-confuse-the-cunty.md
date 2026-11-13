@@ -7,9 +7,10 @@ authors:
 date: 2026-10-03T17:47:00Z
 tags:
   - absurd
-  - stories
   - bulgaria
   - family
+  - relationships
+  - everyday-life
 ---
 
 # There Is Nothing to Gain From This Behavior, But It Will Confuse the Cunty

@@ -6,8 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-08T00:00:00Z
 tags:
-  - stories
   - absurd
+  - dogs
+  - everyday-life
 ---
 
 Bonnie has had meat.

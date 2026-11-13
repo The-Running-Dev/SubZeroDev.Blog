@@ -8,7 +8,9 @@ authors:
 date: 2026-10-08T00:00:00Z
 tags:
   - philosophy
-  - stories
+  - boundaries
+  - communication
+  - relationships
 ---
 
 I told Ethan that Bible study with him and Sandra means something to me.

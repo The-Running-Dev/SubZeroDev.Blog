@@ -6,10 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-08T18:00:00Z
 tags:
-  - stories
-  - philosophy
   - family
   - bulgaria
+  - boundaries
+  - money
 ---
 
 # Who the Fuck Asked You?

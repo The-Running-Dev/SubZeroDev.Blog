@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-03T18:07:00Z
 tags:
-  - stories
   - ai
   - absurd
+  - relationships
+  - communication
 ---
 
 # Apparently I'm Bipolar Now

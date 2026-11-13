@@ -7,8 +7,8 @@ authors:
 date: 2026-10-07T09:33:00Z
 tags:
   - windows
-  - programming
-  - projects
+  - development
+  - everyday-life
 ---
 
 # Why Doesn't Windows Just Put My Shit Back?

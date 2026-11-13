@@ -6,9 +6,11 @@ authors:
   - subzerodev
 date: 2026-10-06T11:45:00Z
 tags:
-  - stories
   - bulgaria
   - absurd
+  - travel
+  - driving
+  - money
 ---
 
 # Fifty Serbians, One Gas Station Employee, and Van Diesel

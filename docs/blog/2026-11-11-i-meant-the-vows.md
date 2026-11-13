@@ -6,8 +6,9 @@ authors:
   - subzerodev
 date: 2026-11-11T00:00:00Z
 tags:
-  - stories
   - philosophy
+  - relationships
+  - boundaries
 ---
 
 I got married in a church despite never considering myself a Christian. Apparently I was willing to make an exception for the part where you stand up and promise another person your entire fucking life.

@@ -10,7 +10,6 @@ tags:
   - ai
   - llm
   - development
-  - productivity
   - absurd
   - lucifer
 ---

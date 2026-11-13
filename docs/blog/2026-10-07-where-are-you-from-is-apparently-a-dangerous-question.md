@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-07T09:35:00Z
 tags:
-  - stories
   - absurd
   - bulgaria
+  - relationships
+  - communication
 ---
 
 # "Where Are You From?" Is Apparently a Dangerous Question

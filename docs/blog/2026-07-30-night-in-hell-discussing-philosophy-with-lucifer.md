@@ -9,7 +9,6 @@ tags:
   - absurd
   - lucifer
   - philosophy
-  - stories
 ---
 
 # The Night I Ended Up in Hell Discussing Philosophy With Lucifer

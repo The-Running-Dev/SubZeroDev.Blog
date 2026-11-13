@@ -1,0 +1,439 @@
+{
+  "topicGroups": [
+    {
+      "title": "Software & Systems",
+      "keys": [
+        "development",
+        "ai",
+        "llm",
+        "ai-assisted-engineering",
+        "automation",
+        "architecture",
+        "workflow",
+        "projects-as-code",
+        "gitops",
+        "mcp",
+        "knowledge-management",
+        "blog-publishing",
+        "game-engine",
+        "docker",
+        "windows",
+        "docusaurus",
+        "react",
+        "markdown",
+        "determinism",
+        "privacy",
+        "security",
+        "work-career"
+      ]
+    },
+    {
+      "title": "People & Relationships",
+      "keys": [
+        "family",
+        "relationships",
+        "communication",
+        "boundaries"
+      ]
+    },
+    {
+      "title": "Thinking & Identity",
+      "keys": [
+        "philosophy",
+        "thinking-learning",
+        "identity",
+        "reading-list"
+      ]
+    },
+    {
+      "title": "Everyday Life",
+      "keys": [
+        "dogs",
+        "driving",
+        "everyday-life",
+        "money",
+        "sport-play",
+        "hookah"
+      ]
+    },
+    {
+      "title": "Places & Society",
+      "keys": [
+        "bulgaria",
+        "travel",
+        "politics-society"
+      ]
+    }
+  ],
+  "otherTopics": [
+    "site-updates",
+    "absurd",
+    "recipes"
+  ],
+  "collectionTags": {
+    "lucifer": "lucifer-chronicles",
+    "ahead-of-the-rubric": "ahead-of-the-rubric",
+    "well-why-not": "well-why-not",
+    "state-of-dev": "state-of-dev"
+  },
+  "collections": [
+    {
+      "id": "lucifer-chronicles",
+      "title": "Lucifer Chronicles",
+      "href": "/series/lucifer-chronicles/",
+      "description": "Impossible encounters, cosmic negotiations, and observations through Lucifer’s eyes.",
+      "start": "gods-greatest-practical-joke"
+    },
+    {
+      "id": "discount-store-marcus-aurelius",
+      "title": "Discount Store Marcus Aurelius",
+      "href": "/series/discount-store-marcus-aurelius/",
+      "description": "Stoicism meets shopping carts, dating, anger, and the rest of an uncooperative universe.",
+      "start": "discount-store-marcus-aurelius"
+    },
+    {
+      "id": "vehicle-history",
+      "title": "The Vehicle History of Uncle Ben",
+      "href": "/series/vehicle-history/",
+      "description": "Cars, motorcycles, repairs, borders, and thirty years of decisions that made sense at the time.",
+      "start": "vehicle-history-of-uncle-ben"
+    },
+    {
+      "id": "ai-assisted-engineering",
+      "title": "AI-Assisted Engineering",
+      "href": "/series/ai-assisted-engineering/",
+      "description": "The operating model, the practical limits, and what happens when the tools get involved.",
+      "start": "ai-assisted-engineering-workflow"
+    },
+    {
+      "id": "building-the-blog",
+      "title": "Building the Journal",
+      "href": "/series/building-the-blog/",
+      "description": "From a small Git-backed blog to a publishing system and a journal with a life of its own.",
+      "start": "welcome"
+    },
+    {
+      "id": "docker",
+      "title": "Docker",
+      "href": "/series/docker/",
+      "description": "From a single container to Compose, with a practical Windows setup guide.",
+      "start": "docker-run-vs-docker-compose"
+    },
+    {
+      "id": "state-of-dev",
+      "title": "State of Dev",
+      "href": "/series/state-of-dev/",
+      "description": "Development snapshots from an engineering workflow that keeps becoming something larger.",
+      "start": "state-of-dev-week-of-july-27-2026"
+    },
+    {
+      "id": "ahead-of-the-rubric",
+      "title": "Ahead of the Rubric",
+      "href": "/about/",
+      "description": "Who I am, how I work, and the recurring habit of building ahead of the grading system.",
+      "start": "ahead-of-the-rubric"
+    },
+    {
+      "id": "well-why-not",
+      "title": "Well, Why Not?",
+      "href": "/series/well-why-not/",
+      "description": "A simple question, a small experiment, and an unexpectedly substantial thing to maintain.",
+      "start": "two-weeks-jones-escalated"
+    }
+  ],
+  "legacyTopics": [
+    {
+      "key": "stories",
+      "label": "Stories",
+      "slugs": [
+        "gods-greatest-practical-joke",
+        "apparently-my-hands-were-the-problem",
+        "lucifer-chronicles",
+        "lucifer-fly-negotiation",
+        "night-in-hell-discussing-philosophy-with-lucifer",
+        "the-absurdity-of-humanity",
+        "trip-to-old-forge-january-2017",
+        "ahead-of-the-rubric",
+        "for-humans",
+        "selected-incidents",
+        "the-absurd-adventures-of-neo",
+        "quick-question-became-44-work-units",
+        "two-weeks-jones-escalated",
+        "blah-blah-blah",
+        "boyan-is-dead-meet-uncle-ben",
+        "consequences",
+        "forgiveness-does-not-mean-access",
+        "mario-and-uncle-ben",
+        "the-fence-that-doesnt-fence",
+        "cleanup-on-aisle-four",
+        "discount-store-marcus-aurelius-cart-business",
+        "discount-store-marcus-aurelius",
+        "here-we-fucking-are",
+        "universe-keeps-unit-testing-marcus-aurelius",
+        "im-a-foreigner-everywhere",
+        "nobody-asked-you",
+        "save-the-children-go-go-go-go-go",
+        "so-fucking-what",
+        "sometimes-you-have-to-ask",
+        "this-is-why-i-dont-go-to-the-doctor",
+        "what-are-you-a-fucking-turtle",
+        "a-hundred-percent-failure-rate",
+        "alcohol-is-apparently-a-productivity-tool-until-it-isnt",
+        "an-engine-wearing-a-trabant-as-a-hat",
+        "apparently-i-bought-infrastructure",
+        "apparently-im-bipolar-now",
+        "care-deeply-detach-completely",
+        "castlevania-but-its-my-fucking-life",
+        "consequences-motherfucker",
+        "critical-acclaim",
+        "customer-service-denied",
+        "deep-means-deep",
+        "grandpa-convention-canine-division",
+        "hannibal-doesnt-need-to-know-everything",
+        "head-code-wrangler-resume-natural-state",
+        "just-backgammon-and-genital-mutilation",
+        "look-at-all-this-shit",
+        "old-man-couldnt-breathe",
+        "ridgeback-infrastructure-upgrade",
+        "the-bar-is-my-drinking-limit",
+        "the-bulgarian-driving-experience",
+        "the-lamb",
+        "the-ridgeback-freedom-license",
+        "there-is-nothing-to-gain-but-it-will-confuse-the-cunty",
+        "this-is-the-world-we-live-in",
+        "useful-but-useless",
+        "vehicular-detachment",
+        "we-shall-ride-on-the-hills",
+        "were-just-fucking-here",
+        "what-are-you-still-auditioning-for",
+        "what-the-fuck-are-you-doing-you-maniac",
+        "who-the-fuck-am-i-to-judge",
+        "zero-trust-pedestrian-architecture",
+        "preemptive-defensiveness-now-available-in-ridgeback",
+        "are-you-not-entertained",
+        "counsel-brought-a-knife-to-a-drone-fight",
+        "discount-store-cinematic-universe",
+        "every-meeting-is-the-first-meeting",
+        "fifty-serbians-one-gas-station-employee",
+        "forgotten-more-than-youll-ever-know",
+        "i-didnt-learn-to-be-present",
+        "i-knew-her-before-i-knew-her-name",
+        "i-retired-from-sarcasm",
+        "im-not-a-programmer",
+        "invisible-eggshells",
+        "just-fucking-tell-me",
+        "training-is-not-a-natural-disaster",
+        "universe-entered-the-chat",
+        "who-wrote-this-shit",
+        "you-dont-get-time-you-make-it",
+        "ancient-sandwich-technology",
+        "binary-people-meet-a-non-binary-life",
+        "discount-store-marcus-aurelius-anger-is-weather",
+        "dont-expect-drunk-people-to-act-sober",
+        "goodbye-is-a-complete-conflict-resolution-strategy",
+        "i-accidentally-built-another-platform",
+        "i-bought-wifi-for-a-computer-sitting-behind-a-router",
+        "i-used-ai-to-explain-why-i-like-using-ai",
+        "lucifer-talks-to-an-autoresponder",
+        "one-drink",
+        "please-stop-explaining-me-to-me",
+        "the-world-has-always-been-mad",
+        "there-is-no-such-thing-as-enough-yogurt",
+        "village-grievance-ledger",
+        "whats-under-the-anger",
+        "where-are-you-from-is-apparently-a-dangerous-question",
+        "you-cant-bullshit-a-bullshitter",
+        "you-dont-need-to-know-tai-chi",
+        "you-know-that-i-know-that-you-know",
+        "apparently-bulgaria-invented-catering",
+        "apparently-im-going-to-a-wedding",
+        "apparently-this-is-my-life",
+        "beat-me-at-tabletop-hockey-and-win-an-ice-cream",
+        "ben-the-legend",
+        "five-days-to-bulgaria",
+        "five-years-six-months-and-no-conversation",
+        "france-heres-an-audi",
+        "hannibals-a-team",
+        "i-dont-want-to-build-this-at-home",
+        "i-dropped-everybody-then-had-a-nice-conversation",
+        "i-just-wanted-plex-on-the-tv",
+        "i-said-what-i-said",
+        "i-switch-operating-systems-for-variety",
+        "jack-of-all-trades-including-van-geometry",
+        "meet-me-where-i-am",
+        "motorcycle-diplomacy",
+        "motorcycle-that-wouldnt-fucking-die",
+        "murphy-drives-a-bmw",
+        "my-blog-is-turning-into-a-journal",
+        "own-your-shit",
+        "apparently-my-parallel-universe-job-is-delta-force",
+        "ten-meters-of-bureaucracy",
+        "ten-whole-centimeters",
+        "thats-just-what-happened",
+        "the-ferry-that-never-happened",
+        "the-hazard-lights-have-spoken",
+        "the-mazda-that-refused-to-die",
+        "the-ridgeback-food-security-system",
+        "the-ridgeworm-chronicles",
+        "understand-your-boundaries-now-fuck-your-boundaries",
+        "vehicle-history-of-uncle-ben",
+        "well-get-lost-in-every-translation",
+        "who-the-fuck-asked-you",
+        "yogurt-with-salt",
+        "asking-questions-is-not-endorsing-terrorism",
+        "chicken-little-has-nuclear-weapons",
+        "down-the-rabbit-hole",
+        "i-left-my-brother-in-a-truck",
+        "if-you-dont-want-war-prepare-for-peace",
+        "im-an-asshole-now-what",
+        "im-not-arguing-im-thinking",
+        "invade-country-own-its-future",
+        "profanity-is-just-fucking-language",
+        "stop-diagnosing-my-curiosity",
+        "the-good-the-bad-and-the-ugly-musk",
+        "war-without-fucking-gasoline",
+        "go-where-youre-celebrated",
+        "ninety-minutes-of-stoicism",
+        "a-lot-of-moving-parts",
+        "fine-take-me-to-the-judge",
+        "three-funnels-and-no-cupboard-space",
+        "country-to-go-home-to",
+        "i-would-rather-not-have-said-any-of-this",
+        "its-just-business-motherfucker",
+        "dance-monkey-dance",
+        "darkness-i-choose-not-to-become",
+        "go-try-the-fucking-thing",
+        "i-need-people-i-can-ask",
+        "price-of-being-myself",
+        "youre-my-boss-not-my-master",
+        "the-salesman-who-accidentally-sold-me-freedom",
+        "gospel-according-to-saint-hookah",
+        "have-hookah-will-travel",
+        "im-just-being-honest",
+        "projects-are-reproducing",
+        "the-devil-the-ogre-and-the-seventeen-accidental-projects",
+        "this-conversation-never-happened",
+        "twenty-euros-to-flip-a-fucking-switch",
+        "apparently-operating-system-on-wednesday",
+        "be-better-i-dont-care",
+        "i-came-here-to-build-things",
+        "i-wasnt-asking-for-a-fucking-intervention",
+        "ive-lived-three-fucking-lives",
+        "meditations-of-a-discount-marcus-the-first-move-tax",
+        "money-has-come-and-gone",
+        "the-giant-and-the-block",
+        "toni-fucking-kukoc",
+        "uncle-ben-and-the-kid-who-remembered",
+        "uncle-ben-has-nothing-to-prove",
+        "what-the-fuck-do-you-know-about-money",
+        "you-know-nothing-jon-snow",
+        "i-fucking-knew-better",
+        "apparently-ive-mastered-life",
+        "forgive-me-father-for-i-asked-her-out",
+        "god-cannot-help-you",
+        "i-never-applied-for-this-job",
+        "im-living-here",
+        "love-is-a-verb-show-me",
+        "schadenfreude-in-the-plumbing-department",
+        "the-call-outside-barcelona",
+        "the-email-that-took-two-years",
+        "the-reply-i-deleted",
+        "the-saturday-surveillance-committee",
+        "two-hundred-grand-and-jon-snow",
+        "abrasive-difficult-stubborn-fuck-your-labels",
+        "department-of-self-inflicted-martyrdom",
+        "dont-mind-me-im-just-an-asshole",
+        "i-asked-it-to-publish-a-fucking-story",
+        "i-didnt-know-id-love-it-until-i-got-there",
+        "i-dont-need-another-fucking-job-managing-ai",
+        "i-dont-want-to-spend-my-life-angry",
+        "i-wasnt-asking-for-a-fucking-intervention-again",
+        "im-looking-for-a-conversation-not-a-fucking-interview",
+        "no-three-month-free-trial-of-my-best-behavior",
+        "please-for-the-love-of-god-take-my-fucking-job",
+        "six-hours-debugging-something-nobody-fucking-asked-for",
+        "the-ai-freight-train-has-left-the-tracks",
+        "the-best-place-youve-never-compared-to-anything",
+        "the-communists-are-coming-again",
+        "four-fucking-dollars",
+        "i-meant-the-vows",
+        "im-not-playing-this-game",
+        "one-fucking-guy"
+      ]
+    },
+    {
+      "key": "productivity",
+      "label": "Productivity",
+      "slugs": [
+        "accidentally-built-an-ai-blogging-machine",
+        "lucifer-ai-model-selection-policy",
+        "alcohol-is-apparently-a-productivity-tool-until-it-isnt",
+        "i-dont-need-another-fucking-job-managing-ai"
+      ]
+    },
+    {
+      "key": "projects",
+      "label": "Projects",
+      "slugs": [
+        "i-accidentally-built-another-platform",
+        "why-doesnt-windows-just-put-my-shit-back"
+      ]
+    },
+    {
+      "key": "subzerodev",
+      "label": "SubZeroDev",
+      "slugs": [
+        "state-of-dev-2026-08-03",
+        "lucifer-found-a-framework"
+      ]
+    },
+    {
+      "key": "gen-x",
+      "label": "Gen X",
+      "slugs": [
+        "ten-whole-centimeters"
+      ],
+      "target": "/tags/driving/"
+    },
+    {
+      "key": "reddit",
+      "label": "Reddit",
+      "slugs": [
+        "you-know-that-i-know-that-you-know"
+      ],
+      "target": "/tags/ai/"
+    },
+    {
+      "key": "programming",
+      "label": "Programming",
+      "slugs": [
+        "i-accidentally-built-another-platform",
+        "vibe-coding-apparently",
+        "why-doesnt-windows-just-put-my-shit-back"
+      ],
+      "target": "/tags/development/"
+    },
+    {
+      "key": "engineering",
+      "label": "Engineering",
+      "slugs": [
+        "vibe-coding-apparently"
+      ],
+      "target": "/tags/development/"
+    },
+    {
+      "key": "absurdity",
+      "label": "Absurdity",
+      "slugs": [
+        "ancient-sandwich-technology"
+      ],
+      "target": "/tags/absurd/"
+    }
+  ],
+  "startingPoints": [
+    "my-blog-is-turning-into-a-journal",
+    "discount-store-marcus-aurelius",
+    "vehicle-history-of-uncle-ben",
+    "ai-assisted-engineering-workflow"
+  ]
+}

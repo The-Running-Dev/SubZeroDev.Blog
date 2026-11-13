@@ -7,8 +7,8 @@ authors:
 date: 2026-07-30T04:11:03Z
 tags:
   - absurd
-  - philosophy
-  - stories
+  - driving
+  - travel
 ---
 
 # Trip to Old Forge, January 2017

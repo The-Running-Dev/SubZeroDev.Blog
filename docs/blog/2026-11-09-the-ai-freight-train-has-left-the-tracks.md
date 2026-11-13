@@ -6,7 +6,6 @@ authors:
   - subzerodev
 date: 2026-11-09T00:00:00Z
 tags:
-  - stories
   - ai
   - automation
 ---

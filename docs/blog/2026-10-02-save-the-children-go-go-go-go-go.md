@@ -8,8 +8,8 @@ date: 2026-10-02T00:00:00Z
 tags:
   - absurd
   - lucifer
-  - stories
   - bulgaria
+  - dogs
 ---
 
 Oh my God, will you stop saving the goddamn children?

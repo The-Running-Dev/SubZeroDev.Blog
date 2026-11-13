@@ -7,7 +7,6 @@ authors:
 date: 2026-09-28T18:30:00Z
 tags:
   - philosophy
-  - stories
 ---
 
 # Discount Store Marcus Aurelius

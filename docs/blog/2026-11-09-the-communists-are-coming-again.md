@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-11-09T00:00:00Z
 tags:
-  - philosophy
-  - stories
   - absurd
+  - philosophy
+  - politics-society
+  - thinking-learning
 ---
 
 I was watching Mike Johnson talk about Marxism, socialism and the communists coming for America, and Discount Store Marcus Aurelius immediately exceeded his recommended daily allowance of human bullshit.

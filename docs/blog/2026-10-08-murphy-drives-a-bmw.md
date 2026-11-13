@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-08T18:00:00Z
 tags:
-  - stories
   - absurd
   - bulgaria
+  - driving
 ---
 
 # Murphy Drives a BMW

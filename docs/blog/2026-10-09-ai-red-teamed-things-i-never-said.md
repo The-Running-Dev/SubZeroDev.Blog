@@ -9,7 +9,8 @@ tags:
   - ai
   - llm
   - absurd
-  - philosophy
+  - thinking-learning
+  - communication
 ---
 
 I asked an AI to red-team my thinking about Elon Musk.

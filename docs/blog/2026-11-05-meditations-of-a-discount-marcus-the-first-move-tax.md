@@ -7,9 +7,8 @@ authors:
 date: 2026-11-05T00:00:00Z
 tags:
   - absurd
-  - philosophy
-  - stories
   - bulgaria
+  - relationships
 ---
 
 # Meditations of a Discount Marcus: The First-Move Tax

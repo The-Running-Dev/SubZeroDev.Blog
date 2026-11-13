@@ -6,9 +6,12 @@ authors:
   - subzerodev
 date: 2026-10-08T18:00:00Z
 tags:
-  - stories
   - absurd
   - lucifer
+  - travel
+  - driving
+  - identity
+  - dogs
 ---
 
 # Apparently This Is My Life

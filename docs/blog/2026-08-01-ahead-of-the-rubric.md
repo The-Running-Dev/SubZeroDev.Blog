@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-08-01T15:00:00Z
 tags:
-  - stories
-  - philosophy
   - ahead-of-the-rubric
+  - thinking-learning
+  - work-career
 ---
 
 # Ahead of the Rubric

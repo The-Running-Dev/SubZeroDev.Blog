@@ -10,7 +10,6 @@ tags:
   - ai
   - development
   - determinism
-  - stories
   - well-why-not
 ---
 

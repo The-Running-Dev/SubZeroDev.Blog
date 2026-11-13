@@ -6,7 +6,7 @@ authors:
   - subzerodev
 date: 2026-11-05T00:00:00Z
 tags:
-  - stories
+  - sport-play
 ---
 
 This was Syracuse, probably twenty years ago. I'm playing basketball in the yard with one of my brother's friends, and the guy is taller than me.

@@ -8,7 +8,7 @@ date: 2026-10-31T00:00:00Z
 tags:
   - lucifer
   - absurd
-  - stories
+  - communication
 ---
 
 *The Lucifer Chronicles — The Curious Case of George Myers*

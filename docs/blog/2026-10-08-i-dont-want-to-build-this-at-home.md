@@ -7,9 +7,9 @@ authors:
 date: 2026-10-08T06:50:00Z
 tags:
   - development
-  - stories
   - absurd
   - well-why-not
+  - everyday-life
 ---
 
 # I Don't Want to Build This at Home. I Already Have.

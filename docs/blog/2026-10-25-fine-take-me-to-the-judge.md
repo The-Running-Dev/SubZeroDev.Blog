@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-25T00:00:00Z
 tags:
-  - stories
   - bulgaria
   - absurd
+  - travel
+  - driving
 ---
 
 # Fine Take Me to the Judge

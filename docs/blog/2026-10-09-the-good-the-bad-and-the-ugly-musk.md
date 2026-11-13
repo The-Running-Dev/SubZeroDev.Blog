@@ -6,9 +6,11 @@ authors:
   - subzerodev
 date: 2026-10-09T00:00:00Z
 tags:
-  - philosophy
   - absurd
-  - stories
+  - philosophy
+  - thinking-learning
+  - politics-society
+  - work-career
 ---
 
 *The Wannabe Genius, the Would-Be Messiah, and, Most Likely, a Buffoon.*

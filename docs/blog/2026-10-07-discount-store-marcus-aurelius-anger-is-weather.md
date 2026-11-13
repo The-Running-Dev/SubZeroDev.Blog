@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-07T06:30:00Z
 tags:
-  - philosophy
-  - stories
   - absurd
+  - philosophy
+  - thinking-learning
 ---
 
 # Discount Store Marcus Aurelius: Anger Is Weather

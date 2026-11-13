@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-11-09T00:00:00Z
 tags:
-  - stories
-  - philosophy
   - lucifer
+  - boundaries
+  - communication
 ---
 
 # Don't Mind Me, I'm Just an Asshole

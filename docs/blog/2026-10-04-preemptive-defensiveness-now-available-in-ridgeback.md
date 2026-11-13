@@ -8,8 +8,8 @@ date: 2026-10-04T20:30:00Z
 tags:
   - absurd
   - lucifer
-  - stories
   - bulgaria
+  - dogs
 ---
 
 # Preemptive Defensiveness, Now Available in Ridgeback

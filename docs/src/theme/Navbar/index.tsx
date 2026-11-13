@@ -2,6 +2,7 @@ import React, { type ReactNode } from 'react';
 import Link from '@docusaurus/Link';
 import NavbarContent from '@theme/Navbar/Content';
 import NavbarLayout from '@theme/Navbar/Layout';
+import ReadingControls from './ReadingControls';
 
 /**
  * The SubZeroDev.com apex owns this identity: see its `composeApex` and
@@ -13,12 +14,15 @@ export default function Navbar(): ReactNode {
     <header className="site-masthead">
       <div className="site-masthead__frame">
         <div className="site-masthead__stack">
-          <div className="site-masthead__identity">
-            <Link className="site-masthead__brand" href="https://subzerodev.com/">
-              SubZeroDev
-            </Link>
-            <p className="site-masthead__meta">Professional uncertainty since 2026.</p>
-            <p className="site-masthead__slogan">Well… Why not?</p>
+          <div className="site-masthead__identity-row">
+            <div className="site-masthead__identity">
+              <Link className="site-masthead__brand" href="https://subzerodev.com/">
+                SubZeroDev
+              </Link>
+              <p className="site-masthead__meta">Professional uncertainty since 2026.</p>
+              <p className="site-masthead__slogan">Well… Why not?</p>
+            </div>
+            <ReadingControls />
           </div>
           <NavbarLayout>
             <NavbarContent />

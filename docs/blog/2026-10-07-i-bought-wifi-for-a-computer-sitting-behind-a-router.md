@@ -7,8 +7,8 @@ authors:
 date: 2026-10-07T06:36:00Z
 tags:
   - development
-  - stories
   - absurd
+  - everyday-life
 ---
 
 # I Bought Wi-Fi for a Computer Sitting Behind a Router

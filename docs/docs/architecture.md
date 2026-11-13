@@ -13,15 +13,24 @@ to own its content, routes, and deployment settings.
 
 | Route | Source | Ownership |
 | --- | --- | --- |
-| `/` | Blog index generated from `docs/blog/` | Blog listing |
+| `/` | `JournalHome.tsx` and generated post metadata | Journal discovery home |
+| `/journal/` | `JournalDiscovery/Journal.tsx` | Searchable publication-order index |
+| `/chronicles/` | `journal.config.json` and curated hub pages | Connected reading paths |
+| `/projects/` | `JournalDiscovery/index.tsx` | Game Engine and Neo project directory |
 | `/<slug>/` | Markdown under `docs/blog/` | Authored blog post |
 | `/archive/` | Docusaurus blog archive | Chronological discovery |
-| `/tags/` | `docs/blog/tags.yml` | Controlled tag index |
+| `/tags/` | `tags.yml` and `journal.config.json` | Topics grouped by subject |
 | `/tags/<tag-permalink>/` | Post front matter and `docs/blog/tags.yml` | Tagged-post discovery |
 | `/rss.xml`, `/atom.xml` | Docusaurus production build | Syndication feeds |
 | `/blog/**` | Pages under `docs/src/pages/blog/` | Legacy-route compatibility |
 | `/docs/` | `docs/docs/index.md` | Generated documentation landing page |
 | `/docs/**` | Markdown under `docs/docs/` | Authored project documentation |
+
+The local `docs/plugins/journal-discovery.cjs` plugin derives discovery data from
+Docusaurus post metadata. `docs/journal.config.json` owns presentation groups,
+Chronicle starting points, and compatibility indexes for retired tags. Topic
+groups add no required post fields. Curated hub entries remain in their page
+source under `docs/src/pages/`.
 
 ## Build Boundary
 

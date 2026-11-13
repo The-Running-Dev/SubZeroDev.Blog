@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-03T00:05:00Z
 tags:
-  - stories
   - bulgaria
   - absurd
+  - driving
 ---
 
 # An Engine Wearing a Trabant as a Hat

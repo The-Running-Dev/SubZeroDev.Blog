@@ -7,7 +7,8 @@ authors:
 date: 2026-10-07T06:31:00Z
 tags:
   - philosophy
-  - stories
+  - thinking-learning
+  - relationships
 ---
 
 # The World Has Always Been Mad

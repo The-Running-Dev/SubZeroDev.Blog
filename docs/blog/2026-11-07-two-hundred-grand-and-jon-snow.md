@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-11-07T00:00:00Z
 tags:
-  - stories
   - absurd
-  - philosophy
+  - relationships
+  - money
 ---
 
 # Two Hundred Grand and Jon Snow

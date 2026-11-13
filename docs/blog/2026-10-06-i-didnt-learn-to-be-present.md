@@ -7,7 +7,8 @@ authors:
 date: 2026-10-06T10:41:00Z
 tags:
   - philosophy
-  - stories
+  - relationships
+  - thinking-learning
 ---
 
 # I Didn't Learn to Be Present. I Noticed I Already Was.

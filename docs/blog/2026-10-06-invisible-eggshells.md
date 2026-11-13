@@ -6,8 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-06T11:20:00Z
 tags:
-  - philosophy
-  - stories
+  - boundaries
+  - relationships
+  - communication
 ---
 
 # Invisible Eggshells

@@ -1,214 +1,229 @@
 windows:
-  label: Windows
+  label: "Windows"
   permalink: /windows
-  description: Installing, configuring, and maintaining Microsoft Windows.
+  description: "Installing, configuring, and maintaining Microsoft Windows."
 
 site-updates:
-  label: Site Updates
+  label: "Journal Updates"
   permalink: /site-updates
-  description: Changes to the SubZeroDev Blog, its publishing workflow, and its public structure.
+  description: "Changes to the SubZeroDev Journal, its publishing workflow, and its public structure."
 
 blog-publishing:
-  label: Blog Publishing
+  label: "Publishing Systems"
   permalink: /blog-publishing
-  description: Building and operating the repository-driven publishing system behind this blog.
+  description: "Building and operating the repository-driven publishing system behind the journal."
 
 ai-assisted-engineering:
-  label: AI-Assisted Engineering
+  label: "AI-Assisted Engineering"
   permalink: /ai-assisted-engineering
-  description: Practical use of AI systems across software design, implementation, review, and delivery.
+  description: "Practical use of AI systems across software design, implementation, review, and delivery."
 
 automation:
-  label: Automation
+  label: "Automation"
   permalink: /automation
-  description: Repeatable tooling and workflows that replace manual engineering operations.
+  description: "Repeatable tooling and workflows that replace manual engineering operations."
 
 projects-as-code:
-  label: Projects as Code
+  label: "Projects as Code"
   permalink: /projects-as-code
-  description: Declarative, version-controlled project structure, infrastructure, governance, and agent behavior.
+  description: "Declarative, version-controlled project structure, infrastructure, governance, and agent behavior."
 
 absurd:
-  label: Absurd
+  label: "Absurdity"
   permalink: /absurd
-  description: Humor built from unreasonable situations treated with perfectly reasonable seriousness.
+  description: "Humor built from unreasonable situations treated with perfectly reasonable seriousness."
 
 lucifer:
-  label: Lucifer
+  label: "Lucifer"
   permalink: /lucifer
-  description: Stories and observations told through the Lucifer persona.
+  description: "Stories and observations told through the Lucifer persona."
 
 philosophy:
-  label: Philosophy
+  label: "Philosophy"
   permalink: /philosophy
-  description: Reflections on boundaries, behavior, meaning, and the mechanics of being human.
-
-stories:
-  label: Stories
-  permalink: /stories
-  description: Personal narratives, incidents, and fictionalized observations.
+  description: "Reflections on boundaries, behavior, meaning, and the mechanics of being human."
 
 ai:
-  label: AI
+  label: "AI"
   permalink: /ai
-  description: Posts about artificial intelligence beyond the specific AI-assisted engineering workflow.
+  description: "Posts about artificial intelligence beyond the specific AI-assisted engineering workflow."
 
 llm:
-  label: LLM
+  label: "Language Models"
   permalink: /llm
-  description: Model selection, behavior, and practical work with large language models.
+  description: "Model selection, behavior, and practical work with large language models."
 
 development:
-  label: Development
+  label: "Software Development"
   permalink: /development
-  description: Posts related to Development.
-
-productivity:
-  label: Productivity
-  permalink: /productivity
-  description: Posts related to Productivity.
+  description: "Building, testing, and maintaining software."
 
 docker:
-  label: Docker
+  label: "Docker and Containers"
   permalink: /docker
-  description: Containers, images, and the tooling around running things in Docker.
+  description: "Containers, images, and the tooling around running things in Docker."
 
 ahead-of-the-rubric:
-  label: Ahead of the Rubric
+  label: "Ahead of the Rubric"
   permalink: /ahead-of-the-rubric
-  description: The recurring pattern of building things before the systems around them are ready to grade them.
+  description: "The recurring pattern of building things before the systems around them are ready to grade them."
 
 reading-list:
-  label: Reading List
+  label: "Books and Reading"
   permalink: /reading-list
-  description: Books and audiobooks worth a first listen or a repeat one.
+  description: "Books and audiobooks worth a first listen or a repeat one."
 
 recipes:
-  label: Recipes
+  label: "Recipes"
   permalink: /recipes
-  description: Recipes worth writing down before they're forgotten.
+  description: "Recipes worth writing down before they're forgotten."
 
 gitops:
-  label: GitOps
+  label: "Git-Based Workflows"
   permalink: /gitops
-  description: Git as the source of truth for code, content, and configuration, with automation built around the repository.
+  description: "Git as the source of truth for code, content, and configuration, with automation built around the repository."
 
 mcp:
-  label: MCP
+  label: "Model Context Protocol"
   permalink: /mcp
-  description: Building and using Model Context Protocol servers as the interface between AI clients and real systems.
+  description: "Building and using Model Context Protocol servers as the interface between AI clients and real systems."
 
 markdown:
-  label: Markdown
+  label: "Markdown"
   permalink: /markdown
-  description: Markdown as a durable, plain-text format for notes, documentation, and published content.
+  description: "Markdown as a durable, plain-text format for notes, documentation, and published content."
 
 knowledge-management:
-  label: Knowledge Management
+  label: "Knowledge Management"
   permalink: /knowledge-management
-  description: Capturing, organizing, and searching personal notes, ideas, and decisions.
+  description: "Capturing, organizing, and searching personal notes, ideas, and decisions."
 
 workflow:
-  label: Workflow
+  label: "Workflows"
   permalink: /workflow
-  description: Defining and running repeatable pipelines that transform one artifact into the next.
+  description: "Defining and running repeatable pipelines that transform one artifact into the next."
 
 architecture:
-  label: Architecture
+  label: "Software Architecture"
   permalink: /architecture
   description: "System design and structural decisions — how the pieces fit together and why."
 
 bulgaria:
-  label: Bulgaria
+  label: "Life in Bulgaria"
   permalink: /bulgaria
-  description: Life, places, and everyday absurdity observed from Bulgaria.
+  description: "Life, places, and everyday absurdity observed from Bulgaria."
 
 family:
-  label: Family
+  label: "Family"
   permalink: /family
-  description: Family dynamics, unsolicited directives, and the drama built around them.
+  description: "Family relationships, shared history, responsibilities, and everyday life."
 
 game-engine:
-  label: Game Engine
+  label: "Game Development"
   permalink: /game-engine
-  description: Designing and building reusable game systems, mechanics, and engine architecture.
+  description: "Game design, reusable game systems, mechanics, and engine architecture."
 
 docusaurus:
-  label: Docusaurus
+  label: "Docusaurus"
   permalink: /docusaurus
-  description: Building documentation and publishing sites with Docusaurus.
+  description: "Building documentation and publishing sites with Docusaurus."
 
 determinism:
-  label: Determinism
+  label: "Determinism"
   permalink: /determinism
-  description: Reproducible state, replay, and systems that behave identically every time they run.
+  description: "Reproducible state, replay, and systems that behave identically every time they run."
 
 well-why-not:
-  label: Well Why Not
+  label: "Well, Why Not?"
   permalink: /well-why-not
-  description: Building the thing first and justifying it afterwards, if at all.
+  description: "Building the thing first and justifying it afterwards, if at all."
 
 state-of-dev:
-  label: State of Dev
+  label: "State of Dev"
   permalink: /state-of-dev
-  description: Weekly development journals covering what shipped, what escalated, and what appeared unannounced.
-
-subzerodev:
-  label: SubZeroDev
-  permalink: /subzerodev
-  description: "The SubZeroDev ecosystem — the engine, the agents, the git tooling, and the platform underneath them."
+  description: "Weekly development journals covering what shipped, what escalated, and what appeared unannounced."
 
 react:
-  label: React
+  label: "React"
   permalink: /react
-  description: Building, composing, and abusing React components and the tooling around them.
+  description: "Building, composing, and abusing React components and the tooling around them."
 
 privacy:
-  label: Privacy
+  label: "Privacy"
   permalink: /privacy
-  description: Practical privacy choices for devices, accounts, and online services.
+  description: "Practical privacy choices for devices, accounts, and online services."
 
 security:
-  label: Security
+  label: "Security"
   permalink: /security
-  description: Protecting devices, accounts, and data, and recovering after a compromise.
-
-absurdity:
-  label: Absurdity
-  permalink: /absurdity
-  description: Journal entries about absurdity.
+  description: "Protecting devices, accounts, and data, and recovering after a compromise."
 
 driving:
-  label: Driving
+  label: "Vehicles and Driving"
   permalink: /driving
-  description: Journal entries about driving.
-
-engineering:
-  label: Engineering
-  permalink: /engineering
-  description: Journal entries about engineering.
-
-gen-x:
-  label: Gen X
-  permalink: /gen-x
-  description: Journal entries about gen x.
+  description: "Cars, motorcycles, ownership, repairs, driving, and journeys where the vehicle is central."
 
 identity:
-  label: Identity
+  label: "Identity and Belonging"
   permalink: /identity
-  description: Journal entries about identity.
+  description: "Self-definition, authenticity, labels, and belonging."
 
-programming:
-  label: Programming
-  permalink: /programming
-  description: Journal entries about programming.
+relationships:
+  label: "Relationships"
+  permalink: /relationships
+  description: "Dating, friendship and partnership; Family remains a separate overlapping topic."
 
-projects:
-  label: Projects
-  permalink: /projects
-  description: Journal entries about projects.
+boundaries:
+  label: "Boundaries and Responsibility"
+  permalink: /boundaries
+  description: "Autonomy, obligations, consequences and access; distinguish the subject from the Family setting."
 
-reddit:
-  label: Reddit
-  permalink: /reddit
-  description: Journal entries about reddit.
+communication:
+  label: "Communication"
+  permalink: /communication
+  description: "Language, misunderstanding, listening, assumptions and conversation."
+
+thinking-learning:
+  label: "Thinking and Learning"
+  permalink: /thinking-learning
+  description: "Learning, reasoning, associative memory and changing perspective; not a medical classification."
+
+work-career:
+  label: "Work and Career"
+  permalink: /work-career
+  description: "Work, professional identity, collaboration and career experiences."
+
+money:
+  label: "Money"
+  permalink: /money
+  description: "Money, spending and its role in decisions; do not turn every purchase into a money post."
+
+politics-society:
+  label: "Politics and Society"
+  permalink: /politics-society
+  description: "Political arguments, historical comparisons and social systems; classification is not endorsement or fact-checking."
+
+travel:
+  label: "Travel"
+  permalink: /travel
+  description: "Journeys, borders and living across places; use Bulgaria separately where relevant."
+
+dogs:
+  label: "Dogs"
+  permalink: /dogs
+  description: "Dog-centered accounts currently buried under Stories, Absurd and Bulgaria."
+
+everyday-life:
+  label: "Home and Everyday Life"
+  permalink: /everyday-life
+  description: "Home infrastructure, ordinary routines, food and practical incidents. Avoid using as a new catch-all."
+
+hookah:
+  label: "Hookah"
+  permalink: /hookah
+  description: "The shisha recipe and the two travel/lounge accounts form a small coherent subject."
+
+sport-play:
+  label: "Sport and Play"
+  permalink: /sport-play
+  description: "Participation, competition and games as lived experiences; keep game development separate."

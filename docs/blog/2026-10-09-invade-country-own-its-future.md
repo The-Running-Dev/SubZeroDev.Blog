@@ -7,7 +7,8 @@ authors:
 date: 2026-10-09T00:00:00Z
 tags:
   - philosophy
-  - stories
+  - politics-society
+  - thinking-learning
 ---
 
 Some documentary I watched years ago left me with an idea I've never forgotten.

@@ -7,7 +7,8 @@ authors:
 date: 2026-09-27T14:58:00Z
 tags:
   - philosophy
-  - stories
+  - identity
+  - boundaries
 ---
 
 # Boyan Is Dead. Meet Uncle Ben.

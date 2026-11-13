@@ -6,9 +6,11 @@ authors:
   - subzerodev
 date: 2026-11-09T00:00:00Z
 tags:
-  - stories
-  - philosophy
   - lucifer
+  - philosophy
+  - communication
+  - identity
+  - boundaries
 ---
 
 # Abrasive, Difficult, Stubborn — Fuck Your Labels

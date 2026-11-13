@@ -7,9 +7,10 @@ authors:
 date: 2026-10-02T00:00:00Z
 tags:
   - lucifer
-  - philosophy
-  - stories
   - bulgaria
+  - philosophy
+  - boundaries
+  - communication
 ---
 
 There is a phrase I seem to use a lot lately.

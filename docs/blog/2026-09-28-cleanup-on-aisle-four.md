@@ -7,7 +7,6 @@ authors:
 date: 2026-09-28T21:34:00Z
 tags:
   - philosophy
-  - stories
 ---
 
 # Cleanup on Aisle Four

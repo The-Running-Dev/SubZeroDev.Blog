@@ -7,7 +7,8 @@ authors:
 date: 2026-10-03T18:15:00Z
 tags:
   - philosophy
-  - stories
+  - thinking-learning
+  - reading-list
 ---
 
 # We're Just Fucking Here

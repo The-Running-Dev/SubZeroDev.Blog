@@ -7,8 +7,7 @@ authors:
 date: 2026-10-26T15:00:00Z
 tags:
   - family
-  - philosophy
-  - stories
+  - boundaries
 ---
 
 # I Would Rather Not Have Said Any of This
