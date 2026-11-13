@@ -77,8 +77,18 @@ export default function AiAssistedEngineering(): React.JSX.Element {
           description: "On Derivco's A-Team, refusing the eight-hour sports-betting course, delegating specialist knowledge, and starting with the reusable abstraction.",
           href: '/hannibal-doesnt-need-to-know-everything/'
         },
-{"title":"I Made Claude Code Shut the Fuck Up","description":"How I configured Claude Code to keep the engineering depth, cut the conversational garbage, control subagents, preserve context, and give me two-line completion reports.","href":"/i-made-claude-code-shut-the-fuck-up/","label":"In practice"},
-{"title":"I Made Codex Shut the Fuck Up Too","description":"How I configured Codex to keep the engineering depth, shrink tool and skill overhead, control subagents, compact context, and stop turning every completion into a retrospective.","href":"/i-made-codex-shut-the-fuck-up-too/","label":"In practice"},
+        {
+          title: "I Made Claude Code Shut the Fuck Up",
+          description: "How I configured Claude Code to keep the engineering depth, cut the conversational garbage, control subagents, preserve context, and give me two-line completion reports.",
+          href: "/i-made-claude-code-shut-the-fuck-up/",
+          label: "In practice"
+        },
+        {
+          title: "I Made Codex Shut the Fuck Up Too",
+          description: "How I configured Codex to keep the engineering depth, shrink tool and skill overhead, control subagents, compact context, and stop turning every completion into a retrospective.",
+          href: "/i-made-codex-shut-the-fuck-up-too/",
+          label: "In practice"
+        },
       ]}
     />
   );

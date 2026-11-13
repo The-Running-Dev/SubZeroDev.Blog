@@ -8,15 +8,51 @@ export default function LuciferChronicles(): React.JSX.Element {
       eyebrow="Chronicle"
       title="Lucifer Chronicles"
       entries={[
-{"title":"Lucifer Discovers Recursive Bureaucracy","description":"Lucifer investigates the latest human innovation: using AI to automatically document the software being built to automate documenting itself.","href":"/lucifer-discovers-recursive-bureaucracy/"},
-{"title":"I Tried to Reuse a Landing Page. Lucifer Found a Framework.","description":"A simple attempt to abstract some React UI quietly became a static-site toolkit, application framework, deployment system, and possibly a recursive UI platform.","href":"/lucifer-found-a-framework/"},
-{"title":"Dance, Monkey, Dance","description":"Tinder has apparently invented a stock market for human worth, and I refuse to list my shares.","href":"/dance-monkey-dance/"},
-{"title":"The Darkness I Choose Not to Become","description":"When my brain moonlights as an evil genius and the Buddhist department files a complaint.","href":"/darkness-i-choose-not-to-become/"},
-{"title":"I Need People I Can Ask","description":"An accidental Stoic discovers Zen communities and prepares to show up with 800 questions and no certification.","href":"/i-need-people-i-can-ask/"},
-{"title":"The Price of Being Myself","description":"Authenticity has been a terrible investment. I keep buying it anyway.","href":"/price-of-being-myself/"},
-{"title":"You're My Boss, Not My Goddamn Master","description":"Two decades of engineering judgment, three HR representatives, and an extremely fragrant laptop return.","href":"/youre-my-boss-not-my-master/"},
-{"title":"I'm Just Being Honest","description":"Two attempted human connections, a strength contest nobody entered, contradictory dating reports, and the dubious assistance of vodka.","href":"/im-just-being-honest/"},
-{"title":"Twenty Euros to Flip a Fucking Switch","description":"Four days after paying an overdue electricity bill in Bulgaria, the lights were still off and express reconnection came with a twenty-euro price tag.","href":"/twenty-euros-to-flip-a-fucking-switch/"},
+        {
+          title: "Lucifer Discovers Recursive Bureaucracy",
+          description: "Lucifer investigates the latest human innovation: using AI to automatically document the software being built to automate documenting itself.",
+          href: "/lucifer-discovers-recursive-bureaucracy/"
+        },
+        {
+          title: "I Tried to Reuse a Landing Page. Lucifer Found a Framework.",
+          description: "A simple attempt to abstract some React UI quietly became a static-site toolkit, application framework, deployment system, and possibly a recursive UI platform.",
+          href: "/lucifer-found-a-framework/"
+        },
+        {
+          title: "Dance, Monkey, Dance",
+          description: "Tinder has apparently invented a stock market for human worth, and I refuse to list my shares.",
+          href: "/dance-monkey-dance/"
+        },
+        {
+          title: "The Darkness I Choose Not to Become",
+          description: "When my brain moonlights as an evil genius and the Buddhist department files a complaint.",
+          href: "/darkness-i-choose-not-to-become/"
+        },
+        {
+          title: "I Need People I Can Ask",
+          description: "An accidental Stoic discovers Zen communities and prepares to show up with 800 questions and no certification.",
+          href: "/i-need-people-i-can-ask/"
+        },
+        {
+          title: "The Price of Being Myself",
+          description: "Authenticity has been a terrible investment. I keep buying it anyway.",
+          href: "/price-of-being-myself/"
+        },
+        {
+          title: "You're My Boss, Not My Goddamn Master",
+          description: "Two decades of engineering judgment, three HR representatives, and an extremely fragrant laptop return.",
+          href: "/youre-my-boss-not-my-master/"
+        },
+        {
+          title: "I'm Just Being Honest",
+          description: "Two attempted human connections, a strength contest nobody entered, contradictory dating reports, and the dubious assistance of vodka.",
+          href: "/im-just-being-honest/"
+        },
+        {
+          title: "Twenty Euros to Flip a Fucking Switch",
+          description: "Four days after paying an overdue electricity bill in Bulgaria, the lights were still off and express reconnection came with a twenty-euro price tag.",
+          href: "/twenty-euros-to-flip-a-fucking-switch/"
+        },
         {
           title: 'Please Walk in Front of the Future With a Red Flag',
           description: 'Lucifer compares red-flag laws, early aviation fears, and the panic surrounding artificial intelligence.',
