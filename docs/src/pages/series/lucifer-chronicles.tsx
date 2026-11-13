@@ -9,6 +9,11 @@ export default function LuciferChronicles(): React.JSX.Element {
       title="Lucifer Chronicles"
       entries={[
         {
+          title: 'Please Walk in Front of the Future With a Red Flag',
+          description: 'Lucifer compares red-flag laws, early aviation fears, and the panic surrounding artificial intelligence.',
+          href: '/please-walk-in-front-of-the-future-with-a-red-flag/'
+        },
+        {
           title: 'One Fucking Guy',
           description: 'Lucifer inspects exhausted build quotas, a personal dashboard, and the enterprise with exactly one user.',
           href: '/one-fucking-guy/'
