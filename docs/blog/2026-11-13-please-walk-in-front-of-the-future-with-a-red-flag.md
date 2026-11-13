@@ -468,4 +468,3 @@ I hear the future has excellent acceleration.
 - [Smithsonian — The Roar of the Crowd](https://airandspace.si.edu/stories/editorial/roar-crowd)
 - [Smithsonian — The Evolution of the Commercial Flying Experience](https://airandspace.si.edu/explore/stories/evolution-commercial-flying-experience)
 - [Pew Research Center — Americans' attitudes toward AI, August 2026](https://www.pewresearch.org/short-reads/2026/08/18/young-adults-in-the-us-are-increasingly-wary-of-ai-concerned-it-will-take-jobs/)
-
