@@ -6,11 +6,13 @@ authors:
   - subzerodev
 date: 2026-10-27T00:00:00Z
 tags:
-  - philosophy
-  - stories
   - bulgaria
   - absurd
   - lucifer
+  - philosophy
+  - boundaries
+  - communication
+  - thinking-learning
 ---
 
 # I Need People I Can Ask

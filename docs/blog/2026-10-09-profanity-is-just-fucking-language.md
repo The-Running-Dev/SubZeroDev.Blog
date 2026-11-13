@@ -8,7 +8,7 @@ date: 2026-10-09T00:00:00Z
 tags:
   - absurd
   - philosophy
-  - stories
+  - communication
 ---
 
 I love the word *fuck*.

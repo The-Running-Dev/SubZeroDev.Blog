@@ -8,8 +8,8 @@ authors:
 date: 2026-10-08T00:00:00Z
 tags:
   - absurd
-  - stories
   - well-why-not
+  - sport-play
 ---
 
 I had some weird fucking dreams.

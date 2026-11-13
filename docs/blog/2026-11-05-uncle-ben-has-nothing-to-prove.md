@@ -6,8 +6,9 @@ authors:
   - subzerodev
 date: 2026-11-05T00:00:00Z
 tags:
-  - stories
-  - philosophy
+  - everyday-life
+  - money
+  - sport-play
 ---
 
 The kid is about twenty-five. I'm about to be fifty. He calls me Uncle Ben, which already makes me fucking laugh, and somehow we've arrived at the question of who can drink more.

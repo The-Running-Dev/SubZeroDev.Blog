@@ -6,8 +6,8 @@ authors:
   - subzerodev
 date: 2026-08-01T15:20:00Z
 tags:
-  - stories
   - ahead-of-the-rubric
+  - work-career
 ---
 
 # Selected Incidents  

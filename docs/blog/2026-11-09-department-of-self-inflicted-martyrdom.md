@@ -10,7 +10,7 @@ tags:
   - family
   - absurd
   - philosophy
-  - stories
+  - boundaries
 ---
 
 Lucifer walked into God's office carrying a folder marked **FAMILY LOYALTY — URGENT, SELF-INFLICTED**.

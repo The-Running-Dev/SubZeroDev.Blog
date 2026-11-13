@@ -7,8 +7,8 @@ authors:
 date: 2026-10-07T06:35:00Z
 tags:
   - bulgaria
-  - stories
   - absurd
+  - everyday-life
 ---
 
 # There Is No Such Thing as Enough Yogurt

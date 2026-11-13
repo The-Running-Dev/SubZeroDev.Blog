@@ -7,7 +7,7 @@ authors:
 date: 2026-11-06T00:00:00Z
 tags:
   - family
-  - stories
+  - boundaries
 ---
 
 I was looking back at the messages I sent Yav, my younger brother. The reply about Star Wars. The last message. All of it. And I felt absolutely fucking stupid for having said any of it.

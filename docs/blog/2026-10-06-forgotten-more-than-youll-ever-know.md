@@ -7,9 +7,8 @@ authors:
 date: 2026-10-06T11:10:00Z
 tags:
   - absurd
-  - stories
   - development
-  - philosophy
+  - work-career
 ---
 
 # I've Forgotten More About This Than You'll Ever Know

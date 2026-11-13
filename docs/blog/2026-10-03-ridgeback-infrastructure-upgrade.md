@@ -7,8 +7,8 @@ authors:
 date: 2026-10-03T17:41:00Z
 tags:
   - absurd
-  - stories
   - bulgaria
+  - dogs
 ---
 
 # The Ridgeback Infrastructure Upgrade

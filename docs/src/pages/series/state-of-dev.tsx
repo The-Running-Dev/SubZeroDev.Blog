@@ -5,9 +5,15 @@ export default function StateOfDev(): React.JSX.Element {
   return (
     <ContentHub
       description="Periodic field notes from the point where an AI-assisted engineering workflow starts behaving like an automation platform."
-      eyebrow="Series"
+      eyebrow="Chronicle"
       title="State of Dev"
       entries={[
+        {
+          title: "State of Dev - Week of August 3, 2026",
+          description: "Weekly development journal covering the continued accidental construction of the SubZeroDev ecosystem.",
+          href: "/state-of-dev-2026-08-03/",
+          label: "Issue 2"
+        },
         {
           label: 'Issue 1',
           title: 'State of Dev – Week of July 27, 2026',

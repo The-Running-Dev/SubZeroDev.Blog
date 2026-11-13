@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-06T10:42:00Z
 tags:
-  - philosophy
-  - stories
   - absurd
+  - philosophy
+  - thinking-learning
 ---
 
 # Who Wrote This Shit?

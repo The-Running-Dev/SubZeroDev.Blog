@@ -7,7 +7,6 @@ authors:
 date: 2026-10-08T06:45:00Z
 tags:
   - development
-  - stories
   - absurd
   - well-why-not
 ---

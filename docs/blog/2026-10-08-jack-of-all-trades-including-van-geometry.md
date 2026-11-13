@@ -6,10 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-08T06:59:00Z
 tags:
-  - stories
   - absurd
-  - philosophy
   - well-why-not
+  - driving
 ---
 
 # Jack of All Trades, Including Van Geometry

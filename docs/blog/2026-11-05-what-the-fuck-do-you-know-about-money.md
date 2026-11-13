@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-11-05T00:00:00Z
 tags:
-  - stories
-  - philosophy
   - absurd
+  - relationships
+  - money
 ---
 
 # What the Fuck Do You Know About Money?

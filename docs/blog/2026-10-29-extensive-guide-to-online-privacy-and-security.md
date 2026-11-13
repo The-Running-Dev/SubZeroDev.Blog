@@ -8,6 +8,7 @@ date: 2026-10-29T12:00:00Z
 tags:
   - privacy
   - security
+  - windows
 ---
 
 I started with a Windows installation guide for a friend, then realized how many privacy and security habits I had accumulated over time. Writing them all down made that surprisingly obvious.

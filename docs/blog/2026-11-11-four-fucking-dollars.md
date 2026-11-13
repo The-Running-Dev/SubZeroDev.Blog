@@ -6,10 +6,10 @@ authors:
   - subzerodev
 date: 2026-11-11T00:00:00Z
 tags:
-  - stories
   - ai
   - llm
   - absurd
+  - money
 ---
 
 I spent at least twenty hours working on self-hosted GitHub runners before properly considering a subscription that I was perfectly willing to pay. Four fucking dollars a month.

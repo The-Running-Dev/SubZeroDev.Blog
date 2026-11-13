@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-11-05T00:00:00Z
 tags:
-  - stories
   - development
-  - philosophy
+  - work-career
+  - thinking-learning
 ---
 
 I wrote at least a dozen Chocolatey packages. I contributed, I made an impact, and eventually I got tired of dealing with assholes. One particular guy still comes to mind when I think about why.

@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-07T12:05:00Z
 tags:
-  - stories
-  - philosophy
   - absurd
+  - thinking-learning
+  - sport-play
 ---
 
 # You Don't Need to Know Tai Chi to Do Tai Chi

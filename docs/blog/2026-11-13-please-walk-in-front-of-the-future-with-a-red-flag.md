@@ -8,8 +8,10 @@ date: 2026-11-13T00:00:00Z
 tags:
   - ai
   - lucifer
-  - philosophy
   - absurd
+  - philosophy
+  - thinking-learning
+  - politics-society
 ---
 
 # Please Walk in Front of the Future With a Red Flag

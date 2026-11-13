@@ -10,6 +10,8 @@ tags:
   - development
   - automation
   - absurd
+  - thinking-learning
+  - work-career
 ---
 
 There is a version of my future where somebody asks how many developers work for me and I have to open three dashboards before answering.

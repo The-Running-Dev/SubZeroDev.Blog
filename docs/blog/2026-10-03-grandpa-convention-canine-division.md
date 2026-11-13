@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-03T00:10:00Z
 tags:
-  - stories
   - bulgaria
   - absurd
+  - dogs
 ---
 
 # Grandpa Convention: Canine Division

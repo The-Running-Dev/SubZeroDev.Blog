@@ -5,7 +5,7 @@ export default function Docker(): React.JSX.Element {
   return (
     <ContentHub
       description="A practical path from installing Docker and running a first container to choosing a reusable Compose setup."
-      eyebrow="Series"
+      eyebrow="Chronicle"
       title="Docker"
       entries={[
         {

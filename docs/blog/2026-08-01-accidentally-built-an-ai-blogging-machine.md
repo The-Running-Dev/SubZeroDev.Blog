@@ -9,7 +9,6 @@ tags:
   - ai
   - development
   - automation
-  - productivity
   - blog-publishing
 ---
 

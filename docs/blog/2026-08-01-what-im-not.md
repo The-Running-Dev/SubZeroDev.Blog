@@ -6,8 +6,10 @@ authors:
   - subzerodev
 date: 2026-08-01T16:00:00Z
 tags:
-  - philosophy
   - ahead-of-the-rubric
+  - philosophy
+  - boundaries
+  - communication
 ---
 
 # What I’m Not  

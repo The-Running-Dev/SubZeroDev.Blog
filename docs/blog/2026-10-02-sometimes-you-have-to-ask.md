@@ -7,9 +7,10 @@ authors:
 date: 2026-10-02T00:00:00Z
 tags:
   - lucifer
-  - philosophy
-  - stories
   - bulgaria
+  - relationships
+  - boundaries
+  - communication
 ---
 
 I complain about people.

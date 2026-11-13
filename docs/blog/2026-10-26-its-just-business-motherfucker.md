@@ -7,8 +7,10 @@ authors:
 - subzerodev
 date: 2026-10-26T00:00:00Z
 tags:
-- stories
-- philosophy
+  - relationships
+  - work-career
+  - money
+  - thinking-learning
 ---
 
 # It's Just Business, Motherfucker

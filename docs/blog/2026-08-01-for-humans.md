@@ -6,9 +6,8 @@ authors:
   - subzerodev
 date: 2026-08-01T14:40:00Z
 tags:
-  - stories
-  - philosophy
   - ahead-of-the-rubric
+  - work-career
 ---
 
 # For Humans  

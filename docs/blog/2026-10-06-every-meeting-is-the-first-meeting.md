@@ -6,8 +6,8 @@ authors:
   - subzerodev
 date: 2026-10-06T10:40:00Z
 tags:
-  - philosophy
-  - stories
+  - relationships
+  - communication
 ---
 
 # Every Meeting Is the First Meeting

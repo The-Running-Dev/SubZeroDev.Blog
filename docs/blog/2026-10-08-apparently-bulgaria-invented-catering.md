@@ -7,8 +7,8 @@ authors:
 date: 2026-10-08T00:00:00Z
 tags:
   - bulgaria
-  - stories
   - absurd
+  - everyday-life
 ---
 
 I've decided to embrace grandpa life properly.

@@ -6,9 +6,8 @@ authors:
   - subzerodev
 date: 2026-11-07T00:00:00Z
 tags:
-  - stories
   - absurd
-  - philosophy
+  - relationships
 ---
 
 # Forgive Me, Father, for I Asked Her Out

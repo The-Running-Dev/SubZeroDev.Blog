@@ -1,14 +1,10 @@
 /*
- * Design tokens lifted from SubZeroDev.com's landing-page presentation layer
- * (src/presentation/palette.ts, stylesheet.ts, primitives.ts): a flat,
- * single dark theme — near-black background, off-white text, one cyan link
- * colour, Inter with system-ui fallbacks, and a fixed type/space scale. No
- * gradients, glassmorphism, or box-shadow glow — separation comes from a
- * single 1px rule colour, matching the .com aesthetic.
+ * The Journal keeps the apex site's flat palette and rules, with a local
+ * light palette, Verdana reading face, and adjustable base text size.
  */
 :root,
 html[data-theme='dark'] {
-  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: Verdana, Geneva, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "Cascadia Code", Consolas, monospace;
   --step--1: 0.8rem;
   --step-0: 1rem;
@@ -23,13 +19,14 @@ html[data-theme='dark'] {
   --measure: 34rem;
 
   --bg: #111113;
+  --surface: #17171A;
   --fg: #F3F1EC;
   --fg-muted: #9A989F;
   --rule: #2B2B31;
   --link: #6FD3FF;
 
   --ifm-background-color: var(--bg);
-  --ifm-background-surface-color: #17171A;
+  --ifm-background-surface-color: var(--surface);
   --ifm-navbar-background-color: var(--bg);
   --ifm-font-family-base: var(--font-sans);
   --ifm-font-color-base: var(--fg);
@@ -42,16 +39,31 @@ html[data-theme='dark'] {
   --ifm-color-primary-light: var(--link);
   --ifm-color-primary-lighter: var(--link);
   --ifm-color-primary-lightest: var(--link);
-  --ifm-code-background: #17171A;
+  --ifm-code-background: var(--surface);
   --ifm-code-border-radius: 0.35rem;
   --ifm-table-border-color: var(--rule);
   --ifm-toc-border-color: var(--rule);
   --ifm-hr-border-color: var(--rule);
 }
 
+html[data-theme='dark'] { color-scheme: dark; }
+html[data-theme='light'] {
+  color-scheme: light;
+  --bg: #FFFFFF;
+  --surface: #F2F4F6;
+  --fg: #20242A;
+  --fg-muted: #535B66;
+  --rule: #D5DAE0;
+  --link: #006A96;
+}
+
 html {
   scroll-behavior: smooth;
+  font-size: 18px;
 }
+
+html[data-journal-text-size='small'] { font-size: 16px; }
+html[data-journal-text-size='large'] { font-size: 20px; }
 
 body {
   background: var(--bg);
@@ -64,7 +76,7 @@ body {
  * overlay intentionally owns only the Docusaurus-specific markup and menu.
  */
 .site-masthead {
-  --site-masthead-inline-padding: clamp(1.25rem, 5vw, 4rem);
+  --site-masthead-inline-padding: clamp(1rem, 3vw, 2rem);
 
   padding-top: 8px;
   background: var(--bg);
@@ -80,28 +92,36 @@ body {
     1120px
   );
   margin: 0 auto;
-  padding: clamp(2rem, 5vw, 4rem) var(--site-masthead-inline-padding) 0;
+  padding: 0.75rem var(--site-masthead-inline-padding) 0;
 }
 
 .site-masthead__stack {
   display: flex;
   flex-direction: column;
-  gap: clamp(1.1rem, 2.2vw, 1.9rem);
+  gap: 0.8rem;
+}
+
+.site-masthead__identity-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem 1.5rem;
 }
 
 .site-masthead__identity {
   display: flex;
   flex-direction: column;
-  gap: clamp(0.6rem, 1.5vw, 1.1rem);
+  gap: 0.3rem;
   max-width: 880px;
-  margin-top: clamp(0.5rem, 1vw, 0.9rem);
+  margin-top: 0;
 }
 
 .site-masthead__brand {
   width: fit-content;
   max-width: 16ch;
   color: var(--fg);
-  font-size: clamp(1.9rem, 3.6vw, 2.75rem);
+  font-size: clamp(1.6rem, 2.5vw, 2rem);
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.05;
@@ -282,6 +302,7 @@ body {
 .footer {
   border-top: 1px solid var(--rule);
   background: var(--bg);
+  color: var(--fg);
 }
 
 /* Infima's own `.footer__links` is `display: block` with plain inline text
@@ -325,6 +346,8 @@ main h1 {
 /* Flat entries, not glassy cards: a top rule between items rather than a
    bordered/shadowed panel, matching the .com `entry` primitive. */
 .blog-post-page main > article {
+  /* Scale the reading measure with the selected text size. */
+  max-inline-size: 60ch;
   padding-bottom: clamp(1.25rem, 3vw, 2rem);
 }
 
@@ -448,6 +471,27 @@ main h1 {
   box-shadow: none;
 }
 
+.article-table__hint {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .blog-post-page .article-table__hint {
+    display: block;
+    margin: 0 0 0.4rem;
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+    line-height: 1.5;
+  }
+
+  .blog-post-page .markdown table {
+    /* Keep wide columns scrollable without widening the article. */
+    display: block;
+    max-inline-size: 100%;
+    overflow-x: auto;
+  }
+}
+
 .markdown th {
   background: var(--ifm-background-surface-color);
 }
@@ -526,8 +570,8 @@ nav[aria-label='Blog recent posts navigation'] [aria-current='page'] {
 }
 
 .content-hub__hero {
-  margin-bottom: 2.25rem;
-  padding-bottom: clamp(1.5rem, 4vw, 2.75rem);
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
   border-bottom: 1px solid var(--rule);
 }
 
@@ -560,7 +604,7 @@ nav[aria-label='Blog recent posts navigation'] [aria-current='page'] {
 }
 
 .content-hub__entry {
-  padding: clamp(1.1rem, 2.4vw, 1.9rem) 0;
+  padding: 1rem 0;
   border-top: 1px solid var(--rule);
 }
 
@@ -637,8 +681,8 @@ a[class*='tagRegular'],
  * using its non-xl 1140px value, is completely unaffected -- this only
  * widens the case that was already hard-capped with room to spare.
  * min(96vw, 1600px) keeps a small, deliberate gutter at the viewport edges
- * while still capping at 1600px so a line of body text doesn't become
- * unreadably long on an ultra-wide monitor.
+ * while capping the overall layout at 1600px. Article text has its own
+ * font-relative reading measure above.
  */
 @media (min-width: 1440px) {
   :root {
@@ -651,6 +695,38 @@ button:focus-visible,
 input:focus-visible {
   outline: 2px solid var(--link);
   outline-offset: 3px;
+}
+
+select:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 3px;
+}
+
+.reading-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.8rem;
+}
+.reading-controls label { display: flex; align-items: center; gap: 0.5rem; }
+.reading-controls select,
+.reading-controls button {
+  min-height: 2.3rem;
+  border: 1px solid var(--rule);
+  border-radius: 0.3rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+.reading-controls button { display: inline-flex; align-items: center; gap: 0.4rem; }
+.reading-controls button:hover { border-color: var(--fg-muted); }
+
+.journal-discovery.margin-vert--xl,
+.content-hub.margin-vert--xl {
+  margin-block: 1.5rem !important;
 }
 
 @media (max-width: 996px) {
@@ -679,6 +755,12 @@ input:focus-visible {
 
   .site-masthead .navbar__items--right .navbar__link {
     font-size: clamp(0.66rem, 2.8vw, var(--step--1));
+  }
+
+  .site-masthead .navbar__items--right > :has(.navbar__search) {
+    position: static;
+    margin-left: auto;
+    padding: 0;
   }
 
   .site-masthead .navbar-sidebar {
@@ -712,3 +794,62 @@ input:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+
+/* Journal discovery shares the site's existing palette and type system. */
+.journal-discovery { max-width: 76rem; padding-inline: clamp(1rem, 3vw, 2rem); }
+.journal-discovery__intro { max-width: 52rem; margin-bottom: 1.25rem; }
+.journal-discovery__home { display: inline-block; margin-bottom: 0.6rem; }
+.journal-discovery__intro h1 { font-size: clamp(1.8rem, 3vw, 2.5rem); line-height: 1.2; letter-spacing: -0.025em; max-width: 30ch; margin-bottom: 0.65rem; }
+.journal-discovery__intro > p { max-width: 65ch; color: var(--fg-muted); font-size: 1rem; line-height: 1.65; margin-bottom: 0; }
+.journal-paths { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; border-block: 1px solid var(--rule); padding-block: 1rem; margin-bottom: 1.5rem; }
+.journal-paths a { display: flex; flex-direction: column; gap: 0.35rem; }
+.journal-paths strong { font-size: 1.22rem; font-weight: 600; }
+.journal-paths span { color: var(--fg-muted); font-size: 0.92rem; line-height: 1.55; max-width: 22ch; }
+.journal-home-columns { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(16rem, 1fr); gap: clamp(1.5rem, 3vw, 3rem); align-items: start; }
+.journal-home-columns aside { padding-left: 1.25rem; border-left: 1px solid var(--rule); }
+.journal-section-heading { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; justify-content: space-between; align-items: baseline; }
+.journal-discovery h2 { font-size: 1.5rem; letter-spacing: -0.02em; }
+.journal-entries { max-width: 54rem; }
+.journal-entry { padding-block: 1rem; border-bottom: 1px solid var(--rule); }
+.journal-entry:first-child { padding-top: 0.4rem; }
+.journal-entry h3 { font-size: 1.1rem; line-height: 1.45; margin-bottom: 0.4rem; }
+.journal-entry h3 a { color: var(--fg); }
+.journal-entry h3 a:hover { color: var(--link); }
+.journal-entry > p { max-width: 68ch; color: var(--fg-muted); line-height: 1.65; margin-bottom: 0; }
+.journal-entry time { display: block; font-size: 0.86rem; color: var(--fg-muted); margin-bottom: 0.35rem; }
+.journal-home-columns aside .journal-entry:last-child { margin-bottom: 1.5rem; }
+.journal-collections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 2rem; }
+.journal-collections article { border-top: 1px solid var(--rule); padding: 1rem 0 1.25rem; }
+.journal-collections p { max-width: 52ch; color: var(--fg-muted); line-height: 1.7; }
+.journal-actions { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; font-size: 0.93rem; }
+.journal-topic-jump { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--rule); margin-bottom: 1.5rem; }
+.journal-topic-groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem 2.5rem; align-items: start; }
+.journal-topic-groups section { scroll-margin-top: 1.5rem; }
+.journal-topics { list-style: none; padding: 0; margin: 0; }
+.journal-topics li { display: flex; justify-content: space-between; gap: 1rem; padding-block: 0.5rem; border-bottom: 1px solid var(--rule); }
+.journal-topics li span { color: var(--fg-muted); font-size: 0.9rem; flex-shrink: 0; }
+.journal-follow-on { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--rule); max-width: 48rem; }
+.journal-follow-on > p { color: var(--fg-muted); }
+.journal-follow-on .journal-topics { max-width: 32rem; margin-bottom: 1.5rem; }
+.journal-index-tools { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1.5rem 3rem; align-items: end; margin-bottom: 1.5rem; }
+.journal-index-tools > div { flex: 1 1 22rem; max-width: 38rem; }
+.journal-index-tools label { display: block; margin-bottom: 0.6rem; font-weight: 600; }
+.journal-index-tools input { width: 100%; border: 1px solid var(--fg-muted); border-radius: 0.3rem; background: var(--ifm-background-surface-color); color: var(--fg); padding: 0.85rem 1rem; font: inherit; }
+.journal-index-tools input::placeholder { color: var(--fg-muted); }
+.journal-index-tools nav { display: flex; flex-wrap: wrap; gap: 0.75rem 1.5rem; padding-bottom: 0.85rem; font-size: 0.92rem; }
+.journal-result-count { color: var(--fg-muted); font-size: 0.9rem; }
+.journal-text-button { background: none; color: var(--link); border: 0; padding: 0; font: inherit; text-decoration: underline; cursor: pointer; }
+@media (max-width: 800px) {
+  .journal-paths { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 1.5rem; }
+  .journal-home-columns { grid-template-columns: 1fr; }
+  .journal-home-columns aside { border-left: 0; border-top: 1px solid var(--rule); padding: 1.25rem 0 0; }
+  .journal-topic-groups, .journal-collections { grid-template-columns: 1fr; }
+}
+@media (max-width: 400px) {
+  .journal-topics li { gap: 0.75rem; }
+  .journal-topics li span { font-size: 0.8rem; }
+}
+.journal-post-links > div { margin-block: 0.5rem; }
+.journal-post-links ul { display: inline; padding: 0; }
+.journal-post-links li { display: inline-block; margin: 0 0 0.4rem 0.7rem; }

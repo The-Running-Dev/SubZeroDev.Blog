@@ -7,8 +7,8 @@ authors:
 date: 2026-10-06T11:55:00Z
 tags:
   - absurd
-  - stories
   - lucifer
+  - communication
 ---
 
 # Are You Not Entertained?

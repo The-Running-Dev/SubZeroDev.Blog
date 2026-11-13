@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-11-05T00:00:00Z
 tags:
-  - stories
   - ai
-  - philosophy
+  - money
+  - boundaries
+  - communication
 ---
 
 # I Wasn't Asking for a Fucking Intervention

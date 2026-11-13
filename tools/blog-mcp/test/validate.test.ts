@@ -20,7 +20,7 @@ beforeAll(() => {
   authorKeys = new Set(loadAuthors(REPO_ROOT, 'docs/blog').map((a) => a.key));
   tagKeys = new Set(loadTags(REPO_ROOT, 'docs/blog').map((t) => t.key));
   expect(authorKeys.has('subzerodev')).toBe(true);
-  expect(tagKeys.has('stories')).toBe(true);
+  expect(tagKeys.has('development')).toBe(true);
 });
 
 function makeLoadedPost(filename: string, content: string): LoadedPost {
@@ -44,7 +44,7 @@ authors:
   - subzerodev
 date: 2099-01-01T00:00:00Z
 tags:
-  - stories
+  - development
 ---`;
 
 const VALID_BODY = `
@@ -85,7 +85,7 @@ describe('blog_validate_posts: negative fixtures, one per rule', () => {
   });
 
   it('FrontMatterFields: rejects a post missing the tags field', async () => {
-    const content = VALID_CONTENT.replace(/tags:\n  - stories\n/, '');
+    const content = VALID_CONTENT.replace(/tags:\n  - development\n/, '');
     const post = makeLoadedPost(VALID_FILENAME, content);
     const findings = await validatePost(REPO_ROOT, post, authorKeys, tagKeys);
     expect(findings.map((f) => f.rule)).toContain('FrontMatterFields');
@@ -135,7 +135,7 @@ describe('blog_validate_posts: negative fixtures, one per rule', () => {
   });
 
   it('Tags: rejects a tag key not in tags.yml', async () => {
-    const content = VALID_CONTENT.replace('  - stories', '  - nonexistent-tag');
+    const content = VALID_CONTENT.replace('  - development', '  - nonexistent-tag');
     const post = makeLoadedPost(VALID_FILENAME, content);
     const findings = await validatePost(REPO_ROOT, post, authorKeys, tagKeys);
     expect(findings.map((f) => f.rule)).toContain('Tags');
@@ -193,7 +193,7 @@ describe('SlugUnique: cross-post duplicate detection', () => {
 
     // authors.yml/tags.yml so the only expected finding is SlugUnique.
     fs.writeFileSync(path.join(blogDir, 'authors.yml'), 'subzerodev:\n  name: SubZeroDev\n  url: https://example.test/\n');
-    fs.writeFileSync(path.join(blogDir, 'tags.yml'), 'stories:\n  label: Stories\n  permalink: /stories\n  description: Test.\n');
+    fs.writeFileSync(path.join(blogDir, 'tags.yml'), 'development:\n  label: Software Development\n  permalink: /development\n  description: Test.\n');
 
     fs.writeFileSync(path.join(blogDir, VALID_FILENAME), VALID_CONTENT);
     fs.writeFileSync(

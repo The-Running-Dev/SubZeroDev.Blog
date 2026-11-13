@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-06T10:43:00Z
 tags:
-  - stories
-  - philosophy
   - absurd
+  - relationships
+  - communication
 ---
 
 # I Knew Her Before I Knew Her Name

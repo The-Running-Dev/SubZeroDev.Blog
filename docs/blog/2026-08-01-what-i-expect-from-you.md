@@ -6,8 +6,10 @@ authors:
   - subzerodev
 date: 2026-08-01T16:20:00Z
 tags:
-  - philosophy
   - ahead-of-the-rubric
+  - philosophy
+  - boundaries
+  - communication
 ---
 
 # What I Expect From You  

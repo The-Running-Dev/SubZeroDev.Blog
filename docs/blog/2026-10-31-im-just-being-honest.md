@@ -6,10 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-31T00:00:00Z
 tags:
-  - stories
   - absurd
   - lucifer
-  - philosophy
+  - relationships
+  - communication
 ---
 
 I have recently participated in two conversations that should have been perfectly ordinary.

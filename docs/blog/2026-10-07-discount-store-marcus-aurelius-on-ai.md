@@ -7,8 +7,9 @@ authors:
 date: 2026-10-07T00:00:00Z
 tags:
   - ai
-  - philosophy
   - absurd
+  - philosophy
+  - communication
 ---
 
 I own books by Marcus Aurelius, Epictetus, and assorted other dead people who apparently figured this shit out a while ago.

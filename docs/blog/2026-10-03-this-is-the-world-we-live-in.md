@@ -8,9 +8,9 @@ date: 2026-10-03T08:00:00Z
 tags:
   - absurd
   - lucifer
-  - philosophy
-  - stories
   - bulgaria
+  - communication
+  - relationships
 ---
 
 # This Is the World We Live In

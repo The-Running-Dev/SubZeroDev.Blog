@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-07T06:33:00Z
 tags:
-  - philosophy
-  - stories
   - absurd
+  - relationships
+  - boundaries
+  - everyday-life
 ---
 
 # Don't Expect Drunk People to Act Sober

@@ -6,8 +6,9 @@ authors:
   - subzerodev
 date: 2026-11-11T00:00:00Z
 tags:
-  - stories
   - philosophy
+  - relationships
+  - boundaries
 ---
 
 I’ve had enough of being told what a man is supposed to do by people who become remarkably flexible when the conversation reaches what they’re supposed to do.

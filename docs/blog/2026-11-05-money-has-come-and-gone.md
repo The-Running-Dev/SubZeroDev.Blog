@@ -6,8 +6,9 @@ authors:
   - subzerodev
 date: 2026-11-05T00:00:00Z
 tags:
-  - stories
   - philosophy
+  - money
+  - thinking-learning
 ---
 
 # Money Has Come and Gone

@@ -6,8 +6,8 @@ authors:
   - subzerodev
 date: 2026-10-03T18:05:00Z
 tags:
-  - stories
-  - philosophy
+  - relationships
+  - everyday-life
 ---
 
 # The Bar Is My Drinking Limit

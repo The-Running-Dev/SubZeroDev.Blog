@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-31T00:00:00Z
 tags:
-  - stories
   - absurd
   - bulgaria
+  - travel
+  - hookah
 ---
 
 “Oh my God, I’m a fucking wizard.”

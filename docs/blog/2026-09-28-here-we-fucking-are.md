@@ -6,8 +6,8 @@ authors:
   - subzerodev
 date: 2026-09-28T22:05:00Z
 tags:
-  - philosophy
-  - stories
+  - relationships
+  - everyday-life
 ---
 
 # Here We Fucking Are

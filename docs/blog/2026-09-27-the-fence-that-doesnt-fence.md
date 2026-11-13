@@ -8,7 +8,8 @@ date: 2026-09-27T00:00:00Z
 tags:
   - absurd
   - bulgaria
-  - stories
+  - dogs
+  - everyday-life
 ---
 
 # The Fence That Doesn't Fence

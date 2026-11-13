@@ -6,8 +6,8 @@ authors:
   - subzerodev
 date: 2026-10-06T11:25:00Z
 tags:
-  - philosophy
-  - stories
+  - relationships
+  - communication
 ---
 
 # Just Fucking Tell Me

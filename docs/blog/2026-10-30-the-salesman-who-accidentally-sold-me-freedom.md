@@ -6,9 +6,11 @@ authors:
   - subzerodev
 date: 2026-10-30T00:00:00Z
 tags:
-  - stories
   - absurd
   - bulgaria
+  - money
+  - boundaries
+  - everyday-life
 ---
 
 # The Salesman Who Accidentally Sold Me Freedom

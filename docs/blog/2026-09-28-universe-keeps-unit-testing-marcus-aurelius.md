@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-09-28T22:25:00Z
 tags:
-  - philosophy
-  - stories
   - ai
+  - philosophy
+  - thinking-learning
 ---
 
 # The Universe Keeps Unit Testing Marcus Aurelius

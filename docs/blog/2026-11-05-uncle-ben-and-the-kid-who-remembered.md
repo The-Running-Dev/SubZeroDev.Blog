@@ -6,8 +6,7 @@ authors:
   - subzerodev
 date: 2026-11-05T00:00:00Z
 tags:
-  - stories
-  - philosophy
+  - sport-play
 ---
 
 The kid remembered me.

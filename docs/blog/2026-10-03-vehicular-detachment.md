@@ -6,10 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-03T07:40:00Z
 tags:
-  - philosophy
-  - stories
   - absurd
   - bulgaria
+  - driving
 ---
 
 # Vehicular Detachment

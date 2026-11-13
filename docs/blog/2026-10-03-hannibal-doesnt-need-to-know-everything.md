@@ -9,7 +9,7 @@ tags:
   - ai-assisted-engineering
   - architecture
   - automation
-  - stories
+  - work-career
 ---
 
 # Hannibal Doesn’t Need to Know Everything

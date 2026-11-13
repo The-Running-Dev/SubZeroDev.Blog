@@ -7,7 +7,10 @@ authors:
 - subzerodev
 date: 2026-10-26T00:00:00Z
 tags:
-- philosophy
+  - philosophy
+  - thinking-learning
+  - identity
+  - relationships
 ---
 
 # Come and Take My Enlightenment. I Don't Want It

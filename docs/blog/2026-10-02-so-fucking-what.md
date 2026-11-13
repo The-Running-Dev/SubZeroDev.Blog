@@ -8,8 +8,8 @@ date: 2026-10-02T00:00:00Z
 tags:
   - absurd
   - lucifer
-  - stories
   - bulgaria
+  - relationships
 ---
 
 I was sitting at the bar drinking Scotch and smoking cigars.

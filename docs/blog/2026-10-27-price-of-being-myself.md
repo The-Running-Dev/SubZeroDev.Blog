@@ -6,10 +6,12 @@ authors:
   - subzerodev
 date: 2026-10-27T00:00:00Z
 tags:
-  - philosophy
-  - stories
   - absurd
   - lucifer
+  - philosophy
+  - identity
+  - boundaries
+  - thinking-learning
 ---
 
 # The Price of Being Myself

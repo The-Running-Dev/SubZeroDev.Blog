@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-03T18:06:00Z
 tags:
-  - stories
-  - productivity
-  - philosophy
+  - thinking-learning
+  - work-career
+  - everyday-life
 ---
 
 # Alcohol Is Apparently a Productivity Tool Until It Isn't

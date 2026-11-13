@@ -9,7 +9,6 @@ tags:
   - absurd
   - lucifer
   - development
-  - stories
 ---
 
 # The Projects Are Reproducing

@@ -6,7 +6,6 @@ authors:
   - subzerodev
 date: 2026-11-05T00:00:00Z
 tags:
-  - stories
   - development
   - absurd
   - well-why-not

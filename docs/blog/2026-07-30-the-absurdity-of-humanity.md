@@ -9,7 +9,6 @@ tags:
   - absurd
   - lucifer
   - philosophy
-  - stories
 ---
 
 # The Absurdity of Humanity

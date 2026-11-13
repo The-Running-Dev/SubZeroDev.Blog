@@ -5,8 +5,8 @@ sidebar_position: 5
 
 # Writing Posts
 
-Blog posts live in `docs/blog/`. The blog index is published at `/`, and posts
-are published directly below it. The source tree, front matter, and production
+Blog posts live in `docs/blog/`. The discovery home is published at `/`, the
+complete index at `/journal/`, and posts directly below the site root. The source tree, front matter, and production
 build are the authoritative record of what is published.
 
 ## Create a Post
@@ -60,6 +60,17 @@ is durable enough to categorize multiple current or expected posts. Each tag
 needs a unique key, permalink, reader-facing label, and description. The
 production build rejects undeclared tags.
 
+The Topics directory groups subjects using `docs/journal.config.json`. Add a
+new subject to both that configuration and `tags.yml`. Collection markers
+(`lucifer`, `ahead-of-the-rubric`, `well-why-not`, and `state-of-dev`) connect
+posts to Chronicles; they are separate from subject browsing. `absurd` is an
+optional tone index, not a default tag for personal stories. Retired tag URLs
+remain readable through the compatibility configuration.
+
+Chronicles are curated reading paths. Update the appropriate hub page when a
+new entry belongs in one, rather than assuming a shared subject creates a
+sequence. The `start` values in `journal.config.json` select opening entries.
+
 Keep each post factual. Describe only behavior that is present in the linked
 source or provide an external source for material claims. Never publish keys,
 tokens, private configuration, or unpublished customer information.
@@ -73,8 +84,11 @@ in the architecture page.
 
 Reader discovery is published at:
 
+- `/journal/` for the searchable publication-order index;
+- `/chronicles/` for reading paths;
+- `/projects/` for project narratives;
 - `/archive/` for the chronological archive;
-- `/tags/` for the tag index;
+- `/tags/` for grouped Topics;
 - `/tags/<tag-permalink>/` for a tag's posts;
 - `/rss.xml` for RSS;
 - `/atom.xml` for Atom.

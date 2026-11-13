@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-03T00:00:00Z
 tags:
-  - stories
   - bulgaria
   - absurd
+  - dogs
+  - everyday-life
 ---
 
 # Zero-Trust Pedestrian Architecture

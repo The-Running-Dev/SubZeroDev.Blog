@@ -6,9 +6,8 @@ authors:
   - subzerodev
 date: 2026-10-03T18:00:00Z
 tags:
-  - philosophy
-  - stories
   - absurd
+  - dogs
 ---
 
 # Consequences, Motherfucker

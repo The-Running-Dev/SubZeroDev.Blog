@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-15T00:01:00Z
 tags:
-  - philosophy
-  - stories
   - ai
+  - philosophy
+  - boundaries
+  - thinking-learning
 ---
 
 # Ninety Minutes of Stoicism

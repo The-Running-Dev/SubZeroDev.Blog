@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-11-09T00:00:00Z
 tags:
-  - stories
   - ai
-  - productivity
+  - boundaries
+  - communication
+  - work-career
 ---
 
 *Automation was supposed to eliminate repetitive work. Somehow it created an entire department.*

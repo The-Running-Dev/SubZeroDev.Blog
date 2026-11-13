@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-09-29T11:42:00Z
 tags:
-  - philosophy
-  - stories
   - bulgaria
+  - philosophy
+  - identity
+  - travel
 ---
 
 # I'm a Foreigner Everywhere, and I'm at Home Everywhere

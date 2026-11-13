@@ -6,7 +6,7 @@ authors:
   - subzerodev
 date: 2026-11-05T00:00:00Z
 tags:
-  - stories
+  - sport-play
 ---
 
 We got to Syracuse in May. School didn't start for us until September.

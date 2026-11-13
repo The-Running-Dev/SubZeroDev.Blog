@@ -6,8 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-25T00:00:00Z
 tags:
-  - stories
   - bulgaria
+  - everyday-life
+  - money
 ---
 
 # A Lot of Moving Parts

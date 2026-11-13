@@ -7,8 +7,8 @@ authors:
 date: 2026-10-07T09:31:00Z
 tags:
   - ai
-  - programming
-  - engineering
+  - development
+  - thinking-learning
 ---
 
 # Vibe Coding, Apparently

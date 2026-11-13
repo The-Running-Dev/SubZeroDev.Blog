@@ -6,9 +6,8 @@ authors:
   - subzerodev
 date: 2026-10-06T11:30:00Z
 tags:
-  - philosophy
-  - stories
   - absurd
+  - communication
 ---
 
 # I Retired From Sarcasm

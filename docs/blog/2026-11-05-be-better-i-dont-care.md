@@ -6,8 +6,7 @@ authors:
   - subzerodev
 date: 2026-11-05T00:00:00Z
 tags:
-  - stories
-  - philosophy
+  - sport-play
 ---
 
 I was decent at basketball when I was a teenager. Fourteen, fifteen, sixteen—I don't fucking know. Somewhere around there. What I remember much more clearly is that I loved playing.

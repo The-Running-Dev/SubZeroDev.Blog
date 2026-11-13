@@ -6,8 +6,9 @@ authors:
   - subzerodev
 date: 2026-11-05T00:00:00Z
 tags:
-  - stories
   - philosophy
+  - thinking-learning
+  - identity
 ---
 
 Some online test gave me an IQ of about 140. Maybe 142.

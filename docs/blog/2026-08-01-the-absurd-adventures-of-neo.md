@@ -8,7 +8,7 @@ date: 2026-08-01T16:40:00Z
 tags:
   - absurd
   - lucifer
-  - stories
+  - game-engine
 ---
 
 # The Absurd Adventures of Neo

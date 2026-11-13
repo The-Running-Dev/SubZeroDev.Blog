@@ -9,9 +9,15 @@ import { checkAllowedPath } from '../src/domain/paths.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, '..', '..', '..');
 const REAL_HUB_FILES = [
+  'docs/src/pages/about.tsx',
   'docs/src/pages/series/lucifer-chronicles.tsx',
   'docs/src/pages/series/ai-assisted-engineering.tsx',
+  'docs/src/pages/series/building-the-blog.tsx',
+  'docs/src/pages/series/docker.tsx',
   'docs/src/pages/series/state-of-dev.tsx',
+  'docs/src/pages/series/discount-store-marcus-aurelius.tsx',
+  'docs/src/pages/series/vehicle-history.tsx',
+  'docs/src/pages/series/well-why-not.tsx',
   'docs/src/pages/projects/game-engine.tsx'
 ];
 

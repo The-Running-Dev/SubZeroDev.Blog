@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-07T09:37:00Z
 tags:
-  - philosophy
   - identity
-  - stories
+  - philosophy
+  - thinking-learning
 ---
 
 # Binary People Meet a Non-Binary Life

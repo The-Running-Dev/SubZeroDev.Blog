@@ -8,9 +8,8 @@ date: 2026-10-03T00:00:00Z
 tags:
   - absurd
   - lucifer
-  - philosophy
-  - stories
   - bulgaria
+  - driving
 ---
 
 The doctor was talking to me about blood pressure.

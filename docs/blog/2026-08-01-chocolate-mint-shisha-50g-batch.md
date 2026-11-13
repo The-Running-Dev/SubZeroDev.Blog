@@ -7,6 +7,7 @@ authors:
 date: 2026-08-01T17:20:00Z
 tags:
   - recipes
+  - hookah
 ---
 
 # Chocolate Mint Shisha — 50g Batch

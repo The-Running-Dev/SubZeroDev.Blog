@@ -7,8 +7,9 @@ authors:
 date: 2026-10-03T17:46:00Z
 tags:
   - absurd
-  - stories
   - bulgaria
+  - driving
+  - travel
 ---
 
 # We Shall Ride on the Hills

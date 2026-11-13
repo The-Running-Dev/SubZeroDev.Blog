@@ -7,7 +7,10 @@ authors:
 date: 2026-10-03T17:30:00Z
 tags:
   - philosophy
-  - stories
+  - identity
+  - relationships
+  - boundaries
+  - thinking-learning
 ---
 
 # I've Always Been Useful to People. I Still Feel Useless.

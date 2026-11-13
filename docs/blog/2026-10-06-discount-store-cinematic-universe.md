@@ -8,8 +8,6 @@ date: 2026-10-06T11:00:00Z
 tags:
   - absurd
   - lucifer
-  - stories
-  - philosophy
 ---
 
 # The Discount Store Cinematic Universe

@@ -9,7 +9,8 @@ date: 2026-10-08T00:00:00Z
 tags:
   - absurd
   - bulgaria
-  - stories
+  - driving
+  - everyday-life
 ---
 
 I parked the camper and took the bike.

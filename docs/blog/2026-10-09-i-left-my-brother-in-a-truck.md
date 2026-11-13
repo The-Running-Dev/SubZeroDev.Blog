@@ -8,9 +8,8 @@ date: 2026-10-09T08:00:00Z
 tags:
   - lucifer
   - absurd
-  - stories
   - family
-  - philosophy
+  - money
 ---
 
 # I Left My Brother in a Truck. My Brain Sent Him to the North Sea.

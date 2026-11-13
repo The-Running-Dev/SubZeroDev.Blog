@@ -8,7 +8,8 @@ date: 2026-10-03T00:00:00Z
 tags:
   - absurd
   - lucifer
-  - stories
+  - relationships
+  - sport-play
 ---
 
 I thought I was fucking unhinged.

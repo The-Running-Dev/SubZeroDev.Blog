@@ -9,7 +9,8 @@ tags:
   - absurd
   - lucifer
   - development
-  - stories
+  - thinking-learning
+  - work-career
 ---
 
 # The Devil, the Ogre, and the Seventeen Accidental Projects

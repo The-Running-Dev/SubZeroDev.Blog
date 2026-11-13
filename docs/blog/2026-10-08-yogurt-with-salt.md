@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-08T06:55:00Z
 tags:
-  - stories
   - absurd
   - bulgaria
+  - everyday-life
 ---
 
 # Yogurt With Salt

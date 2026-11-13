@@ -6,10 +6,11 @@ authors:
   - subzerodev
 date: 2026-10-25T00:00:00Z
 tags:
-  - stories
   - family
   - bulgaria
   - absurd
+  - everyday-life
+  - money
 ---
 
 # Three Funnels and No Cupboard Space

@@ -6,9 +6,8 @@ authors:
   - subzerodev
 date: 2026-09-27T00:00:00Z
 tags:
-  - stories
-  - philosophy
   - family
+  - work-career
 ---
 
 # Mario and Uncle Ben

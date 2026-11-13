@@ -7,7 +7,7 @@ authors:
 date: 2026-07-30T03:22:20Z
 tags:
   - absurd
-  - stories
+  - driving
 ---
 
 # Apparently My Hands Were the Problem

@@ -7,8 +7,9 @@ authors:
 # Provisional draft date; set actual publication date before publishing.
 date: 2026-10-08T00:00:00Z
 tags:
-  - philosophy
-  - stories
+  - relationships
+  - boundaries
+  - communication
 ---
 
 I had a friend for something like thirty years.

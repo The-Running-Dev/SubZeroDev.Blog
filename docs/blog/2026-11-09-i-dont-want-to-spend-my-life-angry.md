@@ -6,9 +6,9 @@ authors:
   - subzerodev
 date: 2026-11-09T00:00:00Z
 tags:
-  - philosophy
-  - stories
   - absurd
+  - philosophy
+  - thinking-learning
 ---
 
 I don't want to be angry at the world. Unfortunately, the world keeps submitting material, and Discount Store Marcus Aurelius appears to have subscribed to the full package.

@@ -6,9 +6,8 @@ authors:
   - subzerodev
 date: 2026-10-07T09:30:00Z
 tags:
-  - stories
-  - reddit
   - ai
+  - communication
 ---
 
 # You Know That I Know That You Know

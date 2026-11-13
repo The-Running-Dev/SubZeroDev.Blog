@@ -8,7 +8,8 @@ date: 2026-10-07T09:36:00Z
 tags:
   - identity
   - philosophy
-  - stories
+  - boundaries
+  - communication
 ---
 
 # Please Stop Explaining Me to Me

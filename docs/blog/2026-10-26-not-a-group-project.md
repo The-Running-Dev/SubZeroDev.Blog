@@ -7,8 +7,9 @@ authors:
 - subzerodev
 date: 2026-10-26T00:00:00Z
 tags:
-- family
-- philosophy
+  - family
+  - philosophy
+  - boundaries
 ---
 
 # I'm Not a Fucking Group Project

@@ -11,7 +11,6 @@ tags:
   - development
   - architecture
   - docusaurus
-  - stories
 ---
 
 # How a Quick Question Became 44 Work Units

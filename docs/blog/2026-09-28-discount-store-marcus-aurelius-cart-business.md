@@ -7,7 +7,8 @@ authors:
 date: 2026-09-28T21:50:00Z
 tags:
   - philosophy
-  - stories
+  - work-career
+  - money
 ---
 
 # Discount Store Marcus Aurelius and the Cart Business

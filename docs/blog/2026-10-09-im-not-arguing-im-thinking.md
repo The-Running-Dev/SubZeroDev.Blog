@@ -6,9 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-09T00:00:00Z
 tags:
-  - philosophy
-  - stories
   - knowledge-management
+  - philosophy
+  - communication
+  - thinking-learning
 ---
 
 I have been called argumentative, difficult, abrasive, opinionated, and an asshole more times than I can count.

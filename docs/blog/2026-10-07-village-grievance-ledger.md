@@ -8,7 +8,8 @@ date: 2026-10-07T09:20:00Z
 tags:
   - absurd
   - bulgaria
-  - stories
+  - dogs
+  - everyday-life
 ---
 
 There is apparently a ledger in every village.

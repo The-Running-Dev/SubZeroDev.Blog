@@ -6,10 +6,10 @@ authors:
   - subzerodev
 date: 2026-10-08T06:34:00Z
 tags:
-  - stories
   - absurd
   - bulgaria
   - family
+  - driving
 ---
 
 # Ten Meters of Bureaucracy

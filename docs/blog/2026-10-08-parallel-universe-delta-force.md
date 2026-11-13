@@ -6,10 +6,9 @@ authors:
   - subzerodev
 date: 2026-10-08T06:55:00Z
 tags:
-  - stories
   - absurd
-  - philosophy
   - well-why-not
+  - sport-play
 ---
 
 # Apparently My Parallel-Universe Job Is Delta Force

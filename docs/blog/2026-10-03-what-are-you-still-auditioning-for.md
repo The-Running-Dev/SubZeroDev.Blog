@@ -7,9 +7,10 @@ authors:
 date: 2026-10-03T18:03:00Z
 tags:
   - family
-  - philosophy
-  - stories
   - absurd
+  - boundaries
+  - everyday-life
+  - money
 ---
 
 # What Are You Still Auditioning For?

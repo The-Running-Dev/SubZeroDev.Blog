@@ -7,8 +7,8 @@ authors:
 date: 2026-10-09T00:00:00Z
 tags:
   - absurd
-  - stories
-  - philosophy
+  - boundaries
+  - driving
 ---
 
 I've been called an asshole more times than I can count.

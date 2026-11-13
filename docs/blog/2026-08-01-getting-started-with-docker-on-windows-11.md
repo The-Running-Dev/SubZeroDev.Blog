@@ -8,6 +8,7 @@ date: 2026-08-01T14:00:00Z
 tags:
   - development
   - docker
+  - windows
 ---
 
 # Getting Started with Docker on Windows 11
